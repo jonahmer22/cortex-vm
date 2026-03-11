@@ -68,7 +68,7 @@ int main(int argc, char **argv){
 
 	arenaDestroy();
 
-	printf("%s\n%zu\n%p\n", buff, size, (void *)&arena);
+	printf("%s\n%lu\n", buff, size);
 
 	free(buff);
 	return 0;

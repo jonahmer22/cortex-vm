@@ -9,7 +9,7 @@ env/
 .pytest_cache
 __pycache__
 
-# swap
+# Swap
 *.swp
 
 # Prerequisites

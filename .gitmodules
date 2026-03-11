@@ -1,0 +1,3 @@
+[submodule "deps/arena"]
+	path = deps/arena
+	url = git@github.com:jonahmer22/arena
