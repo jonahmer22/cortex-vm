@@ -126,7 +126,7 @@ void arenaDestroy(void){
 		}
 
 		// free all MemBlocks
-		for(MemBlock *temp = memBlockDestroy(arena.head); temp != NULL; temp = memBlockDestroy(temp));
+		for(MemBlock *temp = memBlockDestroy(arena.head); temp; temp = memBlockDestroy(temp));
 	}
 
 	// set everything to 0 and NULL then exit
@@ -191,5 +191,6 @@ int main(int argc, char **argv){
 
 	printf("%s\n%zu\n%p\n", buff, size, (void *)&arena);
 
+	free(buff);
 	return 0;
 }

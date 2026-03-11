@@ -9,6 +9,9 @@ env/
 .pytest_cache
 __pycache__
 
+# swap
+*.swp
+
 # Prerequisites
 *.d
 
