@@ -47,7 +47,43 @@ char *readFile(const char *path, size_t *outLen){
 	return buffer;
 }
 
-// TODO: make a file reader for pure binary list of uint64_t words instead of as a char buffer like the one above
+// Read a file into a uint64_t word array (little endian, zero padded to 8-byte boundary)
+uint64_t *readFileWords(const char *path, size_t *outWordCount){
+	FILE *file = fopen(path, "rb");
+	if(!file){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not open file at \"%s\".\n", 0x0021, path);
+		exit(EXIT_FAILURE);
+	}
+
+	fseek(file, 0, SEEK_END);
+	long size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	if(size % 8 != 0){
+		fclose(file);
+		fprintf(stderr, "[FATAL 0x%04X]: File size %ld is not a multiple of 8 bytes.\n", 0x0024, size);
+		exit(EXIT_FAILURE);
+	}
+
+	size_t wordCount = size / 8;
+	uint64_t *buffer = malloc(wordCount * sizeof(uint64_t));
+	if(!buffer){
+		fprintf(stderr, "[FATAL 0x%04X]: Not enough memory to allocate buffer of size %zu bytes.\n", 0x0022, wordCount * 8);
+		exit(EXIT_FAILURE);
+	}
+
+	if(fread(buffer, 1, size, file) != (size_t)size){
+		free(buffer);
+		fclose(file);
+		fprintf(stderr, "[FATAL 0x%04X]: Read in buffer does not match size of file.\n", 0x0023);
+		exit(EXIT_FAILURE);
+	}
+
+	fclose(file);
+	if(outWordCount)
+		*outWordCount = wordCount;
+	return buffer;
+}
 
 int main(int argc, char **argv){
 	// load a file in
@@ -69,8 +105,17 @@ int main(int argc, char **argv){
 	arenaDestroy();
 
 	printf("%s\n%lu\n", buff, size);
-
 	free(buff);
+
+	size_t wordCount = 0;
+	uint64_t *hexBuff = readFileWords(argv[1], &wordCount);
+
+	printf("\nRaw 64-bit hex:\n");
+	for(size_t i = 0; i < wordCount; i++){
+		printf("0x%016llX\n", hexBuff[i]);
+	}
+
+	free(hexBuff);
 	return 0;
 }
 
