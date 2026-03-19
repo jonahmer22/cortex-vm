@@ -8,9 +8,6 @@
 
 #define STACKSIZE (1024*1024*sizeof(uint64_t))
 
-// basic size of memory block for arena
-#define MEMBLOCK_SIZE 1024*1024	// 1mb by default
-
 // ===========
 // Basic Utils
 // ===========
