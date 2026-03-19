@@ -23,9 +23,9 @@ Credit where credit is due — this is highly inspired by experience with RISC-V
 | r1 | 1 | `pc` | Program counter. |
 | r2 | 1 | `sp` | Stack pointer. |
 | r3 | 1 | `ra` | Return address. |
-| r4–r17 | 14 | `s0–s13` | Callee-saved registers. |
-| r18–r31 | 14 | `r0–r13` | Caller-saved. Used for arguments and return values. |
-| r32–r63 | 32 | `t0–t31` | General purpose temporaries. No convention. |
+| r4-r17 | 14 | `s0-s13` | Callee-saved registers. |
+| r18-r31 | 14 | `r0-r13` | Caller-saved. Used for arguments and return values. |
+| r32-r63 | 32 | `t0-t31` | General purpose temporaries. No convention. |
 
 Register aliases (`s0`, `r0`, `t0`, etc.) are assembler-level names for their corresponding physical registers and are interchangeable with the raw register number.
 
@@ -34,15 +34,15 @@ Register aliases (`s0`, `r0`, `t0`, etc.) are assembler-level names for their co
 ## Calling Convention
 
 ### Argument Passing
-Arguments are passed in `r0–r13` (physical `r18–r31`) starting from the low end. There is no stack-based argument passing defined at the ISA level — this is left to the compiler.
+Arguments are passed in `r0-r13` (physical `r18-r31`) starting from the low end. There is no stack-based argument passing defined at the ISA level — this is left to the compiler.
 
 ### Return Values
-Return values are placed in `r0–r13` starting from the low end. The caller is expected to know how many values are returned and in which registers, as determined by the function signature. Up to 14 distinct values may be returned.
+Return values are placed in `r0-r13` starting from the low end. The caller is expected to know how many values are returned and in which registers, as determined by the function signature. Up to 14 distinct values may be returned.
 
 ### Register Preservation
-- `s0–s13` (physical `r4–r17`): Callee-saved. A function must preserve these across a call.
-- `r0–r13` (physical `r18–r31`): Caller-saved. Not preserved across calls. The caller must save any needed values before issuing a call.
-- `t0–t31` (physical `r32–r63`): Caller-saved temporaries. No preservation guarantee.
+- `s0-s13` (physical `r4-r17`): Callee-saved. A function must preserve these across a call.
+- `r0-r13` (physical `r18-r31`): Caller-saved. Not preserved across calls. The caller must save any needed values before issuing a call.
+- `t0-t31` (physical `r32-r63`): Caller-saved temporaries. No preservation guarantee.
 
 ### Call and Return
 Calls and returns are both performed with `jmp`:
@@ -152,6 +152,47 @@ Branch target is `pc + imm`, where `imm` is the sign-extended 36 bit immediate. 
 
 ---
 
+## Binary Format
+
+Cortex-VM executables are a sequence of 64 bit words. The file begins with a fixed 4 word header followed immediately by instructions.
+
+### Magic Number
+The first word identifies the file as a Cortex-VM binary:
+
+```
+0x2E3A434F52540001
+  .:    CORT    v1
+```
+
+`.:` is the human-readable signature, `CORT` identifies the format, and the final 16 bits are the format version number. The version must match what the VM expects or the file will be rejected.
+
+### Header Layout
+
+| Word | Field | Description |
+|------|-------|-------------|
+| 0 | Magic + Version | `0x2E3A434F52540001` |
+| 1 | File length | Total file size in words, including the header. |
+| 2 | Entry point | Word offset from the start of the file to the first instruction to execute. Minimum valid value is 4. |
+| 3 | Extension flags | Bitfield of requested VM extensions. A VM that does not support a required extension must reject the file. |
+
+Instructions begin at word 4.
+
+### Extension Flags
+Each bit in the extension flags word corresponds to a VM extension. Extensions are activated selectively per program — the VM only enables what the program requests.
+
+No extensions are currently implemented. The following are speculative examples of what future extensions might look like:
+
+| Bit | Extension | Description |
+|-----|-----------|-------------|
+| 0 | `g` | Stack-walking garbage collector. |
+| 1 | `s` | String functionality. |
+| 2-63 | — | Reserved. Must be 0. |
+
+### Debug Marker
+In debug builds, the end of the file may be terminated with the word `0x2E3A444541440001` (`.:DEAD` + version). The VM ignores this word in normal execution but may validate its presence in strict or debug mode.
+
+---
+
 ## Notes
 
 ### Loading 64 Bit Constants
@@ -167,5 +208,3 @@ The compiler is responsible for decomposing constants into this sequence.
 
 ### Syscall Convention
 Not yet defined. TBD.
-
-`.:`
