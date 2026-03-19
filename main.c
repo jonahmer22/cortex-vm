@@ -4,6 +4,10 @@
 
 #include "arena.h"
 
+#define VERSION 0x0000000000000001
+
+#define STACKSIZE (1024*1024*sizeof(uint64_t))
+
 // basic size of memory block for arena
 #define MEMBLOCK_SIZE 1024*1024	// 1mb by default
 
@@ -72,11 +76,21 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 		exit(EXIT_FAILURE);
 	}
 
-	if(fread(buffer, 1, size, file) != (size_t)size){
+	uint8_t *raw = (uint8_t *)buffer;
+	if(fread(raw, 1, size, file) != (size_t)size){
 		free(buffer);
 		fclose(file);
 		fprintf(stderr, "[FATAL 0x%04X]: Read in buffer does not match size of file.\n", 0x0023);
 		exit(EXIT_FAILURE);
+	}
+
+	// reconstruct each word from bytes in big-endian order
+	for(size_t i = 0; i < wordCount; i++){
+		uint8_t *b = raw + i * 8;
+		buffer[i] = ((uint64_t)b[0] << 56) | ((uint64_t)b[1] << 48)
+		           | ((uint64_t)b[2] << 40) | ((uint64_t)b[3] << 32)
+		           | ((uint64_t)b[4] << 24) | ((uint64_t)b[5] << 16)
+		           | ((uint64_t)b[6] <<  8) | ((uint64_t)b[7]);
 	}
 
 	fclose(file);
@@ -85,37 +99,109 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 	return buffer;
 }
 
+// ==================
+// start of execution
+// ==================
+
 int main(int argc, char **argv){
-	// load a file in
-	size_t size = 0;
-	char *buff = readFile(argv[1], &size);
-
-	arenaInit();
-
-	int *t = arenaAlloc(sizeof(int) * 256);
-
-	for(int i = 0; i < 256; i++){
-		t[i] = 256 - i;
+	if(argc < 2){
+		fprintf(stdout, "[USAGE]: ./cortex-vm <./path/to/file> [flags]\n");
+		exit(EXIT_FAILURE);
 	}
-	for(int i = 255; i >= 0; i--){
-		printf("%d ", t[i]);
+
+	// eventually need to parse arguements to check for flags like -a to assemble
+	// for right now all this does is to execute as if it was a binary
+	
+	// Read in the file and get it's size
+	size_t fileSize = 0;
+	uint64_t *buff = readFileWords(argv[1], &fileSize);
+
+	// print the raw values of the binary for testing
+	for(size_t i = 0; i < fileSize; i++){
+		printf("0x%016llX\n", (unsigned long long)buff[i]);
 	}
-	printf("\n");
 
-	arenaDestroy();
+	printf("Header Contents:\n");
+	// parse the header
+	uint64_t magic = buff[0];
+	magic >>= 16;
+	printf("magic:\t\t0x%016llX\n", magic);
+	// parse the version number
+	uint16_t version = buff[0] & 0xFFFF;
+	printf("version:\t0x%016X\n", version);
+	// parse the fileLength
+	uint64_t fileLength = buff[1];
+	printf("fileLength:\t0x%016llX\n", fileLength);
+	// parse the offset
+	uint64_t offset = buff[2];
+	printf("fileLength:\t0x%016llX\n", offset);
+	// parse the extension flags
+	uint64_t extensions = buff[3];
+	printf("extensions:\t%064llb\n", extensions);
 
-	printf("%s\n%lu\n", buff, size);
+	// ===================
+	// validate the header
+	// ===================
+
+	// make sure the version number is not greater than implementation version
+	if(version > VERSION){
+		fprintf(stderr, "[VERSION 0x%04X]: Version number 0x%04X reported by binary is greater than Cortex-VM implementation version 0x%04X.\n", VERSION, version, VERSION);
+		free(buff);
+		exit(EXIT_FAILURE);
+	}
+	// make sure that the magic number is the same should be ".:CORT" in ascii
+	if(magic != 0x00002E3A434F5254){
+		fprintf(stderr, "[HEADER FORMATTING]: Binary header is not propperly formatted.\n");
+		free(buff);
+		exit(EXIT_FAILURE);
+	}
+	// make sure that the fileSize and fileLength match
+	if(fileSize != fileLength){
+		fprintf(stderr, "[FILE LENGTH]: A file size of %zu was loaded, while the encoded binary specifies a size of %llu.\n", fileSize, fileLength);
+		free(buff);
+		exit(EXIT_FAILURE);
+	}
+	// make sure that the offset is at least 4
+	if(offset < 4){
+		fprintf(stderr, "[ENTRY POINT]: The specified entry point of %llu is within the header, minimum entry point is 4.\n", offset);
+		free(buff);
+		exit(EXIT_FAILURE);
+	}
+	// check the extension flags, for version 1 they should all be 0
+	if(extensions != (extensions & 0x0000000000000000)){
+		fprintf(stderr, "[NONEXISTENT EXTENSIONS]: Non-existent extensions were specified in the binary header, please ensure extensions are installed and you are using the propper version.\n");
+		free(buff);
+		exit(EXIT_FAILURE);
+	}
+		
+	// ===========
+	// init the vm
+	// ===========
+	
+	// initialize the memory arenas
+	Arena *code = arenaLocalInit();
+	Arena *heap = arenaLocalInit();
+	Arena *stack = arenaLocalInit();
+
+	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - 4));
+	// TODO: when the heap is implemented initialize it here, for now do nothing
+	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
+
+	// TODO: move code into the code section
+
+	// this should no longer be needed
 	free(buff);
 
-	size_t wordCount = 0;
-	uint64_t *hexBuff = readFileWords(argv[1], &wordCount);
+	// TODO: initialize all registers
+	
+	// TODO: in the future when extensions exist initialize them here.
+	
+	// TODO: execute code, should probably be in function and not in main.
 
-	printf("\nRaw 64-bit hex:\n");
-	for(size_t i = 0; i < wordCount; i++){
-		printf("0x%016llX\n", hexBuff[i]);
-	}
-
-	free(hexBuff);
+	// free all the memory for the vm and exit with no errors
+	arenaLocalDestroy(code);
+	arenaLocalDestroy(heap);
+	arenaLocalDestroy(stack);
 	return 0;
 }
 

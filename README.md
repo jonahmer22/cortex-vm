@@ -1,14 +1,14 @@
 # cortex-vm
 A general purpose virtual instruction set architecture virtual machine intended for language runtime. Current ISA is subject to sweeping changes and modifications.
 
-Credit where credit is due — this is highly inspired by experience with RISC-V, Overture, and LEG CPU designs/ISAs.
+Credit where credit is due - this is highly inspired by experience with RISC-V, Overture, and LEG CPU designs/ISAs.
 
 ---
 
 ## Rules
 - 64 bit words
 - 2's complement
-- Words only — all offsets are word offsets, not byte offsets. No byte shenanigans.
+- Words only - all offsets are word offsets, not byte offsets. No byte shenanigans.
 - All free bits must be 0
 - Big endian
 
@@ -34,7 +34,7 @@ Register aliases (`s0`, `r0`, `t0`, etc.) are assembler-level names for their co
 ## Calling Convention
 
 ### Argument Passing
-Arguments are passed in `r0-r13` (physical `r18-r31`) starting from the low end. There is no stack-based argument passing defined at the ISA level — this is left to the compiler.
+Arguments are passed in `r0-r13` (physical `r18-r31`) starting from the low end. There is no stack-based argument passing defined at the ISA level - this is left to the compiler.
 
 ### Return Values
 Return values are placed in `r0-r13` starting from the low end. The caller is expected to know how many values are returned and in which registers, as determined by the function signature. Up to 14 distinct values may be returned.
@@ -58,31 +58,31 @@ jmp ra=r3, rd=zero, imm=0     # ret:  jump to return address, discard into zero
 
 All instructions are 64 bits wide.
 
-### R Type — Register-to-Register ALU
+### R Type - Register-to-Register ALU
 ```
 8 bit opcode | 8 bit function | 6 bit ra | 6 bit rd | 6 bit rb | 4 bit flags | 26 free
 ```
 Performs an operation on `ra` and `rb`, result written to `rd`.
 
-### I Type — Immediate ALU / Jump
+### I Type - Immediate ALU / Jump
 ```
 8 bit opcode | 8 bit function | 6 bit ra | 6 bit rd | imm[31:26] | 4 bit flags | imm[25:0]
 ```
 32 bit sign-extended immediate. Performs an operation on `ra` and the immediate, result written to `rd`.
 
-### S Type — Store
+### S Type - Store
 ```
 8 bit opcode | 8 bit function | 6 bit ra | imm[35:30] | 6 bit rb | imm[29:0]
 ```
 36 bit sign-extended immediate. Stores `rb` to memory at address `ra + imm`.
 
-### L Type — Load
+### L Type - Load
 ```
 8 bit opcode | 8 bit function | 6 bit ra | 6 bit rd | imm[35:0]
 ```
 36 bit sign-extended immediate. Loads from address `ra + imm` into `rd`.
 
-### B Type — Branch
+### B Type - Branch
 ```
 8 bit opcode | 8 bit function | 6 bit ra | 6 bit rd | imm[35:0]
 ```
@@ -97,7 +97,7 @@ Performs an operation on `ra` and `rb`, result written to `rd`.
 
 ## Instruction Set
 
-### ALU — R Type
+### ALU - R Type
 | Instruction | Operation |
 |-------------|-----------|
 | `add` | `rd = ra + rb` |
@@ -109,7 +109,7 @@ Performs an operation on `ra` and `rb`, result written to `rd`.
 | `slr` | `rd = ra >> rb` (logical) |
 | `sar` | `rd = ra >> rb` (arithmetic) |
 
-### ALU — I Type
+### ALU - I Type
 | Instruction | Operation |
 |-------------|-----------|
 | `addi` | `rd = ra + imm` |
@@ -178,7 +178,7 @@ The first word identifies the file as a Cortex-VM binary:
 Instructions begin at word 4.
 
 ### Extension Flags
-Each bit in the extension flags word corresponds to a VM extension. Extensions are activated selectively per program — the VM only enables what the program requests.
+Each bit in the extension flags word corresponds to a VM extension. Extensions are activated selectively per program - the VM only enables what the program requests.
 
 No extensions are currently implemented. The following are speculative examples of what future extensions might look like:
 
@@ -186,10 +186,57 @@ No extensions are currently implemented. The following are speculative examples 
 |-----|-----------|-------------|
 | 0 | `g` | Stack-walking garbage collector. |
 | 1 | `s` | String functionality. |
-| 2-63 | — | Reserved. Must be 0. |
+| 2-63 | - | Reserved. Must be 0. |
 
 ### Debug Marker
 In debug builds, the end of the file may be terminated with the word `0x2E3A444541440001` (`.:DEAD` + version). The VM ignores this word in normal execution but may validate its presence in strict or debug mode.
+
+---
+
+## Memory Layout
+
+The VM's address space is flat and word-indexed. It is divided into three regions separated by large fixed gaps to ensure they can never collide in practice. Each region is backed by an independent arena.
+
+### Address Map
+
+| Region | Base Address | Direction | Notes |
+|--------|-------------|-----------|-------|
+| Code | `0x0000000000000000` | - | Fixed size, loaded from binary. Never grows. |
+| Heap | `0x0001000000000000` | Grows up | Not currently implemented. Reserved for future dynamic allocation. |
+| Stack | `0x0008000000000000` | Grows up | `sp` initialized to base at startup. |
+
+The gaps between regions are large enough that no feasible program can bridge them.
+
+### Address Translation
+When the VM resolves an address it determines the region by range check:
+
+```
+addr < 0x0001000000000000   → code arena
+addr < 0x0008000000000000   → heap arena
+otherwise                   → stack arena
+```
+
+### Region Details
+
+**Code** - Allocated once at load time to exactly the program size (file length minus 4 header words). Read-only during execution.
+
+**Heap** - Base address reserved. Not allocated until heap functionality is needed. TBD.
+
+**Stack** - Allocated at init to a default size. `sp` is initialized to `0x0008000000000000`. Grows upward as the program pushes values.
+
+---
+
+## VM Initialization Sequence
+
+The following steps must occur in order before the first instruction is fetched.
+
+1. **Read file** - Load the binary into a raw word buffer.
+2. **Validate header** - Check magic number and version. Reject if either does not match. Read file length and verify it matches the buffer size. Read entry point and verify it is >= 4. Read extension flags and verify all requested extensions are supported.
+3. **Allocate code arena** - Size is `file_length - 4` words. Copy program words (skipping the header) into the arena.
+4. **Allocate stack arena** - Default initial size. Initialize `sp` to `0x0008000000000000`.
+5. **Initialize registers** - Zero all 64 registers. Set `pc` to the entry point word offset from the header.
+6. **Activate extensions** - Enable any VM extensions specified in the extension flags.
+7. **Begin fetch-decode-execute.**
 
 ---
 
