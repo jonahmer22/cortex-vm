@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "arena.h"
+#include "include/core.h"
 #include "include/utils.h"
 #include "include/header.h"
 
@@ -24,11 +25,6 @@ int main(int argc, char **argv){
 	// Read in the file and get it's size
 	size_t fileSize = 0;
 	uint64_t *buff = readFileWords(argv[1], &fileSize);
-
-	// print the raw values of the binary for testing
-	for(size_t i = 0; i < fileSize; i++){
-		printf("0x%016llX\n", (unsigned long long)buff[i]);
-	}
 
 	// ================
 	// parse the header
@@ -86,7 +82,8 @@ int main(int argc, char **argv){
 	
 	// TODO: in the future when extensions exist initialize them here.
 	
-	// TODO: execute code, should probably be in function and not in main.
+	// fetch, decode, and execute code
+	run(regs, codeBase,/* heapBase,*/ stackBase, fileLength);
 
 	// free all the memory for the vm and exit with no errors
 	arenaLocalDestroy(code);
