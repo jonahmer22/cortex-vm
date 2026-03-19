@@ -234,7 +234,7 @@ The following steps must occur in order before the first instruction is fetched.
 2. **Validate header** - Check magic number and version. Reject if either does not match. Read file length and verify it matches the buffer size. Read entry point and verify it is >= 4. Read extension flags and verify all requested extensions are supported.
 3. **Allocate code arena** - Size is `file_length - 4` words. Copy program words (skipping the header) into the arena.
 4. **Allocate stack arena** - Default initial size. Initialize `sp` to `0x0008000000000000`.
-5. **Initialize registers** - Zero all 64 registers. Set `pc` to the entry point word offset from the header.
+5. **Initialize registers** - Zero all 64 registers. Set `pc` to `entry_point - 4`. Since the header is stripped and not copied into the code arena, `pc = 0` corresponds to the first instruction. The entry point from the header is file-relative, so subtracting 4 converts it to a code-relative offset.
 6. **Activate extensions** - Enable any VM extensions specified in the extension flags.
 7. **Begin fetch-decode-execute.**
 
