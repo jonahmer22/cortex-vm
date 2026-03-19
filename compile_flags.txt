@@ -1,0 +1,3 @@
+-Iinclude
+-Ideps/arena
+-std=c17
