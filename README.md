@@ -24,32 +24,32 @@ Credit where credit is due - this is highly inspired by experience with RISC-V, 
 | r2 | 1 | `sp` | Stack pointer. |
 | r3 | 1 | `ra` | Return address. |
 | r4-r17 | 14 | `s0-s13` | Callee-saved registers. |
-| r18-r31 | 14 | `r0-r13` | Caller-saved. Used for arguments and return values. |
+| r18-r31 | 14 | `a0-a13` | Caller-saved. Used for arguments and return values. |
 | r32-r63 | 32 | `t0-t31` | General purpose temporaries. No convention. |
 
-Register aliases (`s0`, `r0`, `t0`, etc.) are assembler-level names for their corresponding physical registers and are interchangeable with the raw register number.
+Register aliases (`s0`, `a0`, `t0`, etc.) are assembler-level names for their corresponding physical registers and are interchangeable with the raw register number.
 
 ---
 
 ## Calling Convention
 
 ### Argument Passing
-Arguments are passed in `r0-r13` (physical `r18-r31`) starting from the low end. There is no stack-based argument passing defined at the ISA level - this is left to the compiler.
+Arguments are passed in `a0-a13` (physical `r18-r31`) starting from the low end. There is no stack-based argument passing defined at the ISA level - this is left to the compiler.
 
 ### Return Values
-Return values are placed in `r0-r13` starting from the low end. The caller is expected to know how many values are returned and in which registers, as determined by the function signature. Up to 14 distinct values may be returned.
+Return values are placed in `a0-a13` starting from the low end. The caller is expected to know how many values are returned and in which registers, as determined by the function signature. Up to 14 distinct values may be returned.
 
 ### Register Preservation
 - `s0-s13` (physical `r4-r17`): Callee-saved. A function must preserve these across a call.
-- `r0-r13` (physical `r18-r31`): Caller-saved. Not preserved across calls. The caller must save any needed values before issuing a call.
+- `a0-a13` (physical `r18-r31`): Caller-saved. Not preserved across calls. The caller must save any needed values before issuing a call.
 - `t0-t31` (physical `r32-r63`): Caller-saved temporaries. No preservation guarantee.
 
 ### Call and Return
-Calls and returns are both performed with `jmp`:
+Calls and returns are both performed with `jmp`. The call target is PC-relative via the 32 bit signed immediate, with `ra` set to `pc` (r1) so that `ra + imm` resolves to the target address. `rd` captures `pc + 1` as the return address, conventionally stored in `ra` (r3).
 
 ```
-jmp ra=<func>, rd=r3, imm=0   # call: jump to func, save return address in ra (r3)
-jmp ra=r3, rd=zero, imm=0     # ret:  jump to return address, discard into zero
+jmp ra=r1, rd=r3, imm=<offset>   # call: jump to pc+imm, save return address in ra (r3)
+jmp ra=r3, rd=zero, imm=0        # ret:  jump to return address in r3, discard into zero
 ```
 
 ---
@@ -84,9 +84,9 @@ Performs an operation on `ra` and `rb`, result written to `rd`.
 
 ### B Type - Branch
 ```
-8 bit opcode | 8 bit function | 6 bit ra | 6 bit rd | imm[35:0]
+8 bit opcode | 8 bit function | 6 bit ra | imm[35:30] | 6 bit rb | imm[29:0]
 ```
-36 bit sign-extended immediate. Compares `ra` and `rd`. If the condition holds, sets `pc` to `pc + imm`. Branch targets are PC-relative and typically assembled from labels.
+36 bit sign-extended immediate. Compares `ra` and `rb`. If the condition holds, sets `pc` to `pc + imm`. Branch targets are PC-relative and typically assembled from labels.
 
 ### System
 ```
@@ -135,12 +135,12 @@ All memory addresses and offsets are word offsets.
 ### Branching
 | Instruction | Condition |
 |-------------|-----------|
-| `beq` | Branch if `ra == rd` |
-| `bne` | Branch if `ra != rd` |
-| `blt` | Branch if `ra < rd` (signed) |
-| `bltu` | Branch if `ra < rd` (unsigned) |
+| `beq` | Branch if `ra == rb` |
+| `bne` | Branch if `ra != rb` |
+| `blt` | Branch if `ra < rb` (signed) |
+| `bltu` | Branch if `ra < rb` (unsigned) |
 
-Branch target is `pc + imm`, where `imm` is the sign-extended 36 bit immediate. `beq`/`bne` are bitwise comparisons and are sign-agnostic by nature.
+Branch target is `pc + imm`, where `imm` is the split sign-extended 36 bit immediate. `beq`/`bne` are bitwise comparisons and are sign-agnostic by nature.
 
 ### System
 | Instruction | Description |
