@@ -121,8 +121,13 @@ int main(int argc, char **argv){
 		printf("0x%016llX\n", (unsigned long long)buff[i]);
 	}
 
-	printf("Header Contents:\n");
+	// ================
 	// parse the header
+	// ================
+
+	printf("Header Contents:\n");
+
+	// parse the magic number
 	uint64_t magic = buff[0];
 	magic >>= 16;
 	printf("magic:\t\t0x%016llX\n", magic);
@@ -187,12 +192,18 @@ int main(int argc, char **argv){
 	// TODO: when the heap is implemented initialize it here, for now do nothing
 	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
 
-	// TODO: move code into the code section
+	// move code into the code section
+	for(size_t i = 4; i < fileLength; i++){
+		codeBase[i - 4] = buff[i];
+	}
 
 	// this should no longer be needed
 	free(buff);
 
-	// TODO: initialize all registers
+	// initialize all registers to 0s
+	uint64_t regs[64] = {0};
+	regs[1] = offset - 4;		// set PC to offset - 4
+	regs[2] = 0x0008000000000000;	// set sp to the stack base (top 16 bits is 0x0008)
 	
 	// TODO: in the future when extensions exist initialize them here.
 	
