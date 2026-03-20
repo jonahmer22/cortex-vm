@@ -6,8 +6,7 @@
 #include "include/core.h"
 #include "include/utils.h"
 #include "include/header.h"
-
-#define STACKSIZE (1024*1024*sizeof(uint64_t))
+#include "include/defs.h"
 
 // ==================
 // start of execution

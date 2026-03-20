@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include "../include/core.h"
+#include "../include/defs.h"
 
 #define OPCODE(w)		(((w) >> 56) & 0xff)
 #define FUNCT(w)		(((w) >> 48) & 0xff)
@@ -32,11 +34,33 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 		printf("PC %llu: 0x%016llX\n", regs[1] - 1, instr);
 
 		// DECODE
-			
+		uint8_t opcode = OPCODE(instr);
+		switch(opcode){
+			case OP_R:
+				break;
+			case OP_I:
+				break;
+			case OP_S:
+				break;
+			case OP_L:
+				break;
+			case OP_B:
+				break;
+			case OP_SYS:
+				break;
+			default:
+				fprintf(stderr, "[FATAL 0x%04X]: Illegal opcode 0x%02X.\n", 0x0201, opcode);
+				exit(EXIT_FAILURE);
+				break;
+		}
 
+		
+
+		// if PC is past or at the fileLength then stop running
 		if(regs[1] >= fileLength)
 			running = false;
 
+		// enforce r0 = 0
 		regs[0] = 0;
 	}
 }
