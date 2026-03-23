@@ -88,7 +88,7 @@ int main(int argc, char **argv){
 	arenaLocalDestroy(code);
 	arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 //	.:

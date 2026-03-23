@@ -20,8 +20,8 @@
 #define B_IMM(w)		S_IMM(w)
 #define SYS_IMM(w)		((w) & 0xffffffffffff)
 // sign extension
-#define SIGN_EXT32(v)	((int64_t)(int32_t)(v))
-#define SIGN_EXT36(v)	((int64_t)(((v) & (1ULL << 35)) ? ((v) | ~((1ULL << 36) - 1)) : (v)))
+#define SIGN_EXT32(v)		((int64_t)(int32_t)(v))
+#define SIGN_EXT36(v)		((int64_t)(((v) & (1ULL << 35)) ? ((v) | ~((1ULL << 36) - 1)) : (v)))
 
 void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength){
 	fileLength -= 4;
@@ -42,6 +42,32 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				uint8_t rd 	= RD(instr);
 				uint8_t rb 	= RB(instr);
 				uint8_t flags 	= FLAGS(instr);
+
+				// switch based off of the function
+				switch(funct){
+					case FN_ADDSUB:{
+						break;
+					}
+					case FN_OR:{
+						break;
+					}
+					case FN_XOR:{
+						break;
+					}
+					case FN_AND:{
+						break;
+					}
+					case FN_SLL:{
+						break;
+					}
+					case FN_SR:{
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				break;
 			}
 			case OP_I:{
@@ -50,6 +76,35 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				uint8_t rd	= RD(instr);
 				uint8_t flags	= FLAGS(instr);
 				uint64_t imm	= SIGN_EXT32(I_IMM(instr));
+
+				// switch based off of the function
+				switch(funct){
+					case FN_ADDSUB:{
+						break;
+					}
+					case FN_OR:{
+						break;
+					}
+					case FN_XOR:{
+						break;
+					}
+					case FN_AND:{
+						break;
+					}
+					case FN_SLL:{
+						break;
+					}
+					case FN_SR:{
+						break;
+					}
+					case FN_JMP:{
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0203, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				break;
 			}
 			case OP_S:{
@@ -57,6 +112,16 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				uint8_t ra	= RA(instr);
 				uint8_t rb 	= RB(instr);
 				uint64_t imm	= SIGN_EXT36(S_IMM(instr));
+
+				switch(funct){
+					case FN_SW:{
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0204, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				break;
 			}
 			case OP_L:{
@@ -64,6 +129,16 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				uint8_t ra	= RA(instr);
 				uint8_t rd	= RD(instr);
 				uint64_t imm	= SIGN_EXT36(L_IMM(instr));
+
+				switch(funct){
+					case FN_LW:{
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0205, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				break;
 			}
 			case OP_B:{
@@ -71,11 +146,46 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				uint8_t ra	= RA(instr);
 				uint8_t rb	= RB(instr);
 				uint64_t imm	= SIGN_EXT36(B_IMM(instr));
+
+				switch(funct){
+					case FN_BEQ:{
+						break;
+					}
+					case FN_BNE:{
+						break;
+					}
+					case FN_BLT:{
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0206, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				break;
 			}
 			case OP_SYS:{
 				uint8_t funct	= FUNCT(instr);
 				uint64_t imm	= SYS_IMM(instr);
+
+				switch(funct){
+					case FN_HALT:{
+						break;
+					}
+					case FN_SYSCALL:{
+						break;
+					}
+					case FN_NOP:{
+						break;
+					}
+					case FN_BREAK:{
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0207, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				break;
 			}
 			default:
