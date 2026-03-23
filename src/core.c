@@ -37,16 +37,40 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 		uint8_t opcode = OPCODE(instr);
 		switch(opcode){
 			case OP_R:
+				uint8_t funct 	= FUNCT(opcode);
+				uint8_t ra 		= RA(opcode);
+				uint8_t rd 		= RD(opcode);
+				uint8_t rb 		= RB(opcode);
+				uint8_t flags 	= FLAGS(opcode);
 				break;
 			case OP_I:
+				uint8_t funct	= FUNCT(opcode);
+				uint8_t ra		= RA(opcode);
+				uint8_t rd		= RD(opcode);
+				uint8_t flags	= FLAGS(opcode);
+				uint64_t imm	= SIGN_EXT32(I_IMM(opcode));
 				break;
 			case OP_S:
+				uint8_t funct 	= FUNCT(opcode);
+				uint8_t ra		= RA(opcode);
+				uint8_t rb 		= RB(opcode);
+				uint64_t imm	= SIGN_EXT36(S_IMM(opcode));
 				break;
 			case OP_L:
+				uint8_t funct	= FUNCT(opcode);
+				uint8_t ra		= RA(opcode);
+				uint8_t rd		= RD(opcode);
+				uint64_t imm	= SIGN_EXT36(L_IMM(opcode));
 				break;
 			case OP_B:
+				uint8_t funct	= FUNCT(opcode);
+				uint8_t ra		= RA(opcode);
+				uint8_t rb		= RB(opcode);
+				uint64_t imm	= SIGN_EXT36(B_IMM(opcode));
 				break;
 			case OP_SYS:
+				uint8_t funct	= FUNCT(opcode);
+				uint64_t imm	= SYS_IMM(opcode);
 				break;
 			default:
 				fprintf(stderr, "[FATAL 0x%04X]: Illegal opcode 0x%02X.\n", 0x0201, opcode);
@@ -54,7 +78,11 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				break;
 		}
 
-		
+		// if SP is past the max size of the stack then error
+		if(regs[2] >= 1024*1024){
+			fprintf(stderr, "[FATAL 0x%04X]: Stack overflow.\n", 0x0202);
+			exit(EXIT_FAILURE);
+		}
 
 		// if PC is past or at the fileLength then stop running
 		if(regs[1] >= fileLength)
