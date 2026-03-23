@@ -81,7 +81,7 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 								break;
 							}
 							default:
-								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0209, flags);
 								exit(EXIT_FAILURE);
 								break;
 						}
@@ -112,7 +112,7 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 								break;
 							}
 							default:
-								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x020A, flags);
 								exit(EXIT_FAILURE);
 								break;
 						}
@@ -139,7 +139,7 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 								break;
 							}
 							default:
-								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x020B, flags);
 								exit(EXIT_FAILURE);
 								break;
 						}
