@@ -19,6 +19,7 @@
 #define FN_BEQ 0x01
 #define FN_BNE 0x02
 #define FN_BLT 0x03
+#define FN_BLTU 0x04
 
 #define FN_HALT 0x01
 #define FN_SYSCALL 0x02

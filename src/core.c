@@ -46,6 +46,18 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				// switch based off of the function
 				switch(funct){
 					case FN_ADDSUB:{
+						switch(flags){
+							case 0x0:{
+								break;
+							}
+							case 0x1:{
+								break;
+							}
+							default:
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								exit(EXIT_FAILURE);
+								break;
+						}
 						break;
 					}
 					case FN_OR:{
@@ -61,6 +73,18 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 						break;
 					}
 					case FN_SR:{
+						switch(flags){
+							case 0x0:{
+								break;
+							}
+							case 0x1:{
+								break;
+							}
+							default:
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								exit(EXIT_FAILURE);
+								break;
+						}
 						break;
 					}
 					default:
@@ -80,6 +104,18 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 				// switch based off of the function
 				switch(funct){
 					case FN_ADDSUB:{
+						switch(flags){
+							case 0x0:{
+								break;
+							}
+							case 0x1:{
+								break;
+							}
+							default:
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								exit(EXIT_FAILURE);
+								break;
+						}
 						break;
 					}
 					case FN_OR:{
@@ -95,6 +131,18 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 						break;
 					}
 					case FN_SR:{
+						switch(flags){
+							case 0x0:{
+								break;
+							}
+							case 0x1:{
+								break;
+							}
+							default:
+								fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
+								exit(EXIT_FAILURE);
+								break;
+						}
 						break;
 					}
 					case FN_JMP:{
@@ -157,6 +205,9 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 					case FN_BLT:{
 						break;
 					}
+					case FN_BLTU:{
+						break;
+					}
 					default:
 						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0206, funct);
 						exit(EXIT_FAILURE);
@@ -196,7 +247,7 @@ void run(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *s
 
 		// if SP is past the max size of the stack then error
 		if(regs[2] >= ((1024*1024)+0x0008000000000000)){
-			fprintf(stderr, "[FATAL 0x%04X]: Stack overflow.\n", 0x0202);
+			fprintf(stderr, "[FATAL 0x%04X]: Stack overflow.\n", 0x020F);
 			exit(EXIT_FAILURE);
 		}
 
