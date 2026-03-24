@@ -65,7 +65,9 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	// FETCH
 	uint64_t instr = codeBase[regs[1]++];
 
+	#ifdef DEBUG
 	printf("PC %llu:\t\t0x%016llX\n", regs[1] - 1, instr);
+	#endif
 
 	// DECODE
 	uint8_t opcode = OPCODE(instr);

@@ -16,7 +16,7 @@ SRCS := $(wildcard $(SRC_DIR)/*.c) main.c $(DEPS_SRCS)
 OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean run
+.PHONY: all clean run debug
 
 all: $(TARGET)
 
@@ -29,6 +29,10 @@ $(BUILD_DIR)/%.o: %.c
 
 run: $(TARGET)
 	./$(TARGET) $(RUN_ARGS)
+
+debug:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) -DDEBUG" all
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)

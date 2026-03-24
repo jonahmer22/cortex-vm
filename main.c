@@ -38,7 +38,7 @@ int main(int argc, char **argv){
 
 	headerParse(&magic, &version, &fileLength, &offset, &extensions, buff);
 
-	// TODO: remove this in the future
+	#ifdef DEBUG
 	// for testing purposes print the values parsed from the header
 	printf("Header Contents:\n");
 	printf("magic:\t\t0x%016llX\n", magic);
@@ -46,6 +46,7 @@ int main(int argc, char **argv){
 	printf("fileLength:\t0x%016llX\n", fileLength);
 	printf("offset:\t\t0x%016llX\n", offset);
 	printf("extensions:\t%064llb\n", extensions);
+	#endif
 
 	// ===================
 	// validate the header
