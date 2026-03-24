@@ -1,3 +1,6 @@
+#ifndef DEFS_H
+#define DEFS_H
+
 #define OP_R 0x81
 #define OP_I 0x82
 #define OP_S 0x83
@@ -31,3 +34,5 @@
 #define STACK_ADDR 0x0008000000000000
 
 #define STACKSIZE (1024*1024*sizeof(uint64_t))
+
+#endif
