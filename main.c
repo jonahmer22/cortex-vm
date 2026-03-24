@@ -44,7 +44,7 @@ int main(int argc, char **argv){
 	printf("magic:\t\t0x%016llX\n", magic);
 	printf("version:\t0x%016X\n", version);
 	printf("fileLength:\t0x%016llX\n", fileLength);
-	printf("offset:\t0x%016llX\n", offset);
+	printf("offset:\t\t0x%016llX\n", offset);
 	printf("extensions:\t%064llb\n", extensions);
 
 	// ===================
