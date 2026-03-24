@@ -15,7 +15,15 @@
 
 int main(int argc, char **argv){
 	// set up cliargs parameters before parse
+	cliargsStrict();
 	cliargsSetVersion("Cortex-VM v0.0.1");
+	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble binaries designed for the Cortex-ISA.");
+	
+	// add all different args
+	cliargsRegister("assemble", 'a', "Assembles a program at the given path");
+	cliargsRegister("disassemble", 'd', "Disassembles a program at the given path");
+	cliargsRegister("visual", 'v', "Starts the UI");
+	cliargsRegister("output", 'o', "Designates a path for the output file");
 
 	// need to parse arguements to check for flags like -a to assemble or others
 	cliargsParse(argc, argv);
