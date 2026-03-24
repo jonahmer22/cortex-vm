@@ -67,6 +67,15 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 
 	#ifdef DEBUG
 	printf("PC %llu:\t\t0x%016llX\n", regs[1] - 1, instr);
+
+	for(int i = 0; i < 64; i += 4){
+		printf("reg[%d]\t= 0x%016llX\t", i, regs[i]);
+		printf("reg[%d]\t= 0x%016llX\t", i + 1, regs[i + 1]);
+		printf("reg[%d]\t= 0x%016llX\t", i + 2, regs[i + 2]);
+		printf("reg[%d]\t= 0x%016llX", i + 3, regs[i + 3]);
+		printf("\n");
+	}
+
 	#endif
 
 	// DECODE
