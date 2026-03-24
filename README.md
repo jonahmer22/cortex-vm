@@ -97,58 +97,65 @@ Performs an operation on `ra` and `rb`, result written to `rd`.
 
 ## Instruction Set
 
-### ALU - R Type
-| Instruction | Operation |
-|-------------|-----------|
-| `add` | `rd = ra + rb` |
-| `sub` | `rd = ra - rb` |
-| `or` | `rd = ra \| rb` |
-| `xor` | `rd = ra ^ rb` |
-| `and` | `rd = ra & rb` |
-| `sll` | `rd = ra << rb` |
-| `slr` | `rd = ra >> rb` (logical) |
-| `sar` | `rd = ra >> rb` (arithmetic) |
+Instructions are identified by a two-level scheme: the opcode identifies the format and operation class, and the function code identifies the specific operation within that class. Flag bits further modify behavior within a function where hardware-equivalent operations can share a function code.
 
-### ALU - I Type
-| Instruction | Operation |
-|-------------|-----------|
-| `addi` | `rd = ra + imm` |
-| `subi` | `rd = ra - imm` |
-| `ori` | `rd = ra \| imm` |
-| `xori` | `rd = ra ^ imm` |
-| `andi` | `rd = ra & imm` |
-| `slli` | `rd = ra << imm` |
-| `slri` | `rd = ra >> imm` (logical) |
-| `sari` | `rd = ra >> imm` (arithmetic) |
-| `jmp` | `rd = pc + 1; pc = ra + imm` |
+### Opcode Map
 
-`jmp` is the universal jump/call/return instruction. `ra` holds the base address, `imm` is a signed offset applied to `ra`, and `rd` receives `pc + 1` (the next instruction, used as the return address). Passing `zero` as `rd` discards the return address.
+| Opcode | Format | Description |
+|--------|--------|-------------|
+| `0x01` | R type | Register-to-register ALU |
+| `0x02` | I type | Immediate ALU / jump |
+| `0x03` | S type | Store |
+| `0x04` | L type | Load |
+| `0x05` | B type | Branch |
+| `0x06` | System | System instructions |
+
+### ALU - R Type (opcode 0x01) and I Type (opcode 0x02)
+
+R type and I type share the same function codes and flag semantics. R type operates on two registers, I type operates on a register and a 32 bit sign-extended immediate.
+
+| Function | Mnemonic (R/I) | Operation | Flag bit 0 |
+|----------|---------------|-----------|------------|
+| `0x01` | `add` / `addi` | `rd = ra + rb` / `rd = ra + imm` | 0=add, 1=sub |
+| `0x02` | `or` / `ori` | `rd = ra \| rb` / `rd = ra \| imm` | - |
+| `0x03` | `xor` / `xori` | `rd = ra ^ rb` / `rd = ra ^ imm` | - |
+| `0x04` | `and` / `andi` | `rd = ra & rb` / `rd = ra & imm` | - |
+| `0x05` | `sll` / `slli` | `rd = ra << rb` / `rd = ra << imm` | - |
+| `0x06` | `sr` / `sri` | `rd = ra >> rb` / `rd = ra >> imm` | 0=logical, 1=arithmetic |
+| `0x07` | `jmp` | `rd = pc + 1; pc = ra + imm` | - |
+
+Flag bits 1-3 are reserved and must be 0. `not` is not a dedicated instruction - use `xori rd, ra, -1` instead.
+
+`jmp` is I type only. It is the universal jump/call/return instruction. `ra` holds the base address, `imm` is a signed offset applied to `ra`, and `rd` receives `pc + 1` as the return address. Passing `zero` as `rd` discards the return address.
 
 ### Memory
-| Instruction | Format | Operation |
-|-------------|--------|-----------|
-| `sw` | S | `mem[ra + imm] = rb` |
-| `lw` | L | `rd = mem[ra + imm]` |
+
+| Function | Mnemonic | Opcode | Operation |
+|----------|----------|--------|-----------|
+| `0x01` | `sw` | `0x03` (S) | `mem[ra + imm] = rb` |
+| `0x01` | `lw` | `0x04` (L) | `rd = mem[ra + imm]` |
 
 All memory addresses and offsets are word offsets.
 
-### Branching
-| Instruction | Condition |
-|-------------|-----------|
-| `beq` | Branch if `ra == rb` |
-| `bne` | Branch if `ra != rb` |
-| `blt` | Branch if `ra < rb` (signed) |
-| `bltu` | Branch if `ra < rb` (unsigned) |
+### Branching - B Type (opcode 0x05)
+
+| Function | Mnemonic | Condition | Flag bit 0 |
+|----------|----------|-----------|------------|
+| `0x01` | `beq` | Branch if `ra == rb` | - |
+| `0x02` | `bne` | Branch if `ra != rb` | - |
+| `0x03` | `blt` | Branch if `ra < rb`  | - |
+| `0x04` | `bltu`| Branch if `ra < rb`  | - |
 
 Branch target is `pc + imm`, where `imm` is the split sign-extended 36 bit immediate. `beq`/`bne` are bitwise comparisons and are sign-agnostic by nature.
 
-### System
-| Instruction | Description |
-|-------------|-------------|
-| `halt` | Stops execution. |
-| `syscall` | Triggers a system call. Convention TBD. |
-| `nop` | No operation. |
-| `break` | Triggers a debug breakpoint. |
+### System (opcode 0x06)
+
+| Function | Mnemonic | Description |
+|----------|----------|-------------|
+| `0x01` | `halt` | Stops execution. |
+| `0x02` | `syscall` | Triggers a system call. Convention TBD. |
+| `0x03` | `nop` | No operation. |
+| `0x04` | `break` | Triggers a debug breakpoint. |
 
 ---
 

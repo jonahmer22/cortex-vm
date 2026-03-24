@@ -3,10 +3,10 @@
 #include <stdlib.h>
 
 #include "arena.h"
+#include "include/core.h"
 #include "include/utils.h"
 #include "include/header.h"
-
-#define STACKSIZE (1024*1024*sizeof(uint64_t))
+#include "include/defs.h"
 
 // ==================
 // start of execution
@@ -24,11 +24,6 @@ int main(int argc, char **argv){
 	// Read in the file and get it's size
 	size_t fileSize = 0;
 	uint64_t *buff = readFileWords(argv[1], &fileSize);
-
-	// print the raw values of the binary for testing
-	for(size_t i = 0; i < fileSize; i++){
-		printf("0x%016llX\n", (unsigned long long)buff[i]);
-	}
 
 	// ================
 	// parse the header
@@ -75,6 +70,7 @@ int main(int argc, char **argv){
 	for(size_t i = 4; i < fileLength; i++){
 		codeBase[i - 4] = buff[i];
 	}
+	fileLength -= 4;
 
 	// this should no longer be needed
 	free(buff);
@@ -86,13 +82,14 @@ int main(int argc, char **argv){
 	
 	// TODO: in the future when extensions exist initialize them here.
 	
-	// TODO: execute code, should probably be in function and not in main.
+	// fetch, decode, and execute code
+	run(regs, codeBase,/* heapBase,*/ stackBase, fileLength);
 
 	// free all the memory for the vm and exit with no errors
 	arenaLocalDestroy(code);
 	arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 //	.:
