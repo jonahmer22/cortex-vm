@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "arena.h"
+#include "cliargs.h"
 #include "include/core.h"
 #include "include/utils.h"
 #include "include/header.h"
@@ -13,17 +14,27 @@
 // ==================
 
 int main(int argc, char **argv){
-	if(argc < 2){
-		fprintf(stdout, "[USAGE]: ./cortex-vm <./path/to/file> [flags]\n");
-		exit(EXIT_FAILURE);
+	// set up cliargs parameters before parse
+	cliargsSetVersion("Cortex-VM v0.0.1");
+
+	// need to parse arguements to check for flags like -a to assemble or others
+	cliargsParse(argc, argv);
+	if(!cliargsValid()){
+		fprintf(stderr, "[FATAL 0x%04X]: Invalid arguments: %s.\n", 0x0001, cliargsError());
+		return EXIT_FAILURE;
 	}
 
-	// eventually need to parse arguements to check for flags like -a to assemble
-	// for right now all this does is to execute as if it was a binary
+	// get the path from the args (should always just be the subcommand)
+	char *path = cliargsSubcommand();
+	if(path == NULL){
+		fprintf(stderr, "[FATAL 0x%04X]: Invalid path.\n", 0x0002);
+		cliargsPrintHelp();
+		return EXIT_FAILURE;
+	}
 	
 	// Read in the file and get it's size
 	size_t fileSize = 0;
-	uint64_t *buff = readFileWords(argv[1], &fileSize);
+	uint64_t *buff = readFileWords(path, &fileSize);
 
 	// ================
 	// parse the header
