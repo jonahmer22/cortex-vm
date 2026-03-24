@@ -1,3 +1,6 @@
 [submodule "deps/arena"]
 	path = deps/arena
 	url = https://github.com/jonahmer22/arena
+[submodule "deps/cliargs"]
+	path = deps/cliargs
+	url = https://github.com/jonahmer22/cliargs

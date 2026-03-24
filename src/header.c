@@ -20,6 +20,16 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 	*offset = buff[2];
 	// parse the extension flags
 	*extensions = buff[3];
+
+	#ifdef DEBUG
+	// for testing purposes print the values parsed from the header
+	printf("Header Contents:\n");
+	printf("magic:\t\t0x%016llX\n", *magic);
+	printf("version:\t0x%016X\n", *version);
+	printf("fileLength:\t0x%016llX\n", *fileLength);
+	printf("offset:\t\t0x%016llX\n", *offset);
+	printf("extensions:\t%064llb\n", *extensions);
+	#endif
 }
 
 void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *buff){

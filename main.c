@@ -38,16 +38,6 @@ int main(int argc, char **argv){
 
 	headerParse(&magic, &version, &fileLength, &offset, &extensions, buff);
 
-	#ifdef DEBUG
-	// for testing purposes print the values parsed from the header
-	printf("Header Contents:\n");
-	printf("magic:\t\t0x%016llX\n", magic);
-	printf("version:\t0x%016X\n", version);
-	printf("fileLength:\t0x%016llX\n", fileLength);
-	printf("offset:\t\t0x%016llX\n", offset);
-	printf("extensions:\t%064llb\n", extensions);
-	#endif
-
 	// ===================
 	// validate the header
 	// ===================
@@ -60,7 +50,7 @@ int main(int argc, char **argv){
 	
 	// initialize the memory arenas
 	Arena *code = arenaLocalInit();
-	Arena *heap = arenaLocalInit();
+	// Arena *heap = arenaLocalInit();
 	Arena *stack = arenaLocalInit();
 
 	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - 4));
@@ -88,7 +78,7 @@ int main(int argc, char **argv){
 
 	// free all the memory for the vm and exit with no errors
 	arenaLocalDestroy(code);
-	arenaLocalDestroy(heap);
+	// arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
 	return EXIT_SUCCESS;
 }
