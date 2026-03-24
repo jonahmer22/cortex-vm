@@ -103,12 +103,12 @@ Instructions are identified by a two-level scheme: the opcode identifies the for
 
 | Opcode | Format | Description |
 |--------|--------|-------------|
-| `0x01` | R type | Register-to-register ALU |
-| `0x02` | I type | Immediate ALU / jump |
-| `0x03` | S type | Store |
-| `0x04` | L type | Load |
-| `0x05` | B type | Branch |
-| `0x06` | System | System instructions |
+| `0x81` | R type | Register-to-register ALU |
+| `0x82` | I type | Immediate ALU / jump |
+| `0x83` | S type | Store |
+| `0x84` | L type | Load |
+| `0x85` | B type | Branch |
+| `0x86` | System | System instructions |
 
 ### ALU - R Type (opcode 0x01) and I Type (opcode 0x02)
 
