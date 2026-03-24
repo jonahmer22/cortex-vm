@@ -70,6 +70,7 @@ int main(int argc, char **argv){
 	for(size_t i = 4; i < fileLength; i++){
 		codeBase[i - 4] = buff[i];
 	}
+	fileLength -= 4;
 
 	// this should no longer be needed
 	free(buff);

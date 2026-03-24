@@ -143,7 +143,8 @@ All memory addresses and offsets are word offsets.
 |----------|----------|-----------|------------|
 | `0x01` | `beq` | Branch if `ra == rb` | - |
 | `0x02` | `bne` | Branch if `ra != rb` | - |
-| `0x03` | `blt` / `bltu` | Branch if `ra < rb` | 0=signed, 1=unsigned |
+| `0x03` | `blt` | Branch if `ra < rb`  | - |
+| `0x04` | `bltu`| Branch if `ra < rb`  | - |
 
 Branch target is `pc + imm`, where `imm` is the split sign-extended 36 bit immediate. `beq`/`bne` are bitwise comparisons and are sign-agnostic by nature.
 
