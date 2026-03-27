@@ -25,6 +25,8 @@
 
 // memory functions
 void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
+	(void)codeBase;	// just to shut up the compiler
+
 	if(addr < HEAP_ADDR){
 		// just error out, idk why this would be useful
 		fprintf(stderr, "[FATAL 0x%04X]: Illegal write to code region at 0x%016llX.\n", 0x0210, addr);
@@ -42,6 +44,8 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 	}
 }
 uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
+	(void)codeBase;	// just to shut up the compiler
+
 	if(addr < HEAP_ADDR){
 		// just error out, idk why this would be useful
 		fprintf(stderr, "[FATAL 0x%04X]: Illegal read from code region at 0x%016llX.\n", 0x0212, addr);

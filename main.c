@@ -51,7 +51,7 @@ int main(int argc, char **argv){
 		#endif
 
 		sbuff = readFile(path, &outLen);
-		// TODO: call assemble on the source put into buff
+		// TODO: call assemble the source; put into buff
 
 	}
 	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
@@ -62,7 +62,7 @@ int main(int argc, char **argv){
 		#endif
 
 		buff = readFileWords(path, &outLen);
-		// TODO: call disassemble on the words put into the sbuff
+		// TODO: call disassemble the words; put into sbuff
 
 	}
 	if(cliargsFlag("visual", 'v')){
