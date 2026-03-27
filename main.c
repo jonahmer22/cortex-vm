@@ -39,27 +39,28 @@ int main(int argc, char **argv){
 	// - a source file to be assembled
 	char *path = NULL;	// path to file
 	char *sbuff = NULL;	// contents of source file being assembled etc
+	size_t outLen = 0;
 	uint64_t *buff = NULL;	// code buffer
 	
 	// check for flags to either assemble, dissassemble, open visual mode, set output path
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
-		if(path == NULL) path = cliargsArg("assemble", 'a');
+		if(path == NULL)
+			path = cliargsArg("assemble", 'a');
 		#ifdef DEBUG
 		printf("[DEBUG]: assemble flag enabled, path: %s\n", path);
 		#endif
 
-		size_t outLen = 0;
 		sbuff = readFile(path, &outLen);
 		// TODO: call assemble on the source put into buff
 
 	}
 	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
-		if(path == NULL) path = cliargsArg("disassemble", 'd');
+		if(path == NULL)
+			path = cliargsArg("disassemble", 'd');
 		#ifdef DEBUG
 		printf("[DEBUG]: disassemble flag enabled, path: %s\n", path);
 		#endif
 
-		size_t outLen = 0;
 		buff = readFileWords(path, &outLen);
 		// TODO: call disassemble on the words put into the sbuff
 
@@ -81,7 +82,8 @@ int main(int argc, char **argv){
 	// ===================================
 	
 	// get the path from the args (should always just be the subcommand)
-	if(path == NULL) path = cliargsSubcommand();
+	if(path == NULL)
+		path = cliargsSubcommand();
 	if(path == NULL){
 		cliargsPrintHelp();
 		fprintf(stderr, "[FATAL 0x%04X]: Invalid or missing path. A path must be given to a file to either; assemble, disassemble, or execute.\n", 0x0002);
@@ -90,7 +92,8 @@ int main(int argc, char **argv){
 	
 	// Read in the file and get it's size
 	size_t fileSize = 0;
-	if(buff == NULL) buff = readFileWords(path, &fileSize);
+	if(buff == NULL)
+		buff = readFileWords(path, &fileSize);
 
 	// ================
 	// parse the header
@@ -145,6 +148,8 @@ int main(int argc, char **argv){
 	// arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
 
+	// free the buffers that hold code and source
+	// wait until here so that the UI can use both and build later
 	free(buff);
 	free(sbuff);
 
