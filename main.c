@@ -37,7 +37,9 @@ int main(int argc, char **argv){
 	// - a binary to be executed
 	// - a binary to be disassembled
 	// - a source file to be assembled
-	char *path = NULL;
+	char *path = NULL;	// path to file
+	char *sbuff = NULL;	// contents of source file being assembled etc
+	uint64_t *buff = NULL;	// code buffer
 	
 	// check for flags to either assemble, dissassemble, open visual mode, set output path
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
@@ -47,15 +49,10 @@ int main(int argc, char **argv){
 		#endif
 
 		size_t outLen = 0;
-		char *buff = readFile(path, &outLen);
-		// TODO: call assemble on the source put into the buffer
+		sbuff = readFile(path, &outLen);
+		// TODO: call assemble on the source put into buff
 
-
-
-		// free buffer before continuing to execution
-		free(buff);
 	}
-
 	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
 		if(path == NULL) path = cliargsArg("disassemble", 'd');
 		#ifdef DEBUG
@@ -63,20 +60,15 @@ int main(int argc, char **argv){
 		#endif
 
 		size_t outLen = 0;
-		uint64_t *buff = readFileWords(path, &outLen);
-		// TODO: call disassemble on the words put into the buffer
+		buff = readFileWords(path, &outLen);
+		// TODO: call disassemble on the words put into the sbuff
 
-
-		// free buffer before continuing to execution
-		free(buff);
 	}
-
 	if(cliargsFlag("visual", 'v')){
 		#ifdef DEBUG
 		printf("[DEBUG]: visual flag enabled\n");
 		#endif
 	}
-
 	char *outputPath = cliargsArg("output", 'o');
 	if(outputPath != NULL){
 		#ifdef DEBUG
@@ -98,7 +90,7 @@ int main(int argc, char **argv){
 	
 	// Read in the file and get it's size
 	size_t fileSize = 0;
-	uint64_t *buff = readFileWords(path, &fileSize);
+	if(buff == NULL) buff = readFileWords(path, &fileSize);
 
 	// ================
 	// parse the header
@@ -138,9 +130,6 @@ int main(int argc, char **argv){
 	}
 	fileLength -= 4;
 
-	// this should no longer be needed
-	free(buff);
-
 	// initialize all registers to 0s
 	uint64_t regs[64] = {0};
 	regs[1] = offset - 4;		// set PC to offset - 4
@@ -155,6 +144,10 @@ int main(int argc, char **argv){
 	arenaLocalDestroy(code);
 	// arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
+
+	free(buff);
+	free(sbuff);
+
 	return EXIT_SUCCESS;
 }
 
