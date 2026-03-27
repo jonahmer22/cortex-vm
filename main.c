@@ -38,6 +38,7 @@ int main(int argc, char **argv){
 	// - a binary to be disassembled
 	// - a source file to be assembled
 	char *path = NULL;	// path to file
+	char *outputPath = NULL;	// path to the output file if present
 	char *sbuff = NULL;	// contents of source file being assembled etc
 	size_t outLen = 0;
 	uint64_t *buff = NULL;	// code buffer
@@ -65,12 +66,14 @@ int main(int argc, char **argv){
 		// TODO: call disassemble the words; put into sbuff
 
 	}
-	if(cliargsFlag("visual", 'v')){
+	if(cliargsFlag("visual", 'v') || cliargsArg("visual", 'v') != NULL){
+		if(path == NULL)
+			path = cliargsArg("visual", 'v');
 		#ifdef DEBUG
 		printf("[DEBUG]: visual flag enabled\n");
 		#endif
 	}
-	char *outputPath = cliargsArg("output", 'o');
+	outputPath = cliargsArg("output", 'o');
 	if(outputPath != NULL){
 		#ifdef DEBUG
 		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
