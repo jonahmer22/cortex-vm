@@ -66,7 +66,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	uint64_t instr = codeBase[regs[1]++];
 
 	#ifdef DEBUG
-	printf("PC %llu:\t\t0x%016llX\n", regs[1] - 1, instr);
+	printf("[DEBUG]: PC %llu:\t\t0x%016llX\n", regs[1] - 1, instr);
 
 	for(int i = 0; i < 64; i += 4){
 		printf("reg[%d]\t= 0x%016llX\t", i, regs[i]);

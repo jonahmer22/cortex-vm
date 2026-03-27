@@ -33,10 +33,66 @@ int main(int argc, char **argv){
 	}
 
 	// get the path from the args (should always just be the subcommand)
-	char *path = cliargsSubcommand();
+	// this will be to:
+	// - a binary to be executed
+	// - a binary to be disassembled
+	// - a source file to be assembled
+	char *path = NULL;
+	
+	// check for flags to either assemble, dissassemble, open visual mode, set output path
+	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
+		if(path == NULL) path = cliargsArg("assemble", 'a');
+		#ifdef DEBUG
+		printf("[DEBUG]: assemble flag enabled, path: %s\n", path);
+		#endif
+
+		size_t outLen = 0;
+		char *buff = readFile(path, &outLen);
+		// TODO: call assemble on the source put into the buffer
+
+
+
+		// free buffer before continuing to execution
+		free(buff);
+	}
+
+	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
+		if(path == NULL) path = cliargsArg("disassemble", 'd');
+		#ifdef DEBUG
+		printf("[DEBUG]: disassemble flag enabled, path: %s\n", path);
+		#endif
+
+		size_t outLen = 0;
+		uint64_t *buff = readFileWords(path, &outLen);
+		// TODO: call disassemble on the words put into the buffer
+
+
+		// free buffer before continuing to execution
+		free(buff);
+	}
+
+	if(cliargsFlag("visual", 'v')){
+		#ifdef DEBUG
+		printf("[DEBUG]: visual flag enabled\n");
+		#endif
+	}
+
+	char *outputPath = cliargsArg("output", 'o');
+	if(outputPath != NULL){
+		#ifdef DEBUG
+		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
+		#endif
+	}
+	
+	// ===================================
+	// default execution of binary at path
+	// ===================================
+	
+	// get the path from the args (should always just be the subcommand)
+	if(path == NULL) path = cliargsSubcommand();
 	if(path == NULL){
-		fprintf(stderr, "[FATAL 0x%04X]: Invalid path.\n", 0x0002);
 		cliargsPrintHelp();
+		fprintf(stderr, "[FATAL 0x%04X]: Invalid or missing path. A path must be given to a file to either; assemble, disassemble, or execute.\n", 0x0002);
 		return EXIT_FAILURE;
 	}
 	
