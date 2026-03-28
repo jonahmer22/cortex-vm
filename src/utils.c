@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "../include/utils.h"
 
@@ -89,4 +90,50 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 	if(outWordCount)
 		*outWordCount = wordCount;
 	return buffer;
+}
+
+// Write a char buffer to a file (creates or overwrites)
+void writeFile(const char *path, char *sbuff, size_t len){
+	FILE *file = fopen(path, "wb");
+	if(!file){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not open or create file at \"%s\".\n", 0x0121, path);
+		exit(EXIT_FAILURE);
+	}
+
+	if(fwrite(sbuff, 1, len, file) != len){
+		fclose(file);
+		fprintf(stderr, "[FATAL 0x%04X]: Failed to write all %zu bytes to \"%s\".\n", 0x0122, len, path);
+		exit(EXIT_FAILURE);
+	}
+
+	fclose(file);
+}
+
+// Write a uint64_t word array to a file in big-endian byte order (creates or overwrites)
+void writeFileWords(const char *path, uint64_t *buff, size_t wordCount){
+	FILE *file = fopen(path, "wb");
+	if(!file){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not open or create file at \"%s\".\n", 0x0131, path);
+		exit(EXIT_FAILURE);
+	}
+
+	for(size_t i = 0; i < wordCount; i++){
+		uint8_t bytes[8];
+		bytes[0] = (buff[i] >> 56) & 0xff;
+		bytes[1] = (buff[i] >> 48) & 0xff;
+		bytes[2] = (buff[i] >> 40) & 0xff;
+		bytes[3] = (buff[i] >> 32) & 0xff;
+		bytes[4] = (buff[i] >> 24) & 0xff;
+		bytes[5] = (buff[i] >> 16) & 0xff;
+		bytes[6] = (buff[i] >>  8) & 0xff;
+		bytes[7] = (buff[i]      ) & 0xff;
+
+		if(fwrite(bytes, 1, 8, file) != 8){
+			fclose(file);
+			fprintf(stderr, "[FATAL 0x%04X]: Failed to write word %zu to \"%s\".\n", 0x0132, i, path);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	fclose(file);
 }

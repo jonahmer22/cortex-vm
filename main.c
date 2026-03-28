@@ -8,6 +8,7 @@
 #include "include/utils.h"
 #include "include/header.h"
 #include "include/defs.h"
+#include "include/assembler.h"
 
 // ==================
 // start of execution
@@ -43,7 +44,14 @@ int main(int argc, char **argv){
 	size_t outLen = 0;
 	uint64_t *buff = NULL;	// code buffer
 	
-	// check for flags to either assemble, dissassemble, open visual mode, set output path
+	// check for output paths before other flags so that the output can be used in assembler and disassembler
+	outputPath = cliargsArg("output", 'o');
+	if(outputPath != NULL){
+		#ifdef DEBUG
+		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
+		#endif
+	}
+	// check for flags to either assemble, dissassemble, open visual mode
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
 		if(path == NULL)
 			path = cliargsArg("assemble", 'a');
@@ -52,8 +60,8 @@ int main(int argc, char **argv){
 		#endif
 
 		sbuff = readFile(path, &outLen);
-		// TODO: call assemble the source; put into buff
-
+		// call assemble the source; put into buff
+		buff = assemble(sbuff, outputPath);
 	}
 	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
 		if(path == NULL)
@@ -64,19 +72,12 @@ int main(int argc, char **argv){
 
 		buff = readFileWords(path, &outLen);
 		// TODO: call disassemble the words; put into sbuff
-
 	}
 	if(cliargsFlag("visual", 'v') || cliargsArg("visual", 'v') != NULL){
 		if(path == NULL)
 			path = cliargsArg("visual", 'v');
 		#ifdef DEBUG
 		printf("[DEBUG]: visual flag enabled\n");
-		#endif
-	}
-	outputPath = cliargsArg("output", 'o');
-	if(outputPath != NULL){
-		#ifdef DEBUG
-		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
 		#endif
 	}
 	
@@ -95,6 +96,8 @@ int main(int argc, char **argv){
 	
 	// Read in the file and get it's size
 	size_t fileSize = 0;
+	if(buff != NULL)
+		fileSize = buff[1];
 	if(buff == NULL)
 		buff = readFileWords(path, &fileSize);
 

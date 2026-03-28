@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "../include/defs.h"
 #include "../include/header.h"
 
 void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *buff){
