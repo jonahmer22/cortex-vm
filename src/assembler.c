@@ -46,10 +46,18 @@ bool cmpChars(char *head, const char *cmp, size_t len){
 }
 
 void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc){
+	// skip comments
+	if(*head == ';'){
+		while(*head != '\n' && *head != '\0'){
+			head++;
+		}
+		*opcode = OP_LABEL;
+		return;
+	}
 
 	// might be a label
 	char *peek = head;
-	while(isalnum(*peek))
+	while(isalnum(*peek) || *peek == '_')
 		peek++;
 	if(*peek == ':'){
 		// label
@@ -632,9 +640,9 @@ void getImm(int64_t *val, uint64_t pc){
 	else if(isalpha(*head)){
 		// parse a label
 		char *start = head;
-		while(isalnum(*head))
+		while(isalnum(*head) || *head == '_')
 			head++;
-		// now the label should go from start to head - 1
+		// now the label should go from start to head
 
 		// add the label to a register of labels to patch back in later
 		labelListAppend(labelsPatches, start, head, pc);
@@ -777,7 +785,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 	}
 	// patch in label values
 	for(size_t i = 0; i < labelsPatches->len; i++){
-		// TODO: walk the list of patches; find the approprate label address to replace with; update the instruction
+		// walk the list of patches; find the approprate label address to replace with; update the instruction
 		LabelNode *p = labelListGet(labelsPatches, i);
 		LabelNode *r = labelListFind(labelsRegistry, p->start, p->end);
 		if(r == NULL){
@@ -786,6 +794,9 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		}
 
 		uint64_t word = listGet(list, p->pc);
+		#ifdef DEBUG
+		uint64_t temp_word = word;
+		#endif
 
 		uint8_t opcode = DECODE_OPCODE(word);
 
@@ -813,6 +824,10 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		}
 
 		listSet(list, p->pc, word);
+
+		#ifdef DEBUG
+		printf("[DEBUG]: Patched instruction at pc=%zu from 0x%016llX to 0x%016llX\n", (p->pc)-4, temp_word, word);
+		#endif
 	}
 
 	listSet(list, 1, list->len);	// set the file length (should be just the length of the list)
