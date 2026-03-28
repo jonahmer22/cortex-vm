@@ -4,6 +4,9 @@
 # Cortex Binary
 cortex-vm
 
+# Compiled Cortex-VM binaries
+*.cxv
+
 # Python venv for testing
 env/
 .pytest_cache

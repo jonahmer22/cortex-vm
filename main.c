@@ -44,7 +44,14 @@ int main(int argc, char **argv){
 	size_t outLen = 0;
 	uint64_t *buff = NULL;	// code buffer
 	
-	// check for flags to either assemble, dissassemble, open visual mode, set output path
+	// check for output paths before other flags so that the output can be used in assembler and disassembler
+	outputPath = cliargsArg("output", 'o');
+	if(outputPath != NULL){
+		#ifdef DEBUG
+		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
+		#endif
+	}
+	// check for flags to either assemble, dissassemble, open visual mode
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
 		if(path == NULL)
 			path = cliargsArg("assemble", 'a');
@@ -54,7 +61,7 @@ int main(int argc, char **argv){
 
 		sbuff = readFile(path, &outLen);
 		// call assemble the source; put into buff
-		buff = assemble(sbuff);
+		buff = assemble(sbuff, outputPath);
 	}
 	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
 		if(path == NULL)
@@ -71,12 +78,6 @@ int main(int argc, char **argv){
 			path = cliargsArg("visual", 'v');
 		#ifdef DEBUG
 		printf("[DEBUG]: visual flag enabled\n");
-		#endif
-	}
-	outputPath = cliargsArg("output", 'o');
-	if(outputPath != NULL){
-		#ifdef DEBUG
-		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
 		#endif
 	}
 	
