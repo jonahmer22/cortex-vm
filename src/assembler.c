@@ -851,7 +851,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 
 	// output the assembled binary at a given path or a.cxv
 	if(outputPath == NULL)
-		outputPath = "a.cxv";
+		outputPath = "a.out";
 	writeFileWords(outputPath, words, words[1]);
 	
 	#ifdef DEBUG
