@@ -23,6 +23,32 @@ List *listInit(void);
 void listDestroy(List *list);
 void listAppend(List *list, uint64_t val);
 void listSet(List *list, size_t index, uint64_t val);
+uint64_t listGet(List *list, size_t index);
 uint64_t *listToArray(List *list);
+
+// ==========
+// Label List
+// ==========
+
+typedef struct LabelNode{
+	char *start;        // pointer into source buffer where label name begins
+	char *end;          // pointer one past the last character of the label name
+	size_t pc;          // instruction index associated with this label
+	struct LabelNode *next;
+} LabelNode;
+
+typedef struct LabelList{
+	LabelNode *head;
+	LabelNode *tail;
+	size_t len;
+} LabelList;
+
+LabelList *labelListInit(void);
+void labelListDestroy(LabelList *list);
+void labelListAppend(LabelList *list, char *start, char *end, size_t pc);
+// returns the first node whose name matches [start, end), or NULL if not found
+LabelNode *labelListFind(LabelList *list, char *start, char *end);
+// returns the node at the given index
+LabelNode *labelListGet(LabelList *list, size_t index);
 
 #endif

@@ -10,6 +10,7 @@
 #include "../include/list.h"
 
 #define ENCODE_OPCODE(op)	((uint64_t)((op) & 0xff) << 56)
+#define DECODE_OPCODE(w)		(((w) >> 56) & 0xff)
 #define ENCODE_FUNCT(fn)	((uint64_t)((fn) & 0xff) << 48)
 #define ENCODE_RA(ra)		((uint64_t)((ra) & 0x3f) << 42)
 #define ENCODE_RD(rd)		((uint64_t)((rd) & 0x3f) << 36)
@@ -21,6 +22,11 @@
 #define ENCODE_S_IMM(imm)	(((((uint64_t)(imm) >> 30) & 0x3f) << 36) | ((uint64_t)(imm) & 0x3fffffff))
 #define ENCODE_L_IMM(imm)	((uint64_t)(imm) & 0xfffffffff)
 #define ENCODE_B_IMM(imm)	ENCODE_S_IMM(imm)
+
+// registry of labels and their pc addresses
+LabelList *labelsRegistry;
+// labels to be patched
+LabelList *labelsPatches;
 
 char *head = NULL;
 size_t line = 0;
@@ -39,7 +45,21 @@ bool cmpChars(char *head, const char *cmp, size_t len){
 	return true;
 }
 
-void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags){
+void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc){
+
+	// might be a label
+	char *peek = head;
+	while(isalnum(*peek))
+		peek++;
+	if(*peek == ':'){
+		// label
+		labelListAppend(labelsRegistry, head, peek, pc);
+		head = peek + 1;
+
+		*opcode = OP_LABEL;
+		return;
+	}
+	// might be an opcode
 	*flags = 0x00;
 	switch(*head){
 		case 'A':
@@ -504,7 +524,7 @@ void getReg(uint8_t *r){
 		}
 	}
 }
-void getImm(int64_t *val){
+void getImm(int64_t *val, uint64_t pc){
 	bool neg = false;
 	if(*head == '-'){
 		neg = true;
@@ -609,6 +629,16 @@ void getImm(int64_t *val){
 			}
 		}
 	}
+	else if(isalpha(*head)){
+		// parse a label
+		char *start = head;
+		while(isalnum(*head))
+			head++;
+		// now the label should go from start to head - 1
+
+		// add the label to a register of labels to patch back in later
+		labelListAppend(labelsPatches, start, head, pc);
+	}
 	else{
 		// dealing with decimal
 		temp = strtoll(head, &head, 10);
@@ -625,6 +655,10 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 
 	// init the word list
 	List *list = listInit();
+	// init label registry
+	labelsRegistry = labelListInit();
+	// init label patches
+	labelsPatches = labelListInit();
 
 	// init the header and add to word list
 	// add signature + magic + version number
@@ -645,15 +679,13 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 
 		// TODO: (FUTURE) check for stuff like to put in the data section
 
-		// TODO: (FUTURE) check for labels and store them in a table along with their positions
-
 		// the current word we are assembling
 		uint64_t word = 0;
 		
 		// use functions to make the propper word
 		uint8_t opcode, funct, flags;
 		opcode = funct = flags = 0;
-		getOpcodeFunct(&opcode, &funct, &flags);
+		getOpcodeFunct(&opcode, &funct, &flags, list->len);
 		// consume white space or comma or both
 		skipSep();
 		switch(opcode){
@@ -677,7 +709,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				skipSep();
 				getReg(&ra);
 				skipSep();
-				getImm(&imm);
+				getImm(&imm, list->len);
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_I_IMM(imm) | ENCODE_FLAGS(flags);
 				break;
@@ -690,7 +722,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				skipSep();
 				getReg(&rb);
 				skipSep();
-				getImm(&imm);
+				getImm(&imm, list->len);
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_S_IMM(imm) | ENCODE_RB(rb);
 				break;
@@ -703,7 +735,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				skipSep();
 				getReg(&ra);
 				skipSep();
-				getImm(&imm);
+				getImm(&imm, list->len);
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_L_IMM(imm);
 				break;
@@ -716,13 +748,17 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				skipSep();
 				getReg(&rb);
 				skipSep();
-				getImm(&imm);	// TODO: (FUTURE) should be parsing a label instead and then computing jump address to encode
+				getImm(&imm, list->len);	// TODO: (FUTURE) should be parsing a label instead and then computing jump address to encode
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_B_IMM(imm) | ENCODE_RB(rb);
 				break;
 			}
 			case OP_SYS:{
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct);
+				break;
+			}
+			case OP_LABEL:{
+				continue;
 				break;
 			}
 			default:{
@@ -739,13 +775,64 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		// add the word to the words list
 		listAppend(list, word);
 	}
+	// patch in label values
+	for(size_t i = 0; i < labelsPatches->len; i++){
+		// TODO: walk the list of patches; find the approprate label address to replace with; update the instruction
+		LabelNode *p = labelListGet(labelsPatches, i);
+		LabelNode *r = labelListFind(labelsRegistry, p->start, p->end);
+		if(r == NULL){
+			fprintf(stderr, "[FATAL 0x%04X]: Attempting to patch an non-existent label at pc=%zu.\n", 0x030C, p->pc);
+			exit(EXIT_FAILURE);
+		}
+
+		uint64_t word = listGet(list, p->pc);
+
+		uint8_t opcode = DECODE_OPCODE(word);
+
+		switch(opcode){
+			case OP_I:{
+				word |= ENCODE_I_IMM((int64_t)r->pc - (int64_t)p->pc);
+				break;
+			}
+			case OP_S:{
+				word |= ENCODE_S_IMM((int64_t)r->pc - (int64_t)p->pc);
+				break;
+			}
+			case OP_L:{
+				word |= ENCODE_L_IMM((int64_t)r->pc - (int64_t)p->pc);
+				break;
+			}
+			case OP_B:{
+				word |= ENCODE_B_IMM((int64_t)r->pc - (int64_t)p->pc);
+				break;
+			}
+			default:{
+				fprintf(stderr, "[FATAL 0x%04X]: Attempting to patch a label to an opcode without imm values.\n", 0x030B);
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		listSet(list, p->pc, word);
+	}
+
 	listSet(list, 1, list->len);	// set the file length (should be just the length of the list)
-	listSet(list, 2, 4);	// TODO: set the entry point as just the first instruction temporarily
+
+	char *tmp = "main";
+	LabelNode *entry = labelListFind(labelsRegistry, tmp, tmp + 4);
+	if(entry)
+		listSet(list, 2, entry->pc);
+	else
+		listSet(list, 2, 4);	// if not set the first instruction as entry point
+
 	listSet(list, 3, 0);	// don't worry about flags for right now.
 
 	// return the raw array of the word list
 	uint64_t *words = listToArray(list);
+
+	// destroy dynamic lists
 	listDestroy(list);
+	labelListDestroy(labelsRegistry);
+	labelListDestroy(labelsPatches);
 
 	// output the assembled binary at a given path or a.cxv
 	if(outputPath == NULL)

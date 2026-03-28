@@ -10,6 +10,8 @@
 #define OP_B 0x85
 #define OP_SYS 0x86
 
+#define OP_LABEL 0x00
+
 #define FN_ADDSUB 0x01
 #define FN_OR 0x02
 #define FN_XOR 0x03
