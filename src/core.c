@@ -9,9 +9,9 @@
 #define OPCODE(w)		(((w) >> 56) & 0xff)
 #define FUNCT(w)		(((w) >> 48) & 0xff)
 #define FLAGS(w)		(((w) >> 26) & 0xf)
-#define RA(w)			(((w) >> 42) & 0x3f)
-#define RD(w)			(((w) >> 36) & 0x3f)
-#define RB(w)			(((w) >> 30) & 0x3f)
+#define I_RA(w)			(((w) >> 42) & 0x3f)
+#define I_RD(w)			(((w) >> 36) & 0x3f)
+#define I_RB(w)			(((w) >> 30) & 0x3f)
 // I-type: imm[31:26] at word bits 35:30, imm[25:0] at word bits 25:0
 #define I_IMM(w)		(((((w) >> 30) & 0x3f) << 26) | ((w) & 0x3ffffff))
 // S-type and B-type: imm[35:30] at word bits 41:36, imm[29:0] at word bits 29:0
@@ -67,10 +67,10 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	bool running = true;
 
 	// FETCH
-	uint64_t instr = codeBase[regs[1]++];
+	uint64_t instr = codeBase[regs[PC]++];
 
 	#ifdef DEBUG
-	printf("[DEBUG]: PC %llu:\t\t0x%016llX\n", regs[1] - 1, instr);
+	printf("[DEBUG]: PC %llu:\t\t0x%016llX\n", regs[PC] - 1, instr);
 
 	for(int i = 0; i < 64; i += 4){
 		printf("reg[%d]\t= 0x%016llX\t", i, regs[i]);
@@ -87,9 +87,9 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	switch(opcode){
 		case OP_R:{
 			uint8_t funct 	= FUNCT(instr);
-			uint8_t ra 	= RA(instr);
-			uint8_t rd 	= RD(instr);
-			uint8_t rb 	= RB(instr);
+			uint8_t ra 	= I_RA(instr);
+			uint8_t rd 	= I_RD(instr);
+			uint8_t rb 	= I_RB(instr);
 			uint8_t flags 	= FLAGS(instr);
 
 			// switch based off of the function
@@ -153,8 +153,8 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 		case OP_I:{
 			uint8_t funct	= FUNCT(instr);
-			uint8_t ra	= RA(instr);
-			uint8_t rd	= RD(instr);
+			uint8_t ra	= I_RA(instr);
+			uint8_t rd	= I_RD(instr);
 			uint8_t flags	= FLAGS(instr);
 			uint64_t imm	= SIGN_EXT32(I_IMM(instr));
 
@@ -211,8 +211,8 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;
 				}
 				case FN_JMP:{
-					uint64_t next = regs[1];
-					regs[1] = (uint64_t)regs[ra] + (uint64_t)imm;
+					uint64_t next = regs[PC];
+					regs[PC] = (uint64_t)regs[ra] + (uint64_t)imm;
 					regs[rd] = next;
 					break;
 				}
@@ -225,8 +225,8 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 		case OP_S:{
 			uint8_t funct 	= FUNCT(instr);
-			uint8_t ra	= RA(instr);
-			uint8_t rb 	= RB(instr);
+			uint8_t ra	= I_RA(instr);
+			uint8_t rb 	= I_RB(instr);
 			uint64_t imm	= SIGN_EXT36(S_IMM(instr));
 
 			switch(funct){
@@ -243,8 +243,8 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 		case OP_L:{
 			uint8_t funct	= FUNCT(instr);
-			uint8_t ra	= RA(instr);
-			uint8_t rd	= RD(instr);
+			uint8_t ra	= I_RA(instr);
+			uint8_t rd	= I_RD(instr);
 			uint64_t imm	= SIGN_EXT36(L_IMM(instr));
 
 			switch(funct){
@@ -261,32 +261,32 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 		case OP_B:{
 			uint8_t funct	= FUNCT(instr);
-			uint8_t ra	= RA(instr);
-			uint8_t rb	= RB(instr);
+			uint8_t ra	= I_RA(instr);
+			uint8_t rb	= I_RB(instr);
 			uint64_t imm	= SIGN_EXT36(B_IMM(instr));
 
 			switch(funct){
 				case FN_BEQ:{
 					if((uint64_t)regs[ra] == (uint64_t)regs[rb]){
-						regs[1] = (regs[1] - 1) + (uint64_t)imm;
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;
 				}
 				case FN_BNE:{
 					if((uint64_t)regs[ra] != (uint64_t)regs[rb]){
-						regs[1] = (regs[1] - 1) + (uint64_t)imm;
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;
 				}
 				case FN_BLT:{
 					if((int64_t)regs[ra] < (int64_t)regs[rb]){
-						regs[1] = (regs[1] - 1) + (uint64_t)imm;
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;
 				}
 				case FN_BLTU:{
 					if((uint64_t)regs[ra] < (uint64_t)regs[rb]){
-						regs[1] = (regs[1] - 1) + (uint64_t)imm;
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;
 				}
@@ -314,7 +314,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;	// funnily enough this is good enough already
 				}
 				case FN_BREAK:{
-					fprintf(stderr, "[BREAK]: Breakpoint hit at PC %llu\n", regs[1] - 1);
+					fprintf(stderr, "[BREAK]: Breakpoint hit at PC %llu\n", regs[PC] - 1);
 					fprintf(stderr, "Registers:\n");
 
 					for(int i = 0; i < 64; i++){
@@ -338,17 +338,17 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 			break;
 	}
 	// if SP is past the max size of the stack then error
-	if(regs[2] >= ((1024*1024)+0x0008000000000000)){
+	if(regs[SP] >= ((1024*1024)+0x0008000000000000)){
 		fprintf(stderr, "[FATAL 0x%04X]: Stack overflow.\n", 0x020F);
 		exit(EXIT_FAILURE);
 	}
 
 	// if PC is past or at the fileLength then stop running
-	if(regs[1] >= fileLength)
+	if(regs[PC] >= fileLength)
 		running = false;
 
 	// enforce r0 = 0
-	regs[0] = 0;
+	regs[ZERO] = 0;
 
 	return running;
 }
