@@ -6,6 +6,7 @@ cortex-vm
 
 # Compiled Cortex-VM binaries
 *.cxv
+*.out
 
 # Python venv for testing
 env/

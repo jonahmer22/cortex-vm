@@ -47,9 +47,8 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	(void)codeBase;	// just to shut up the compiler
 
 	if(addr < HEAP_ADDR){
-		// just error out, idk why this would be useful
-		fprintf(stderr, "[FATAL 0x%04X]: Illegal read from code region at 0x%016llX.\n", 0x0212, addr);
-		exit(EXIT_FAILURE);
+		// allow reading of values from code section (usefull for .data)
+		return codeBase[addr];
 	}
 	else if(addr < STACK_ADDR){
 		// do nothing for right now
@@ -307,11 +306,23 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;
 				}
 				case FN_SYSCALL:{
-					// no syscalls are currently implemented out outlined
-					// temporary print int
+					// temporary syscalls; subject to future change
 					switch(regs[A13]){
-						case 1:{
+						case SYS_PRINT_INT:{
+							// print an integer in A0
 							printf("%lld", (int64_t)regs[A0]);
+							break;
+						}
+						case SYS_PRINT_STR:{
+							// print a string who's address is at A0
+							for(size_t i = 0; ; i++){
+								char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase);
+								if(chars == '\0'){
+									break;
+								}
+								printf("%c", chars);
+							}
+
 							break;
 						}
 						default:{

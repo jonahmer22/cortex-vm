@@ -36,6 +36,17 @@ void skipSep(void){
 		head++;
 }
 
+bool skipComments(void){
+	// skip comments
+	if(*head == ';'){
+		while(*head != '\n' && *head != '\0'){
+			head++;
+		}
+		return true;
+	}
+	return false;
+}
+
 bool cmpChars(char *head, const char *cmp, size_t len){
 	for(size_t i = 0; i < len; i++){
 		if(toupper(*(head+i)) != toupper(*(cmp+i)))
@@ -45,12 +56,53 @@ bool cmpChars(char *head, const char *cmp, size_t len){
 	return true;
 }
 
-void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc){
-	// skip comments
-	if(*head == ';'){
-		while(*head != '\n' && *head != '\0'){
-			head++;
+void getData(List *list);
+
+void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc, List *list){
+	// might be the start of the .data section
+	if(*head == '.'){
+		head++;
+		if(cmpChars(head, "data", 4)){
+			head += 4;
+			skipSep();
+			*opcode = OP_DATA;
+			// we are now healing with the .data section this must be at the end of the file
+			while(*head != '\0'){	// parse until the end of the file
+				if(*head == '\n'){
+					head++;
+					line++;
+					continue;
+				}
+				skipSep();
+				if(skipComments())
+					continue;
+
+				// check for label
+				char *peek = head;
+				while(isalnum(*peek) || *peek == '_')
+					peek++;
+				if(*peek == ':'){
+					labelListAppend(labelsRegistry, head, peek, list->len);
+					head = peek + 1;
+					continue;
+				}
+				
+				// get any value;
+				// - list of numbers (array: decimal, octal, binary, hex)
+				// - any char value
+				// - a string which is to be stored like an array; each char has to have it's own uint64_t since we only work in words
+				getData(list);
+			}
 		}
+		else{
+			fprintf(stderr, "[FATAL 0x%04X]: line beginning with \'.\' but does not contain a section.\n", 0x030D);
+			exit(EXIT_FAILURE);
+		}
+		return;
+	}
+
+	// skip comments
+	if(skipComments()){
 		*opcode = OP_LABEL;
 		return;
 	}
@@ -654,6 +706,62 @@ void getImm(int64_t *val, uint64_t pc){
 
 	*val = neg ? -temp : temp;
 }
+void getData(List *list){
+	// we are parsing a string
+	if(*head == '"'){
+		head++;
+		while(*head != '"' && *head != '\0'){
+			char temp = *head;
+			// escape sequences
+			if(*head == '\\'){
+				head++;
+				switch(*head){
+					case 'n':{
+						temp = '\n';
+						break;
+					}
+					case 't':{
+						temp = '\t';
+						break;
+					}
+					case 'r':{
+						temp = '\r';
+						break;
+					}
+					case '0':{
+						temp = '\0';
+						break;
+					}
+					case '\\':{
+						temp = '\\';
+						break;
+					}
+					case '\'':{
+						temp = '\'';
+						break;
+					}
+					default:{
+						fprintf(stderr, "[FATAL 0x%04X]: Unknown escape sequence on line %zu.\n", 0x0305, line);
+						exit(EXIT_FAILURE);
+					}
+				}
+			}
+			listAppend(list, (uint64_t)temp);
+			head++;
+		}
+		if(*head != '"'){
+			fprintf(stderr, "[FATAL 0x%04X]: Unterminated string literal on line %zu.\n", 0x030E, line);
+			exit(EXIT_FAILURE);
+		}
+		head++;
+	}
+	else{
+		// some other sort of value, just use getImm() to parse it
+		int64_t val = 0;
+		getImm(&val, 0);
+		listAppend(list, (uint64_t)val);
+	}
+}
 
 uint64_t *assemble(char *sbuff, const char *outputPath){
 	// implement assembler
@@ -693,7 +801,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		// use functions to make the propper word
 		uint8_t opcode, funct, flags;
 		opcode = funct = flags = 0;
-		getOpcodeFunct(&opcode, &funct, &flags, list->len);
+		getOpcodeFunct(&opcode, &funct, &flags, list->len, list);
 		// consume white space or comma or both
 		skipSep();
 		switch(opcode){
@@ -767,6 +875,10 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 			}
 			case OP_LABEL:{
 				continue;
+				break;
+			}
+			case OP_DATA:{
+				// reached a .data section and there is nothing to do
 				break;
 			}
 			default:{

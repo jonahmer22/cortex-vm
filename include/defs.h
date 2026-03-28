@@ -11,6 +11,7 @@
 #define OP_SYS 0x86
 
 #define OP_LABEL 0x00
+#define OP_DATA 0xFF
 
 #define FN_ADDSUB 0x01
 #define FN_OR 0x02
@@ -38,6 +39,88 @@
 #define STACK_ADDR 0x0008000000000000
 
 #define STACKSIZE (1024*1024*sizeof(uint64_t))
+
+// A0 = exit number
+#define SYS_EXIT        0
+// A0 = int to print
+// A1 = format
+// - 0 = decimal
+// - 1 = binary
+// - 2 = octal
+// - 3 = hex
+#define SYS_PRINT_INT   1
+// A0 = int to print
+// A1 = format
+// - 0 = decimal
+// - 1 = binary
+// - 2 = octal
+// - 3 = hex
+#define SYS_PRINT_UINT  2
+// A0 = char to print
+#define SYS_PRINT_CHAR  3
+// A0 = float to print
+// A1 = format
+// - 0 = decimal
+// - 1 = binary
+// - 2 = octal
+// - 3 = hex
+#define SYS_PRINT_FLOAT 4
+// A0 = address of string to print
+// must be null terminated
+#define SYS_PRINT_STR   5
+// A0 = integer read in
+// can read in the following formats:
+// - 0 = decimal
+// - 1 = binary
+// - 2 = octal
+// - 3 = hex
+#define SYS_READ_INT    11
+// A0 = unsigned integer read in
+// can read in the following formats:
+// - 0 = decimal
+// - 1 = binary
+// - 2 = octal
+// - 3 = hex
+#define SYS_READ_UINT   12
+// A0 = char read in
+#define SYS_READ_CHAR   13
+// A0 = float read in
+#define SYS_READ_FLOAT  14
+// A0 = address of string destination
+// A1 = max length to read
+#define SYS_READ_STR    15
+// A0 = integer to seed random
+#define SYS_RAND_SEED   21
+// A0 = pseudo random integer
+#define SYS_RAND_INT    22
+// args:
+// A0 = max
+// A1 = min
+// rets:
+// A0 = random number in range
+#define SYS_RAND_R_INT  23
+// A0 = random float in range of 0 to 1
+#define SYS_RAND_FLOAT  24
+// args:
+// A0 = null terminated path
+// A1 = mode
+// rets:
+// A0 = file descriptor
+#define SYS_FILE_OPEN   31
+// args:
+// A0 = file descriptor
+// rets:
+// A0 = pointer to buffer
+#define SYS_FILE_READ   32
+// A0 = file descriptor
+#define SYS_FILE_CLOSE  33
+// A0 = file descriptor
+// A1 = pointer to buffer
+#define SYS_FILE_WRITE  34
+// A0 = time in miliseconds since Jan 1, 1970
+#define SYS_TIME_GET    41
+// A0 = time to sleep in miliseconds
+#define SYS_TIME_SLEEP  42
 
 #define ZERO    0
 #define PC      1
