@@ -95,6 +95,8 @@ int main(int argc, char **argv){
 	
 	// Read in the file and get it's size
 	size_t fileSize = 0;
+	if(buff != NULL)
+		fileSize = buff[1];
 	if(buff == NULL)
 		buff = readFileWords(path, &fileSize);
 

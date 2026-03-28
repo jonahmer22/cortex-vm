@@ -299,7 +299,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 		case OP_SYS:{
 			uint8_t funct	= FUNCT(instr);
-			uint64_t imm	= SYS_IMM(instr);
+			// uint64_t imm	= SYS_IMM(instr);
 
 			switch(funct){
 				case FN_HALT:{
@@ -308,6 +308,19 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				}
 				case FN_SYSCALL:{
 					// no syscalls are currently implemented out outlined
+					// temporary print int
+					switch(regs[A13]){
+						case 1:{
+							printf("%lld", (int64_t)regs[A0]);
+							break;
+						}
+						default:{
+							fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+							exit(EXIT_FAILURE);
+							break;
+						}
+					}
+					
 					break;
 				}
 				case FN_NOP:{

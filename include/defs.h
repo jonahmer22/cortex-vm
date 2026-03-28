@@ -1,6 +1,8 @@
 #ifndef DEFS_H
 #define DEFS_H
 
+#define VERSION 0x0000000000000001
+
 #define OP_R 0x81
 #define OP_I 0x82
 #define OP_S 0x83
