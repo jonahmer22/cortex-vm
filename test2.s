@@ -30,6 +30,7 @@ addi a0, t1, 0
 syscall
 addi t0, zero, 99
 sw sp, t0, 0
+add t0, r0, r0
 lw t1, sp, 0
 addi a0, t1, 0
 syscall
