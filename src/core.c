@@ -82,7 +82,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 
 	#endif
 
-	// DECODE
+	// DECODE + EXECUTE
 	uint8_t opcode = OPCODE(instr);
 	switch(opcode){
 		case OP_R:{
