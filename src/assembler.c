@@ -791,15 +791,15 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 
 		switch(opcode){
 			case OP_I:{
-				word |= ENCODE_I_IMM((int64_t)r->pc - (int64_t)p->pc);
+				word |= ENCODE_I_IMM((int64_t)r->pc - 4);
 				break;
 			}
 			case OP_S:{
-				word |= ENCODE_S_IMM((int64_t)r->pc - (int64_t)p->pc);
+				word |= ENCODE_S_IMM((int64_t)r->pc - 4);
 				break;
 			}
 			case OP_L:{
-				word |= ENCODE_L_IMM((int64_t)r->pc - (int64_t)p->pc);
+				word |= ENCODE_L_IMM((int64_t)r->pc - 4);
 				break;
 			}
 			case OP_B:{
