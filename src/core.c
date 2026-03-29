@@ -156,10 +156,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		}
 		// reading syscalls
 		case SYS_READ_INT:{
-			int64_t v = 0;
+			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					scanf("%lld", &v);
+					scanf("%lld", (int64_t *)&v);
 					break;
 				}
 				case 1:{	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
@@ -349,7 +349,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			#ifdef _WIN32
 			Sleep((DWORD)ms);
 			#else
-			usleep((useconds_t)(ms * 1000));
+			usleep((uint64_t)(ms * 1000));
 			#endif
 			break;
 		}

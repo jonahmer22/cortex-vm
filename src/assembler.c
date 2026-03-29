@@ -645,7 +645,7 @@ void getImm(int64_t *val, uint64_t pc){
 			case 'x':{
 				head++;
 				// dealing with hex
-				while(ishexnumber(*head)){
+				while(isxdigit(*head)){
 					temp <<= 4;
 					if(isalpha(*head)){
 						temp += (toupper(*head) - 55);
