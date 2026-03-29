@@ -754,6 +754,7 @@ void getData(List *list){
 			exit(EXIT_FAILURE);
 		}
 		head++;
+		listAppend(list, 0);	// null terminator
 	}
 	else{
 		// some other sort of value, just use getImm() to parse it

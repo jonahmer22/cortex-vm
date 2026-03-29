@@ -2,6 +2,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
+#include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+// file descriptor table
+#define MAX_FDS 64
+static FILE *fdTable[MAX_FDS] = {NULL};
 
 #include "../include/core.h"
 #include "../include/defs.h"
@@ -62,7 +74,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 }
 
-bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength){
+bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 	bool running = true;
 
 	// FETCH
@@ -299,18 +311,78 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		case OP_SYS:{
 			uint8_t funct	= FUNCT(instr);
 			// uint64_t imm	= SYS_IMM(instr);
-
 			switch(funct){
 				case FN_HALT:{
 					running = false;
 					break;
 				}
 				case FN_SYSCALL:{
-					// temporary syscalls; subject to future change
 					switch(regs[A13]){
+						// exit syscall
+						case SYS_EXIT:{
+							running = false;
+							*exit_code = regs[A0];
+							break;
+						}
+						// printing syscalls
 						case SYS_PRINT_INT:{
-							// print an integer in A0
-							printf("%lld", (int64_t)regs[A0]);
+							switch(regs[A1]){
+								case 0:{
+									printf("%lld", (int64_t)regs[A0]);
+									break;
+								}
+								case 1:{
+									printf("0b");
+									int64_t u = regs[A0];
+									for(int i = 63; i >= 0; --i)
+										putchar((u >> i) & 1 ? '1' : '0');
+									break;
+								}
+								case 2:{
+									printf("0o%022llo", (uint64_t)regs[A0]);
+									break;
+								}
+								case 3:{
+									printf("0x%016llX", (uint64_t)regs[A0]);
+									break;
+								}
+								default:{
+									goto SYS_FMT_FAILURE;
+									break;
+								}
+							}
+							break;
+						}
+						case SYS_PRINT_UINT:{
+							switch(regs[A1]){
+								case 0:{
+									printf("%llu", (uint64_t)regs[A0]);
+									break;
+								}
+								case 1:{
+									printf("0b");
+									int64_t u = regs[A0];
+									for(int i = 63; i >= 0; --i)
+										putchar((u >> i) & 1 ? '1' : '0');
+									break;
+								}
+								case 2:{
+									printf("0o%022llo", (uint64_t)regs[A0]);
+									break;
+								}
+								case 3:{
+									printf("0x%016llX", (uint64_t)regs[A0]);
+									break;
+								}
+								default:{
+									goto SYS_FMT_FAILURE;
+									break;
+								}
+							}
+							break;
+						}
+						case SYS_PRINT_CHAR:{
+							printf("%c", (char)regs[A0]);
 							break;
 						}
 						case SYS_PRINT_STR:{
@@ -322,16 +394,227 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 								}
 								printf("%c", chars);
 							}
+							break;
+						}
+						// reading syscalls
+						case SYS_READ_INT:{
+							int64_t v = 0;
+							switch(regs[A1]){
+								case 0:{
+									scanf("%lld", &v);
+									break;
+								}
+								case 1:{	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
+									scanf("%llo", &v);
+									break;
+								}
+								case 2:{
+									scanf("%llo", &v);
+									break;
+								}
+								case 3:{
+									scanf("%llx", &v);
+									break;
+								}
+								default:
+									goto SYS_FMT_FAILURE;
+							}
+							regs[A0] = (uint64_t)v;
+							// flush remaining input including newline
+							int ch;
+							while((ch = getchar()) != '\n' && ch != EOF);
+							break;
+						}
+						case SYS_READ_UINT:{
+							uint64_t v = 0;
+							switch(regs[A1]){
+								case 0:{
+									scanf("%llu", &v);
+									break;
+								}
+								case 1:{
+									scanf("%llo", &v);
+									break;
+								}
+								case 2:{
+									scanf("%llo", &v);
+									break;
+								}
+								case 3:{
+									scanf("%llx", &v);
+									break;
+								}
+								default:
+									goto SYS_FMT_FAILURE;
+							}
+							regs[A0] = v;
+							// flush remaining input including newline
+							int ch2;
+							while((ch2 = getchar()) != '\n' && ch2 != EOF);
+							break;
+						}
+						case SYS_READ_CHAR:{
+							regs[A0] = (uint64_t)getchar();
+							// flush remaining input including newline
+							int ch3;
+							while((ch3 = getchar()) != '\n' && ch3 != EOF);
+							break;
+						}
+						case SYS_READ_STR:{
+							uint64_t addr = regs[A0];
+							uint64_t maxLen = regs[A1];
+							size_t i = 0;
+							int c;
+							while(i < maxLen - 1 && (c = getchar()) != EOF && c != '\n'){
+								setWord(addr + i, (uint64_t)(unsigned char)c, codeBase, stackBase);
+								i++;
+							}
+							setWord(addr + i, 0, codeBase, stackBase);
+							break;
+						}
+						// random number syscalls
+						case SYS_RAND_SEED:{
+							srand((unsigned int)regs[A0]);
+							break;
+						}
+						case SYS_RAND_INT:{
+							regs[A0] = ((uint64_t)rand() << 32) | (uint64_t)rand();
+							break;
+						}
+						case SYS_RAND_R_INT:{
+							int64_t mn = (int64_t)regs[A0];
+							int64_t mx = (int64_t)regs[A1];
+							if(mx < mn){
+								fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (%lld) is less than min (%lld).\n", 0x0213, mx, mn);
+								exit(EXIT_FAILURE);
+							}
+							uint64_t range = (uint64_t)(mx - mn) + 1;
+							regs[A0] = (uint64_t)(mn + (int64_t)(((uint64_t)rand() << 32 | (uint64_t)rand()) % range));
+							break;
+						}
+						// file i/o syscalls
+						case SYS_FILE_OPEN:{
+							// build path string from vm memory
+							char path[4096];
+							size_t pi = 0;
+							uint64_t addr = regs[A0];
+							char c;
+							while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, stackBase)) != '\0')
+								path[pi++] = c;
+							path[pi] = '\0';
 
+							const char *mode;
+							switch(regs[A1]){
+								case 0:{
+									mode = "rb";
+									break;
+								}
+								case 1:{
+									mode = "wb";
+									break;
+								}
+								case 2:{
+									mode = "ab";
+									break;
+								}
+								default:
+									goto SYS_FMT_FAILURE;
+							}
+
+							// find a free fd slot (skip 0,1,2 — stdin/stdout/stderr)
+							int fd = -1;
+							for(int fi = 3; fi < MAX_FDS; fi++){
+								if(fdTable[fi] == NULL){ fd = fi; break; }
+							}
+							if(fd == -1){
+								fprintf(stderr, "[FATAL 0x%04X]: File descriptor table full.\n", 0x020D);
+								exit(EXIT_FAILURE);
+							}
+
+							fdTable[fd] = fopen(path, mode);
+							if(!fdTable[fd]){
+								fprintf(stderr, "[FATAL 0x%04X]: Could not open file \"%s\".\n", 0x0210, path);
+								exit(EXIT_FAILURE);
+							}
+							regs[A0] = (uint64_t)fd;
+							break;
+						}
+						case SYS_FILE_READ:{
+							int fd = (int)regs[A0];
+							if(fd < 0 || fd >= MAX_FDS || !fdTable[fd]){
+								fprintf(stderr, "[FATAL 0x%04X]: Invalid file descriptor %d.\n", 0x0211, fd);
+								exit(EXIT_FAILURE);
+							}
+							// read into stack at current sp
+							uint64_t bufAddr = regs[SP];
+							int c;
+							uint64_t wi = 0;
+							while((c = fgetc(fdTable[fd])) != EOF){
+								stackBase[bufAddr - STACK_ADDR + wi] = (uint64_t)(unsigned char)c;
+								wi++;
+							}
+							// null terminate
+							stackBase[bufAddr - STACK_ADDR + wi] = 0;
+							regs[A0] = bufAddr;
+							break;
+						}
+						case SYS_FILE_CLOSE:{
+							int fd = (int)regs[A0];
+							if(fd >= 3 && fd < MAX_FDS && fdTable[fd]){
+								fclose(fdTable[fd]);
+								fdTable[fd] = NULL;
+							}
+							break;
+						}
+						case SYS_FILE_WRITE:{
+							int fd = (int)regs[A0];
+							if(fd < 0 || fd >= MAX_FDS || !fdTable[fd]){
+								fprintf(stderr, "[FATAL 0x%04X]: Invalid file descriptor %d.\n", 0x0212, fd);
+								exit(EXIT_FAILURE);
+							}
+							uint64_t addr = regs[A1];
+							char c;
+							while((c = (char)loadWord(addr++, codeBase, stackBase)) != '\0')
+								fputc(c, fdTable[fd]);
+							break;
+						}
+						// time syscalls
+						case SYS_TIME_GET:{
+							regs[A0] = (uint64_t)(time(NULL)) * 1000;
+							break;
+						}
+						case SYS_TIME_SLEEP:{
+							uint64_t ms = regs[A0];
+							#ifdef _WIN32
+							Sleep((DWORD)ms);
+							#else
+							usleep((useconds_t)(ms * 1000));
+							#endif
 							break;
 						}
 						default:{
+							// TODO: different extensions switch cases; check for whether the extension is active via if statements first
+							if(extensions & EXT_FLOAT){
+								// we have float extensions and should check for them as syscalls
+								switch(regs[A13]){
+									case SYS_PRINT_FLOAT:{
+										break;
+									}
+									case SYS_READ_FLOAT:{
+										break;
+									}
+									case SYS_RAND_FLOAT:{
+										break;
+									}
+									// no default or error case; that way we fall through to check other extensions
+								}
+							}
+							SYS_FMT_FAILURE:
 							fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
 							exit(EXIT_FAILURE);
 							break;
 						}
 					}
-					
 					break;
 				}
 				case FN_NOP:{
@@ -356,10 +639,53 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 			}
 			break;
 		}
-		default:
+		default:{
+			bool handled = false;
+			if(extensions & EXT_FLOAT){
+				// TODO: we have float extensions and should check for them as opcodes
+				switch(opcode){
+					// no default so it falls through to other extension checks
+					case OP_FR:{
+						// switch on function
+						handled = true;
+						break;
+					}
+					case OP_FI:{
+						// switch on function
+						handled = true;
+						break;
+					}
+					case OP_FB:{
+						// switch on function
+						handled = true;
+						break;
+					}
+				}
+			}
+			if(!handled && extensions & EXT_M){
+				// TODO: we have multiply extensions and should check for them as opcodes
+				switch(opcode){
+					// no default so it falls through to other extension checks
+					case OP_MR:{
+						// switch on function
+						handled = true;
+						break;
+					}
+					case OP_MI:{
+						// switch on function
+						handled = true;
+						break;
+					}
+				}
+			}
+			if(!handled)
+				goto OP_FAILURE;
+			break;
+
+			OP_FAILURE:
 			fprintf(stderr, "[FATAL 0x%04X]: Illegal opcode 0x%02X.\n", 0x0201, opcode);
 			exit(EXIT_FAILURE);
-			break;
+		}
 	}
 	// if SP is past the max size of the stack then error
 	if(regs[SP] >= ((1024*1024)+0x0008000000000000)){
@@ -377,6 +703,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	return running;
 }
 
-void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength){
-	while(step(regs, codeBase, stackBase, fileLength));
+void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+	while(step(regs, codeBase, stackBase, fileLength, extensions, exit_code));
 }
