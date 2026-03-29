@@ -144,10 +144,11 @@ int main(int argc, char **argv){
 	regs[1] = offset - 4;		// set PC to offset - 4
 	regs[2] = 0x0008000000000000;	// set sp to the stack base (top 16 bits is 0x0008)
 	
-	// TODO: in the future when extensions exist initialize them here.
-	
+	// exit_code
+	uint64_t exit_code = 0;
+
 	// fetch, decode, and execute code
-	run(regs, codeBase,/* heapBase,*/ stackBase, fileLength);
+	run(regs, codeBase,/* heapBase,*/ stackBase, fileLength, extensions, &exit_code);
 
 	// free all the memory for the vm and exit with no errors
 	arenaLocalDestroy(code);
@@ -159,7 +160,7 @@ int main(int argc, char **argv){
 	free(buff);
 	free(sbuff);
 
-	return EXIT_SUCCESS;
+	return exit_code;
 }
 
 //	.:
