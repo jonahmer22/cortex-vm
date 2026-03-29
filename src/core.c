@@ -386,7 +386,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 }
 
 // returns true if the opcode was handled by an extension, false if unknown
-static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions){
+static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t instr, uint64_t *regs){
 	bool handled = false;
 	if(extensions & EXT_FLOAT){
 		// TODO: we have float extensions and should check for them as opcodes
@@ -415,11 +415,84 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions){
 			// no default so it falls through to other extension checks
 			case OP_MR:{
 				// switch on function
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rd = I_RD(instr);
+				uint8_t rb = I_RB(instr);
+				// don't actually need flags I think
+				// uint8_t flags = FLAGS(instr);
+				switch(funct){
+					case FN_MUL:{
+						regs[rd] = (uint64_t)((int64_t)regs[ra] * (int64_t)regs[rb]);
+						break;
+					}
+					case FN_MULH:{
+						regs[rd] = (uint64_t)(((__int128_t)(int64_t)regs[ra] * (__int128_t)(int64_t)regs[rb]) >> 64);
+						break;
+					}
+					case FN_MULHU:{
+						regs[rd] = (uint64_t)(((__uint128_t)regs[ra] * (__uint128_t)regs[rb]) >> 64);
+						break;
+					}
+					case FN_DIV:{
+						regs[rd] = (uint64_t)((int64_t)regs[ra] / (int64_t)regs[rb]);
+						break;
+					}
+					case FN_DIVU:{
+						regs[rd] = (uint64_t)regs[ra] / (uint64_t)regs[rb];
+						break;
+					}
+					case FN_REM:{
+						regs[rd] = (uint64_t)((int64_t)regs[ra] % (int64_t)regs[rb]);
+						break;
+					}
+					case FN_REMU:{
+						regs[rd] = (uint64_t)regs[ra] % (uint64_t)regs[rb];
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
 			case OP_MI:{
 				// switch on function
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rd = I_RD(instr);
+				uint64_t imm = SIGN_EXT32(I_IMM(instr));
+				// dont think this is actually needed
+				// uint8_t flags = FLAGS(instr);
+				switch(funct){
+					case FN_MUL:{
+						regs[rd] = (uint64_t)((int64_t)regs[ra] * (int64_t)imm);
+						break;
+					}
+					// no need for high bits of OP_MI since I types can only have 32 bit imm values
+					case FN_DIV:{
+						regs[rd] = (uint64_t)((int64_t)regs[ra] / (int64_t)imm);
+						break;
+					}
+					case FN_DIVU:{
+						regs[rd] = (uint64_t)regs[ra] / (uint64_t)imm;
+						break;
+					}
+					case FN_REM:{
+						regs[rd] = (uint64_t)((int64_t)regs[ra] % (int64_t)imm);
+						break;
+					}
+					case FN_REMU:{
+						regs[rd] = (uint64_t)regs[ra] % (uint64_t)imm;
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
@@ -697,7 +770,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 			break;
 		}
 		default:{
-			if(!handleExtensionOpcode(opcode, extensions))
+			if(!handleExtensionOpcode(opcode, extensions, instr, regs))
 				goto OP_FAILURE;
 			break;
 
