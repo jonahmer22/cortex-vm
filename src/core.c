@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -75,7 +76,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 }
 
 // returns false if the VM should stop running (SYS_EXIT)
-static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t extensions, uint64_t *exit_code){
+static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code){
 	switch(regs[A13]){
 		// exit syscall
 		case SYS_EXIT:{
@@ -353,31 +354,24 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			#endif
 			break;
 		}
+		case SYS_PRINT_FLOAT:{
+			double v = 0;
+			memcpy(&v, &regs[A0], sizeof(v));
+			printf("%.*lf", (int)regs[A1], v);
+			break;
+		}
+		case SYS_READ_FLOAT:{
+			double v = 0;
+			scanf("%lf", &v);
+			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
+		case SYS_RAND_FLOAT:{
+			double v = ((double)rand() / (double)RAND_MAX);
+			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
 		default:{
-			// different extensions switch cases; check for whether the extension is active via if statements first
-			if(extensions & EXT_FLOAT){
-				// we have float extensions and should check for them as syscalls
-				switch(regs[A13]){
-					case SYS_PRINT_FLOAT:{
-						double v = 0;
-						memcpy(&v, &regs[A0], sizeof(v));
-						printf("%lf", v);
-						return true;
-					}
-					case SYS_READ_FLOAT:{
-						double v = 0;
-						scanf("%lf", &v);
-						memcpy(&regs[A0], &v, sizeof(v));
-						return true;
-					}
-					case SYS_RAND_FLOAT:{
-						double v = ((double)rand() / (double)RAND_MAX);
-						memcpy(&regs[A0], &v, sizeof(v));
-						return true;
-					}
-					// no default or error case; that way we fall through to check other extensions
-				}
-			}
 			fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
 			exit(EXIT_FAILURE);
 		}
@@ -389,21 +383,179 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t instr, uint64_t *regs){
 	bool handled = false;
 	if(extensions & EXT_FLOAT){
-		// TODO: we have float extensions and should check for them as opcodes
+		// we have float extensions and should check for them as opcodes
 		switch(opcode){
 			// no default so it falls through to other extension checks
 			case OP_FR:{
+				// decode values
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rd = I_RD(instr);
+				uint8_t rb = I_RB(instr);
+
+				// get values of ra and rb
+				double raD, rbD;
+				raD = rbD = 0;
+				memcpy(&raD, &regs[ra], sizeof(raD));
+				memcpy(&rbD, &regs[rb], sizeof(rbD));
+
 				// switch on function
+				switch(funct){
+					case FN_FADD:{
+						double res = raD + rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FSUB:{
+						double res = raD - rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FMUL:{
+						double res = raD * rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FDIV:{
+						double res = raD / rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
 			case OP_FI:{
+				// get values
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rd = I_RD(instr);
+				uint8_t flags = FLAGS(instr);
+				
+				// propperly extract the data from the instruction
+				uint32_t immBits = (uint32_t)I_IMM(instr);
+				float immF = 0;
+				memcpy(&immF, &immBits, sizeof(immF));
+				double d = (double)immF;
+
+				// get ra value
+				double raD;
+				raD = 0;
+				memcpy(&raD, &regs[ra], sizeof(raD));
+				
 				// switch on function
+				switch(funct){
+					case FN_FADD:{
+						double res = raD + d;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FSUB:{
+						double res = 0;
+						if(flags == 0x01){
+							// neg instead of a sub
+							res = -raD;
+						}
+						else{
+							res = raD - d;
+						}
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FMUL:{
+						double res = raD * d;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FDIV:{
+						double res = raD / d;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FSQRT:{
+						double res = sqrt(raD);
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FABS:{
+						double res = fabs(raD);
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FTOI:{
+						regs[rd] = (int64_t)(raD);
+						break;
+					}
+					case FN_FTOUI:{
+						regs[rd] = (uint64_t)(raD);
+						break;
+					}
+					case FN_ITOF:{
+						double res = (double)(int64_t)regs[ra];
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_UITOF:{
+						double res = (double)(uint64_t)regs[ra];
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
 			case OP_FB:{
+				// decode values
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rb = I_RB(instr);
+				int64_t imm = SIGN_EXT36(B_IMM(instr));
+
+				// get ra value
+				double raD, rbD;
+				raD = rbD = 0;
+				memcpy(&raD, &regs[ra], sizeof(raD));
+				memcpy(&rbD, &regs[rb], sizeof(rbD));
+
 				// switch on function
+				switch(funct){
+					case FN_FBLT:{
+						if(raD < rbD){
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+						}
+						break;
+					}
+					case FN_FBLE:{
+						if(raD <= rbD){
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+						}
+						break;
+					}
+					case FN_FBGT:{
+						if(raD > rbD){
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+						}
+						break;
+					}
+					case FN_FBGE:{
+						if(raD >= rbD){
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+						}
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
@@ -743,7 +895,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;
 				}
 				case FN_SYSCALL:{
-					if(!handleSyscall(regs, codeBase, stackBase, extensions, exit_code))
+					if(!handleSyscall(regs, codeBase, stackBase, exit_code))
 						running = false;
 					break;
 				}
