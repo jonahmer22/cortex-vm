@@ -1121,24 +1121,25 @@ void getData(List *list){
 		head++;
 		listAppend(list, 0);	// null terminator
 	}
-
-	// should be a number
-	char *peek = head;
-	if(*peek == '-')
-		peek++;
-	while(isdigit(*peek))
-		peek++;
-	if(*peek == '.'){
-		double d = strtod(head, &head);
-		uint64_t bits;
-		memcpy(&bits, &d, sizeof(bits));
-		listAppend(list, bits);
-	}
 	else{
-		// some other sort of value, just use getImm() to parse it
-		int64_t val = 0;
-		getImm(&val, 0);
-		listAppend(list, (uint64_t)val);
+		// should be a number
+		char *peek = head;
+		if(*peek == '-')
+			peek++;
+		while(isdigit(*peek))
+			peek++;
+		if(*peek == '.'){
+			double d = strtod(head, &head);
+			uint64_t bits;
+			memcpy(&bits, &d, sizeof(bits));
+			listAppend(list, bits);
+		}
+		else{
+			// some other sort of value, just use getImm() to parse it
+			int64_t val = 0;
+			getImm(&val, 0);
+			listAppend(list, (uint64_t)val);
+		}
 	}
 }
 
@@ -1210,29 +1211,34 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				getReg(&rd);
 				skipSep();
 				getReg(&ra);
-				switch(funct){
-					// list of I functions that don't take an imm value
-					case FN_FSQRT:
-					case FN_FABS:
-					case FN_FTOI:
-					case FN_FTOUI:
-					case FN_ITOF:
-					case FN_UITOF:
-						imm = 0;
-						break;
-					case FN_FSUB:{
-						if(flags == 0x01){
+				if(opcode == OP_FI){
+					switch(funct){
+						// list of FI functions that don't take an imm value
+						case FN_FSQRT:
+						case FN_FABS:
+						case FN_FTOI:
+						case FN_FTOUI:
+						case FN_ITOF:
+						case FN_UITOF:
 							imm = 0;
 							break;
+						case FN_FSUB:{
+							if(flags == 0x01){
+								imm = 0;
+								break;
+							}
+							// needs to fall through to default
+							__attribute__((fallthrough));	// this gets the compiler to shut up
 						}
-						// needs to fall through to default
-						__attribute__((fallthrough));	// this gets the compiler to shut up
+						default:
+							skipSep();
+							getImm(&imm, list->len);
+							break;
 					}
-					default:
-						// normal things
-						skipSep();
-						getImm(&imm, list->len);
-						break;
+				}
+				else{
+					skipSep();
+					getImm(&imm, list->len);
 				}
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_I_IMM(imm) | ENCODE_FLAGS(flags);
