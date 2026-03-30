@@ -75,7 +75,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 }
 
 // returns false if the VM should stop running (SYS_EXIT)
-static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t extensions, uint64_t *exit_code){
+static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code){
 	switch(regs[A13]){
 		// exit syscall
 		case SYS_EXIT:{
@@ -353,31 +353,24 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			#endif
 			break;
 		}
+		case SYS_PRINT_FLOAT:{
+			double v = 0;
+			memcpy(&v, &regs[A0], sizeof(v));
+			printf("%.*lf", (int)regs[A1], v);
+			break;
+		}
+		case SYS_READ_FLOAT:{
+			double v = 0;
+			scanf("%lf", &v);
+			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
+		case SYS_RAND_FLOAT:{
+			double v = ((double)rand() / (double)RAND_MAX);
+			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
 		default:{
-			// different extensions switch cases; check for whether the extension is active via if statements first
-			if(extensions & EXT_FLOAT){
-				// we have float extensions and should check for them as syscalls
-				switch(regs[A13]){
-					case SYS_PRINT_FLOAT:{
-						double v = 0;
-						memcpy(&v, &regs[A0], sizeof(v));
-						printf("%lf", v);
-						return true;
-					}
-					case SYS_READ_FLOAT:{
-						double v = 0;
-						scanf("%lf", &v);
-						memcpy(&regs[A0], &v, sizeof(v));
-						return true;
-					}
-					case SYS_RAND_FLOAT:{
-						double v = ((double)rand() / (double)RAND_MAX);
-						memcpy(&regs[A0], &v, sizeof(v));
-						return true;
-					}
-					// no default or error case; that way we fall through to check other extensions
-				}
-			}
 			fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
 			exit(EXIT_FAILURE);
 		}
@@ -743,7 +736,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;
 				}
 				case FN_SYSCALL:{
-					if(!handleSyscall(regs, codeBase, stackBase, extensions, exit_code))
+					if(!handleSyscall(regs, codeBase, stackBase, exit_code))
 						running = false;
 					break;
 				}

@@ -1053,9 +1053,13 @@ void getImm(int64_t *val, uint64_t pc){
 		if(*peek == '.'){
 			// we have a float, floats can either be represented by 1. or 1.0 etc
 			double d = strtod(head, &head);
-			d = neg ? -d : d;
 
-			memcpy(&temp, &d, sizeof(uint64_t));
+			d = neg ? -d : d;
+			float f = (float)d;
+			uint32_t bits = 0;
+
+			memcpy(&bits, &f, sizeof(bits));
+			temp = (uint64_t)bits;
 			*val = (int64_t)temp;
 			return;
 		}
@@ -1116,6 +1120,19 @@ void getData(List *list){
 		}
 		head++;
 		listAppend(list, 0);	// null terminator
+	}
+
+	// should be a number
+	char *peek = head;
+	if(*peek == '-')
+		peek++;
+	while(isdigit(*peek))
+		peek++;
+	if(*peek == '.'){
+		double d = strtod(head, &head);
+		uint64_t bits;
+		memcpy(&bits, &d, sizeof(bits));
+		listAppend(list, bits);
 	}
 	else{
 		// some other sort of value, just use getImm() to parse it

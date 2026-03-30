@@ -150,6 +150,7 @@
 
 // rets: (EXT_FLOAT required)
 // A0 = float read
+// A1 = precision of float printed
 #define SYS_READ_FLOAT  14
 
 // args:
