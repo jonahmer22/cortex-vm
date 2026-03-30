@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include "../include/assembler.h"
@@ -600,6 +601,224 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				goto OP_FAILURE;
 			break;
 		}
+		case 'F':
+		case 'f':{
+			head++;
+			*extensions |= EXT_FLOAT;
+			// might be a f extension opcode
+			switch(*head){
+				case 'A':
+				case 'a':{
+					head++;
+					// could be fadd, faddi, fabs
+					if(cmpChars(head, "ddi", 3)){
+						head += 3;
+						// dealing with faddi
+						*opcode = OP_FI;
+						*funct = FN_FADD;
+						break;
+					}
+					else if(cmpChars(head, "dd", 2)){
+						head += 2;
+						// dealing with fadd
+						*opcode = OP_FR;
+						*funct = FN_FADD;
+						break;
+					}
+					else if(cmpChars(head, "bs", 2)){
+						head += 2;
+						// dealing with fabs
+						*opcode = OP_FI;
+						*funct = FN_FABS;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'S':
+				case 's':{
+					head++;
+					// could be fsub, fsubi, fsqrt
+					if(cmpChars(head, "ubi", 3)){
+						head += 3;
+						// dealing with fsubi
+						*opcode = OP_FI;
+						*funct = FN_FSUB;
+						break;
+					}
+					else if(cmpChars(head, "ub", 2)){
+						head += 2;
+						// dealing with fsub
+						*opcode = OP_FR;
+						*funct = FN_FSUB;
+						break;
+					}
+					else if(cmpChars(head, "qrt", 3)){
+						head += 3;
+						// dealing with fsqrt
+						*opcode = OP_FI;	// NOTE: for all 1 reg arg values we are going to reuse I types but in Core just not decode the imm
+						*funct = FN_FSQRT;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'N':
+				case 'n':{
+					head++;
+					// could be a fneg
+					if(cmpChars(head, "eg", 2)){
+						head += 2;
+						// dealing with fneg
+						*opcode = OP_FI;
+						*funct = FN_FSUB;
+						*flags = 0x01;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'M':
+				case 'm':{
+					head++;
+					// could be a fmul, fmuli
+					if(cmpChars(head, "uli", 3)){
+						head += 3;
+						// dealing with fmuli
+						*opcode = OP_FI;
+						*funct = FN_FMUL;
+						break;
+					}
+					else if(cmpChars(head, "ul", 2)){
+						head += 2;
+						// dealing with fmul
+						*opcode = OP_FR;
+						*funct = FN_FMUL;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'D':
+				case 'd':{
+					head++;
+					// could be a fdiv, fdivi
+					if(cmpChars(head, "ivi", 3)){
+						head += 3;
+						// dealing with fdivi
+						*opcode = OP_FI;
+						*funct = FN_FDIV;
+						break;
+					}
+					else if(cmpChars(head, "iv", 2)){
+						head += 2;
+						// dealing with fdiv
+						*opcode = OP_FR;
+						*funct = FN_FDIV;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'T':
+				case 't':{
+					head++;
+					// could be ftoi, ftoui
+					if(cmpChars(head, "oui", 3)){
+						head += 3;
+						// dealing with ftoui
+						*opcode = OP_FI;
+						*funct = FN_FTOUI;
+						break;
+					}
+					else if(cmpChars(head, "oi", 2)){
+						head += 2;
+						// dealing with ftoi
+						*opcode = OP_FI;
+						*funct = FN_FTOI;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'B':
+				case 'b':{
+					head++;
+					// we should be dealing with a branch of a float
+					// can be fblt, fble, fbgt, fbge
+					// floats get extra branch conditions, can still use regular beq and bne
+					if(cmpChars(head, "lt", 2)){
+						head += 2;
+						// dealing with fblt
+						*opcode = OP_FB;
+						*funct = FN_FBLT;
+						break;
+					}
+					else if(cmpChars(head, "le", 2)){
+						head += 2;
+						// dealing with fble
+						*opcode = OP_FB;
+						*funct = FN_FBLE;
+						break;
+					}
+					else if(cmpChars(head, "gt", 2)){
+						head += 2;
+						// dealing with fbgt
+						*opcode = OP_FB;
+						*funct = FN_FBGT;
+						break;
+					}
+					else if(cmpChars(head, "ge", 2)){
+						head += 2;
+						// dealing with fbge
+						*opcode = OP_FB;
+						*funct = FN_FBGE;
+						break;
+					}
+					else
+						goto OP_FAILURE;
+				}
+			}
+			break;
+		}
+		case 'I':
+		case 'i':{
+			head++;
+			*extensions |= EXT_FLOAT;
+			// could be a itof
+			if(cmpChars(head, "tof", 3)){
+				head += 3;
+				// dealing with itof
+				*opcode = OP_FI;
+				*funct = FN_ITOF;
+				break;
+			}
+			else
+				goto OP_FAILURE;
+			break;
+		}
+		case 'U':
+		case 'u':{
+			head++;
+			*extensions |= EXT_FLOAT;
+			// could be a uitof
+			if(cmpChars(head, "itof", 4)){
+				head += 4;
+				// is uitof
+				*opcode = OP_FI;
+				*funct = FN_UITOF;
+				break;
+			}
+			else
+				goto OP_FAILURE;
+			break;
+		}
 		default:{
 			OP_FAILURE:
 			fprintf(stderr, "[FATAL 0x%04X]: Non-existent opcode on line %zu.\n", 0x0301, line);
@@ -827,8 +1046,23 @@ void getImm(int64_t *val, uint64_t pc){
 		labelListAppend(labelsPatches, start, head, pc);
 	}
 	else{
-		// dealing with decimal
-		temp = strtoll(head, &head, 10);
+		// check for a decimal place
+		char *peek = head;
+		while(isdigit(*peek))
+			peek++;
+		if(*peek == '.'){
+			// we have a float, floats can either be represented by 1. or 1.0 etc
+			double d = strtod(head, &head);
+			d = neg ? -d : d;
+
+			memcpy(&temp, &d, sizeof(uint64_t));
+			*val = (int64_t)temp;
+			return;
+		}
+		else{
+			// dealing with decimal
+			temp = strtoll(head, &head, 10);
+		}
 	}
 
 	*val = neg ? -temp : temp;
@@ -936,6 +1170,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		// consume white space or comma or both
 		skipSep();
 		switch(opcode){
+			case OP_FR:
 			case OP_MR:
 			case OP_R:{
 				uint8_t ra, rd, rb;
@@ -949,6 +1184,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_RB(rb) | ENCODE_FLAGS(flags);
 				break;
 			}
+			case OP_FI:
 			case OP_MI:
 			case OP_I:{
 				uint8_t ra, rd;
@@ -957,8 +1193,30 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				getReg(&rd);
 				skipSep();
 				getReg(&ra);
-				skipSep();
-				getImm(&imm, list->len);
+				switch(funct){
+					// list of I functions that don't take an imm value
+					case FN_FSQRT:
+					case FN_FABS:
+					case FN_FTOI:
+					case FN_FTOUI:
+					case FN_ITOF:
+					case FN_UITOF:
+						imm = 0;
+						break;
+					case FN_FSUB:{
+						if(flags == 0x01){
+							imm = 0;
+							break;
+						}
+						// needs to fall through to default
+						__attribute__((fallthrough));	// this gets the compiler to shut up
+					}
+					default:
+						// normal things
+						skipSep();
+						getImm(&imm, list->len);
+						break;
+				}
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_I_IMM(imm) | ENCODE_FLAGS(flags);
 				break;
@@ -989,6 +1247,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_L_IMM(imm);
 				break;
 			}
+			case OP_FB:
 			case OP_B:{
 				uint8_t ra, rb;
 				int64_t imm;
@@ -1046,6 +1305,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		uint8_t opcode = DECODE_OPCODE(word);
 
 		switch(opcode){
+			case OP_FI:
 			case OP_MI:
 			case OP_I:{
 				word |= ENCODE_I_IMM((int64_t)r->pc - 4);
@@ -1059,6 +1319,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				word |= ENCODE_L_IMM((int64_t)r->pc - 4);
 				break;
 			}
+			case OP_FB:
 			case OP_B:{
 				word |= ENCODE_B_IMM((int64_t)r->pc - (int64_t)p->pc);
 				break;
