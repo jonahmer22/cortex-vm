@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -382,21 +383,179 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t instr, uint64_t *regs){
 	bool handled = false;
 	if(extensions & EXT_FLOAT){
-		// TODO: we have float extensions and should check for them as opcodes
+		// we have float extensions and should check for them as opcodes
 		switch(opcode){
 			// no default so it falls through to other extension checks
 			case OP_FR:{
+				// decode values
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rd = I_RD(instr);
+				uint8_t rb = I_RB(instr);
+
+				// get values of ra and rb
+				double raD, rbD;
+				raD = rbD = 0;
+				memcpy(&raD, &regs[ra], sizeof(raD));
+				memcpy(&rbD, &regs[rb], sizeof(rbD));
+
 				// switch on function
+				switch(funct){
+					case FN_FADD:{
+						double res = raD + rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FSUB:{
+						double res = raD - rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FMUL:{
+						double res = raD * rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FDIV:{
+						double res = raD / rbD;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
 			case OP_FI:{
+				// get values
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rd = I_RD(instr);
+				uint8_t flags = FLAGS(instr);
+				
+				// propperly extract the data from the instruction
+				uint32_t immBits = (uint32_t)I_IMM(instr);
+				float immF = 0;
+				memcpy(&immF, &immBits, sizeof(immF));
+				double d = (double)immF;
+
+				// get ra value
+				double raD;
+				raD = 0;
+				memcpy(&raD, &regs[ra], sizeof(raD));
+				
 				// switch on function
+				switch(funct){
+					case FN_FADD:{
+						double res = raD + d;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FSUB:{
+						double res = 0;
+						if(flags == 0x01){
+							// neg instead of a sub
+							res = -raD;
+						}
+						else{
+							res = raD - d;
+						}
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FMUL:{
+						double res = raD * d;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FDIV:{
+						double res = raD / d;
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FSQRT:{
+						double res = sqrt(raD);
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FABS:{
+						double res = fabs(raD);
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_FTOI:{
+						regs[rd] = (int64_t)(raD);
+						break;
+					}
+					case FN_FTOUI:{
+						regs[rd] = (uint64_t)(raD);
+						break;
+					}
+					case FN_ITOF:{
+						double res = (double)((int32_t)(immBits));
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					case FN_UITOF:{
+						double res = (double)((uint32_t)(immBits));
+						memcpy(&regs[rd], &res, sizeof(res));
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
 			case OP_FB:{
+				// decode values
+				uint8_t funct = FUNCT(instr);
+				uint8_t ra = I_RA(instr);
+				uint8_t rb = I_RB(instr);
+				uint32_t imm = SIGN_EXT36(I_IMM(instr));
+
+				// get ra value
+				double raD, rbD;
+				raD = rbD = 0;
+				memcpy(&raD, &regs[ra], sizeof(raD));
+				memcpy(&rbD, &regs[rb], sizeof(rbD));
+
 				// switch on function
+				switch(funct){
+					case FN_FBLT:{
+						if(raD < rbD){
+							regs[PC] = imm;
+						}
+						break;
+					}
+					case FN_FBLE:{
+						if(raD <= rbD){
+							regs[PC] = imm;
+						}
+						break;
+					}
+					case FN_FBGT:{
+						if(raD > rbD){
+							regs[PC] = imm;
+						}
+						break;
+					}
+					case FN_FBGE:{
+						if(raD >= rbD){
+							regs[PC] = imm;
+						}
+						break;
+					}
+					default:
+						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
+						exit(EXIT_FAILURE);
+						break;
+				}
 				handled = true;
 				break;
 			}
