@@ -29,7 +29,10 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 	printf("[DEBUG]: version:\t0x%016X\n", *version);
 	printf("[DEBUG]: fileLength:\t0x%016llX\n", *fileLength);
 	printf("[DEBUG]: offset:\t0x%016llX\n", *offset);
-	printf("[DEBUG]: extensions:\t%064llb\n", *extensions);
+	printf("[DEBUG]: extensions:\t0b");
+	for(int i = 63; i >= 0; --i)
+		putchar((*extensions >> i) & 1 ? '1' : '0');
+	printf(" (FLOAT:%d M:%d)\n", (int)((*extensions & EXT_FLOAT) != 0), (int)((*extensions & EXT_M) != 0));
 	#endif
 }
 
@@ -63,7 +66,8 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 		exit(EXIT_FAILURE);
 	}
 	// check the extension flags, for version 1 they should all be 0
-	if(*extensions != (*extensions & 0x0000000000000000)){
+	uint64_t validExts = EXT_FLOAT | EXT_M;
+	if(*extensions != (*extensions & validExts)){
 		fprintf(stderr, "[NONEXISTENT EXTENSIONS]: Non-existent extensions were specified in the binary header, please ensure extensions are installed and you are using the propper version.\n");
 		free(buff);
 		exit(EXIT_FAILURE);

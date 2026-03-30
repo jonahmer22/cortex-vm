@@ -31,9 +31,14 @@ LabelList *labelsPatches;
 char *head = NULL;
 size_t line = 0;
 
-void skipSep(void){
-	while(*head == ' ' || *head == '\t' || *head == ',')
+bool skipSep(void){
+	bool skipped = false;
+	while(*head == ' ' || *head == '\t' || *head == ','){
 		head++;
+		skipped = true;
+	}
+
+	return skipped;
 }
 
 bool skipComments(void){
@@ -58,7 +63,7 @@ bool cmpChars(char *head, const char *cmp, size_t len){
 
 void getData(List *list);
 
-void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc, List *list){
+void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc, List *list, uint64_t *extensions){
 	// might be the start of the .data section
 	if(*head == '.'){
 		head++;
@@ -119,6 +124,8 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 		*opcode = OP_LABEL;
 		return;
 	}
+
+	// make sure to set the extensions flag if you encounter one
 	// might be an opcode
 	*flags = 0x00;
 	switch(*head){
@@ -473,6 +480,126 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				goto OP_FAILURE;
 			break;
 		}
+		case 'M':
+		case 'm':{
+			head++;
+			// can be mul, muli, mulh, mulhu
+			if(cmpChars(head, "ul", 2)){
+				head += 2;
+				*extensions |= EXT_M;
+				// we have a mul instruction
+				if(cmpChars(head, "hu", 2)){
+					head += 2;
+					// we have mulhu
+					*opcode = OP_MR;
+					*funct = FN_MULHU;
+				}
+				else if(cmpChars(head, "h", 1)){
+					head++;
+					// we hve mulh
+					*opcode = OP_MR;
+					*funct = FN_MULH;
+				}
+				else if(cmpChars(head, "i", 1)){
+					head++;
+					// we have muli
+					*opcode = OP_MI;
+					*funct = FN_MUL;
+				}
+				else{
+					if(skipSep()){
+						// we have mul
+						*opcode = OP_MR;
+						*funct = FN_MUL;
+					}
+					else
+						goto OP_FAILURE;
+				}
+			}
+			else
+				goto OP_FAILURE;
+			break;
+		}
+		case 'D':
+		case 'd':{
+			head++;
+			// can be div, divi, divu, divui
+			if(cmpChars(head, "iv", 2)){
+				head += 2;
+				*extensions |= EXT_M;
+				// we have a div instruction
+				if(cmpChars(head, "ui", 2)){
+					head += 2;
+					// we have divui
+					*opcode = OP_MI;
+					*funct = FN_DIVU;
+				}
+				else if(cmpChars(head, "u", 1)){
+					head++;
+					// we hve divu
+					*opcode = OP_MR;
+					*funct = FN_DIVU;
+				}
+				else if(cmpChars(head, "i", 1)){
+					head++;
+					// we have divi
+					*opcode = OP_MI;
+					*funct = FN_DIV;
+				}
+				else{
+					if(skipSep()){
+						// we have div
+						*opcode = OP_MR;
+						*funct = FN_DIV;
+					}
+					else
+						goto OP_FAILURE;
+				}
+			}
+			else
+				goto OP_FAILURE;
+			break;
+		}
+		case 'R':
+		case 'r':{
+			head++;
+			// can be rem, remi, remu, remui
+			if(cmpChars(head, "em", 2)){
+				head += 2;
+				*extensions |= EXT_M;
+				// we have a rem instruction
+				if(cmpChars(head, "ui", 2)){
+					head += 2;
+					// we have remui
+					*opcode = OP_MI;
+					*funct = FN_REMU;
+				}
+				else if(cmpChars(head, "u", 1)){
+					head++;
+					// we hve remu
+					*opcode = OP_MR;
+					*funct = FN_REMU;
+				}
+				else if(cmpChars(head, "i", 1)){
+					head++;
+					// we have remi
+					*opcode = OP_MI;
+					*funct = FN_REM;
+				}
+				else{
+					if(skipSep()){
+						// we have rem
+						*opcode = OP_MR;
+						*funct = FN_REM;
+					}
+					else
+						goto OP_FAILURE;
+				}
+			}
+			else
+				goto OP_FAILURE;
+			break;
+		}
 		default:{
 			OP_FAILURE:
 			fprintf(stderr, "[FATAL 0x%04X]: Non-existent opcode on line %zu.\n", 0x0301, line);
@@ -645,7 +772,7 @@ void getImm(int64_t *val, uint64_t pc){
 			case 'x':{
 				head++;
 				// dealing with hex
-				while(ishexnumber(*head)){
+				while(isxdigit(*head)){
 					temp <<= 4;
 					if(isalpha(*head)){
 						temp += (toupper(*head) - 55);
@@ -770,6 +897,9 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 	// - use macros for destination indeces and addresses so easy to change in the future
 	// - return an array of words representing the code
 
+	// create an extensions word to have flags set later
+	uint64_t extensions = 0;
+
 	// init the word list
 	List *list = listInit();
 	// init label registry
@@ -802,10 +932,11 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		// use functions to make the propper word
 		uint8_t opcode, funct, flags;
 		opcode = funct = flags = 0;
-		getOpcodeFunct(&opcode, &funct, &flags, list->len, list);
+		getOpcodeFunct(&opcode, &funct, &flags, list->len, list, &extensions);
 		// consume white space or comma or both
 		skipSep();
 		switch(opcode){
+			case OP_MR:
 			case OP_R:{
 				uint8_t ra, rd, rb;
 				ra = rd = rb = 0;
@@ -818,6 +949,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_RD(rd) | ENCODE_RB(rb) | ENCODE_FLAGS(flags);
 				break;
 			}
+			case OP_MI:
 			case OP_I:{
 				uint8_t ra, rd;
 				int64_t imm;
@@ -914,6 +1046,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 		uint8_t opcode = DECODE_OPCODE(word);
 
 		switch(opcode){
+			case OP_MI:
 			case OP_I:{
 				word |= ENCODE_I_IMM((int64_t)r->pc - 4);
 				break;
@@ -952,7 +1085,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 	else
 		listSet(list, 2, 4);	// if not set the first instruction as entry point
 
-	listSet(list, 3, 0);	// don't worry about flags for right now.
+	listSet(list, 3, extensions);	// set extension flags, default is 0 so should be all fine if none exist
 
 	// return the raw array of the word list
 	uint64_t *words = listToArray(list);
