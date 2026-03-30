@@ -210,15 +210,15 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			}
 			regs[A0] = v;
 			// flush remaining input including newline
-			int ch2;
-			while((ch2 = getchar()) != '\n' && ch2 != EOF);
+			int ch;
+			while((ch = getchar()) != '\n' && ch != EOF);
 			break;
 		}
 		case SYS_READ_CHAR:{
 			regs[A0] = (uint64_t)getchar();
 			// flush remaining input including newline
-			int ch3;
-			while((ch3 = getchar()) != '\n' && ch3 != EOF);
+			int ch;
+			while((ch = getchar()) != '\n' && ch != EOF);
 			break;
 		}
 		case SYS_READ_STR:{
@@ -364,6 +364,8 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			double v = 0;
 			scanf("%lf", &v);
 			memcpy(&regs[A0], &v, sizeof(v));
+			int ch;
+			while((ch = getchar()) != '\n' && ch != EOF);
 			break;
 		}
 		case SYS_RAND_FLOAT:{
