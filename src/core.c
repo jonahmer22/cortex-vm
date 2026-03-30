@@ -495,12 +495,12 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 						break;
 					}
 					case FN_ITOF:{
-						double res = (double)((int32_t)(immBits));
+						double res = (double)(int64_t)regs[ra];
 						memcpy(&regs[rd], &res, sizeof(res));
 						break;
 					}
 					case FN_UITOF:{
-						double res = (double)((uint32_t)(immBits));
+						double res = (double)(uint64_t)regs[ra];
 						memcpy(&regs[rd], &res, sizeof(res));
 						break;
 					}
@@ -517,7 +517,7 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 				uint8_t funct = FUNCT(instr);
 				uint8_t ra = I_RA(instr);
 				uint8_t rb = I_RB(instr);
-				uint32_t imm = SIGN_EXT36(I_IMM(instr));
+				int64_t imm = SIGN_EXT36(B_IMM(instr));
 
 				// get ra value
 				double raD, rbD;
@@ -529,25 +529,25 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 				switch(funct){
 					case FN_FBLT:{
 						if(raD < rbD){
-							regs[PC] = imm;
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 						}
 						break;
 					}
 					case FN_FBLE:{
 						if(raD <= rbD){
-							regs[PC] = imm;
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 						}
 						break;
 					}
 					case FN_FBGT:{
 						if(raD > rbD){
-							regs[PC] = imm;
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 						}
 						break;
 					}
 					case FN_FBGE:{
 						if(raD >= rbD){
-							regs[PC] = imm;
+							regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 						}
 						break;
 					}
