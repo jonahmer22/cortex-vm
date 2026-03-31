@@ -1,5 +1,5 @@
 CC 		:= $(shell command -v gcc-15 2>/dev/null || echo gcc)
-CFLAGS  := -std=c17 -Wall -Wextra -Wpedantic -g -O3 -march=native
+CFLAGS  := -std=c17 -Wall -Wextra -Wpedantic -g -lm -O3 -march=native
 LDFLAGS :=
 
 SRC_DIR    := src
