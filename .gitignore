@@ -4,6 +4,9 @@
 # Cortex Binary
 cortex-vm
 
+# any testing assembly files
+*.s
+
 # Compiled Cortex-VM binaries
 *.cxv
 *.out
