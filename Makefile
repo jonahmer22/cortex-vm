@@ -12,13 +12,25 @@ DEPS_SRCS := $(shell find $(DEPS_DIR) -type f -name '*.c' ! -path '*/testing/*' 
 DEPS_INC_DIRS := $(sort $(dir $(shell find $(DEPS_DIR) -type f -name '*.h' 2>/dev/null)))
 CPPFLAGS := -I$(INC_DIR) $(addprefix -I,$(DEPS_INC_DIRS))
 
+LIB_DIR    := lib
+LIB_TARGET := $(LIB_DIR)/libcortex-vm.a
+LIB_SRCS   := $(wildcard $(SRC_DIR)/*.c) $(DEPS_SRCS)
+LIB_OBJS   := $(patsubst %.c,$(BUILD_DIR)/%.o,$(LIB_SRCS))
+
 SRCS := $(wildcard $(SRC_DIR)/*.c) main.c $(DEPS_SRCS)
 OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean run debug
+.PHONY: all lib clean run debug
 
 all: $(TARGET)
+
+lib: $(LIB_TARGET)
+
+$(LIB_TARGET): $(LIB_OBJS)
+	@mkdir -p $(LIB_DIR)
+	ar rcs $@ $^
+	cp $(INC_DIR)/cortex-vm.h $(LIB_DIR)/cortex-vm.h
 
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
@@ -35,6 +47,6 @@ debug:
 	$(MAKE) CFLAGS="$(CFLAGS) -DDEBUG" all
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -rf $(BUILD_DIR) $(TARGET) $(LIB_DIR)
 
 -include $(DEPS)

@@ -8,8 +8,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [0.4.0] — Library API & CLI Improvements
+
+### Added
+- **Embedding API** — `cortexExecSource(const char *source)` and `cortexExecBinary(const uint64_t *binary, size_t wordCount)` in `src/cortex-vm.c` / `include/cortex-vm.h`; runs the VM with no CLI involvement
+- **`make lib` target** — builds `lib/libcortex-vm.a` and copies `lib/cortex-vm.h`; everything an embedder needs in one directory
+- **`LIBRARY.md`** — full guide covering submodule setup, Makefile integration, API reference, and examples
+
 ### Changed
 - `-a` and `-d` flags no longer fall through to execution after assembling or disassembling. To assemble and run in one step, use `-ar` (or `-ra`). Running a pre-assembled binary directly (`./cortex-vm <binary>`) is unchanged.
+- `make clean` now also removes the `lib/` directory
+
+### Fixed
+- `const` correctness propagated throughout the assembler: `head`, `peek`, `start` cursor variables, `LabelNode.start`/`.end`, `labelListAppend`, `labelListFind`, and `cmpChars` all use `const char *`
+- `headerValidate` no longer calls `free(buff)` before `exit()` on validation failure — redundant since the process is terminating, and removes a spurious `const`-discard warning
+- `strtod`/`strtoll` calls in the assembler now use a local `char *endptr` intermediary to avoid discarding `const` from the source cursor
 
 ---
 
