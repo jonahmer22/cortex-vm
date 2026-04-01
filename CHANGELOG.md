@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- `-a` and `-d` flags no longer fall through to execution after assembling or disassembling. To assemble and run in one step, use `-ar` (or `-ra`). Running a pre-assembled binary directly (`./cortex-vm <binary>`) is unchanged.
+
 ---
 
 ## [0.3.0] — F Extension & Test Suite

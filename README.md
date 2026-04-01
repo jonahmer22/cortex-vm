@@ -48,14 +48,14 @@ main:
 ```
 
 ```sh
-./cortex-vm -a hello.s -o hello.out
-./cortex-vm hello.out
+./cortex-vm -a hello.s -o hello.out    # assemble to hello.out
+./cortex-vm hello.out                  # run
 ```
 
 ### Assemble and Run in One Step
 
 ```sh
-./cortex-vm -a hello.s      # assembles to a.out, then runs it
+./cortex-vm -ar hello.s     # assemble to a.out and run immediately
 ```
 
 ---
@@ -64,8 +64,10 @@ main:
 
 ```
 ./cortex-vm <binary>                    # run a pre-assembled binary
-./cortex-vm -a <source.s>              # assemble and run (output: a.out)
+./cortex-vm -a <source.s>              # assemble to a.out
 ./cortex-vm -a <source.s> -o <out>     # assemble to a specific path
+./cortex-vm -ar <source.s>             # assemble and run immediately
+./cortex-vm -ar <source.s> -o <out>    # assemble to a specific path and run
 ```
 
 ---

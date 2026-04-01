@@ -34,10 +34,13 @@ make
 
 This produces the `cortex-vm` binary in the project root.
 
-**Running a program:**
+**Assembling and running a program:**
 ```bash
-./cortex-vm -a program.s          # assemble and run
-./cortex-vm -a program.s -o out   # assemble to 'out', then run
+./cortex-vm -a program.s           # assemble to a.out
+./cortex-vm -a program.s -o out    # assemble to 'out'
+./cortex-vm -ar program.s          # assemble to a.out and run immediately
+./cortex-vm -ar program.s -o out   # assemble to 'out' and run immediately
+./cortex-vm program.out            # run a pre-assembled binary
 ```
 
 **Running the test suite:**
@@ -66,7 +69,7 @@ main:
 
 Run it:
 ```bash
-./cortex-vm -a hello.s
+./cortex-vm -ar hello.s
 Hello, World!
 ```
 
