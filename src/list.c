@@ -152,7 +152,7 @@ void labelListDestroy(LabelList *list){
 	free(list);
 }
 
-void labelListAppend(LabelList *list, char *start, char *end, size_t pc){
+void labelListAppend(LabelList *list, const char *start, const char *end, size_t pc){
 	if(!list){
 		fprintf(stderr, "[FATAL 0x%04X]: Cannot append to uninitialized LabelList.\n", 0x0412);
 		exit(EXIT_FAILURE);
@@ -181,7 +181,7 @@ void labelListAppend(LabelList *list, char *start, char *end, size_t pc){
 	list->len++;
 }
 
-LabelNode *labelListFind(LabelList *list, char *start, char *end){
+LabelNode *labelListFind(LabelList *list, const char *start, const char *end){
 	if(!list){
 		fprintf(stderr, "[FATAL 0x%04X]: Cannot search uninitialized LabelList.\n", 0x0414);
 		exit(EXIT_FAILURE);

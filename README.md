@@ -13,6 +13,7 @@ A fast, extensible 64-bit virtual machine and assembler designed as the primary 
 - **Built-in assembler** — single-pass with two-pass label resolution; supports labels, `.data` section, hex/binary/octal/char literals, and comments
 - **Rich syscall set** — print/read int/uint/char/float/string, random numbers, file I/O, and time
 - **Automatic extension detection** — the assembler inspects opcodes and sets extension flags in the binary header; no manual flags needed
+- **Embeddable** — builds as a static library (`libcortex-vm.a`) for use as a runtime inside another project; two-function API
 - **Fast** — ~400M instructions/sec at `-O3 -march=native` on modern hardware (GCC-15)
 
 ---
@@ -77,6 +78,7 @@ main:
 | Document | Description |
 |----------|-------------|
 | [TUTORIAL.md](TUTORIAL.md) | Step-by-step introduction — from building to writing real programs |
+| [LIBRARY.md](LIBRARY.md) | How to embed Cortex-VM as a library in another C project |
 | [SPEC.md](SPEC.md) | Full ISA and implementation reference |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 

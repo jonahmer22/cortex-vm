@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-uint64_t *assemble(char *sbuff, const char *outputPath, int noOutput);
+uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput);
 
 #endif
 

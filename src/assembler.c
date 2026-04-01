@@ -29,7 +29,7 @@ LabelList *labelsRegistry;
 // labels to be patched
 LabelList *labelsPatches;
 
-char *head = NULL;
+const char *head = NULL;
 size_t line = 0;
 
 bool skipSep(void){
@@ -53,7 +53,7 @@ bool skipComments(void){
 	return false;
 }
 
-bool cmpChars(char *head, const char *cmp, size_t len){
+bool cmpChars(const char *head, const char *cmp, size_t len){
 	for(size_t i = 0; i < len; i++){
 		if(toupper(*(head+i)) != toupper(*(cmp+i)))
 			return false;
@@ -84,7 +84,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					continue;
 
 				// check for label
-				char *peek = head;
+				const char *peek = head;
 				while(isalnum(*peek) || *peek == '_')
 					peek++;
 				if(*peek == ':'){
@@ -114,7 +114,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 	}
 
 	// might be a label
-	char *peek = head;
+	const char *peek = head;
 	while(isalnum(*peek) || *peek == '_')
 		peek++;
 	if(*peek == ':'){
@@ -1037,7 +1037,7 @@ void getImm(int64_t *val, uint64_t pc){
 	}
 	else if(isalpha(*head)){
 		// parse a label
-		char *start = head;
+		const char *start = head;
 		while(isalnum(*head) || *head == '_')
 			head++;
 		// now the label should go from start to head
@@ -1047,12 +1047,14 @@ void getImm(int64_t *val, uint64_t pc){
 	}
 	else{
 		// check for a decimal place
-		char *peek = head;
+		const char *peek = head;
 		while(isdigit(*peek))
 			peek++;
 		if(*peek == '.'){
 			// we have a float, floats can either be represented by 1. or 1.0 etc
-			double d = strtod(head, &head);
+			char *endptr;
+			double d = strtod(head, &endptr);
+			head = endptr;
 
 			d = neg ? -d : d;
 			float f = (float)d;
@@ -1065,7 +1067,9 @@ void getImm(int64_t *val, uint64_t pc){
 		}
 		else{
 			// dealing with decimal
-			temp = strtoll(head, &head, 10);
+			char *endptr;
+			temp = strtoll(head, &endptr, 10);
+			head = endptr;
 		}
 	}
 
@@ -1123,13 +1127,15 @@ void getData(List *list){
 	}
 	else{
 		// should be a number
-		char *peek = head;
+		const char *peek = head;
 		if(*peek == '-')
 			peek++;
 		while(isdigit(*peek))
 			peek++;
 		if(*peek == '.'){
-			double d = strtod(head, &head);
+			char *endptr;
+			double d = strtod(head, &endptr);
+			head = endptr;
 			uint64_t bits;
 			memcpy(&bits, &d, sizeof(bits));
 			listAppend(list, bits);
@@ -1143,7 +1149,7 @@ void getData(List *list){
 	}
 }
 
-uint64_t *assemble(char *sbuff, const char *outputPath, int noOutput){
+uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	// implement assembler
 	// - must check for opcode then parse based off of the char value of that opcode.
 	// - use macros for destination indeces and addresses so easy to change in the future
@@ -1362,7 +1368,7 @@ uint64_t *assemble(char *sbuff, const char *outputPath, int noOutput){
 
 	listSet(list, 1, list->len);	// set the file length (should be just the length of the list)
 
-	char *tmp = "main";
+	const char *tmp = "main";
 	LabelNode *entry = labelListFind(labelsRegistry, tmp, tmp + 4);
 	if(entry)
 		listSet(list, 2, entry->pc);
