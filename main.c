@@ -26,7 +26,7 @@ int main(int argc, char **argv){
 	cliargsRegister("visual", 'v', "Starts the UI");
 	cliargsRegister("output", 'o', "Designates a path for the output file");
 	
-	// might be a cool idea, but I don't know how to exactly execute an idea like this
+	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
 
 	// need to parse arguements to check for flags like -a to assemble or others

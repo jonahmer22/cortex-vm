@@ -7,6 +7,9 @@ cortex-vm
 # any testing assembly files
 *.s
 
+# any saved outputs from debug
+output*
+
 # Compiled Cortex-VM binaries
 *.cxv
 *.out
