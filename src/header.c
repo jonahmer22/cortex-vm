@@ -73,3 +73,5 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 		exit(EXIT_FAILURE);
 	}
 }
+
+// 	.:

@@ -10,3 +10,5 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *buff);
 
 #endif
+
+//  .:

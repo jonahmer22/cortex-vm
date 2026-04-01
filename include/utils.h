@@ -14,3 +14,5 @@ void writeFile(const char *path, char *sbuff, size_t len);
 void writeFileWords(const char *path, uint64_t *buff, size_t wordCount);
 
 #endif
+
+//  .:
