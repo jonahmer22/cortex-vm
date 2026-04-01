@@ -1143,7 +1143,7 @@ void getData(List *list){
 	}
 }
 
-uint64_t *assemble(char *sbuff, const char *outputPath){
+uint64_t *assemble(char *sbuff, const char *outputPath, int noOutput){
 	// implement assembler
 	// - must check for opcode then parse based off of the char value of that opcode.
 	// - use macros for destination indeces and addresses so easy to change in the future
@@ -1379,10 +1379,13 @@ uint64_t *assemble(char *sbuff, const char *outputPath){
 	labelListDestroy(labelsRegistry);
 	labelListDestroy(labelsPatches);
 
-	// output the assembled binary at a given path or a.cxv
-	if(outputPath == NULL)
-		outputPath = "a.out";
-	writeFileWords(outputPath, words, words[1]);
+	// check if we want to dissable output
+	if(!noOutput){
+		// output the assembled binary at a given path or a.cxv
+		if(outputPath == NULL)
+			outputPath = "a.out";
+		writeFileWords(outputPath, words, words[1]);
+	}
 	
 	#ifdef DEBUG
 	printf("[DEBUG]: Output assembled source to:\t%s\n", outputPath);

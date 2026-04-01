@@ -24,6 +24,7 @@ int main(int argc, char **argv){
 	cliargsRegister("assemble", 'a', "Assembles a program at the given path");
 	cliargsRegister("disassemble", 'd', "Disassembles a program at the given path");
 	cliargsRegister("run", 'r', "Executes a compiled binary immediately after execution (may only be used in conjunction with -d and -a flags)");
+	cliargsRegister("no-output", 'n', "Prevents the assembler or disassembler from creating an output file (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("visual", 'v', "Starts the UI");
 	cliargsRegister("output", 'o', "Designates a path for the output file");
 
@@ -57,6 +58,8 @@ int main(int argc, char **argv){
 	}
 	// check for -r flag (run after assemble/disassemble)
 	int runAfter = cliargsFlag("run", 'r');
+	// check for the --no-output flag
+	int noOutput = cliargsFlag("no-output", 'n');
 
 	// check for flags to either assemble, dissassemble, open visual mode
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
@@ -70,7 +73,7 @@ int main(int argc, char **argv){
 
 		sbuff = readFile(path, &outLen);
 		// call assemble the source; put into buff and write out to file
-		buff = assemble(sbuff, outputPath);
+		buff = assemble(sbuff, outputPath, noOutput);
 
 		if(!runAfter){
 			free(buff);
