@@ -24,6 +24,8 @@ A fast, extensible 64-bit virtual machine and assembler designed as the primary 
 ```sh
 git clone https://github.com/jonahmer22/cortex-vm.git
 cd cortex-vm
+git submodule init
+git submodule update
 make
 ```
 
