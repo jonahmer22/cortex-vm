@@ -21,12 +21,12 @@ int main(int argc, char **argv){
 	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble binaries designed for the Cortex-ISA.");
 	
 	// add all different args
+	cliargsRegister("output", 'o', "Designates a path for the output file");
 	cliargsRegister("assemble", 'a', "Assembles a program at the given path");
 	cliargsRegister("disassemble", 'd', "Disassembles a program at the given path");
 	cliargsRegister("run", 'r', "Executes a compiled binary immediately after execution (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("no-output", 'n', "Prevents the assembler or disassembler from creating an output file (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("visual", 'v', "Starts the UI");
-	cliargsRegister("output", 'o', "Designates a path for the output file");
 
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
