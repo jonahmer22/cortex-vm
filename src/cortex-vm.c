@@ -45,7 +45,7 @@ int cortexExecBinary(const uint64_t *binary, size_t wordCount){
 	// ===================
 
     // we just pass in fileLength here twice since we don't actually care
-	headerValidate(&magic, &version, &wordCount, &fileLength, &offset, &extensions, binary);
+	headerValidate(&magic, &version, &wordCount, &fileLength, &offset, &extensions);
 
     // ===========
 	// init the vm

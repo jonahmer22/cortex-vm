@@ -31,8 +31,8 @@ uint64_t *listToArray(List *list);
 // ==========
 
 typedef struct LabelNode{
-	char *start;        // pointer into source buffer where label name begins
-	char *end;          // pointer one past the last character of the label name
+	const char *start;  // pointer into source buffer where label name begins
+	const char *end;    // pointer one past the last character of the label name
 	size_t pc;          // instruction index associated with this label
 	struct LabelNode *next;
 } LabelNode;
@@ -45,9 +45,9 @@ typedef struct LabelList{
 
 LabelList *labelListInit(void);
 void labelListDestroy(LabelList *list);
-void labelListAppend(LabelList *list, char *start, char *end, size_t pc);
+void labelListAppend(LabelList *list, const char *start, const char *end, size_t pc);
 // returns the first node whose name matches [start, end), or NULL if not found
-LabelNode *labelListFind(LabelList *list, char *start, char *end);
+LabelNode *labelListFind(LabelList *list, const char *start, const char *end);
 // returns the node at the given index
 LabelNode *labelListGet(LabelList *list, size_t index);
 

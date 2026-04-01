@@ -144,7 +144,7 @@ int main(int argc, char **argv){
 	// validate the header
 	// ===================
 
-	headerValidate(&magic, &version, &fileSize, &fileLength, &offset, &extensions, buff);
+	headerValidate(&magic, &version, &fileSize, &fileLength, &offset, &extensions);
 
 	// ===========
 	// init the vm
