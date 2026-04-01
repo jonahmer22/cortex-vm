@@ -4,6 +4,10 @@
 # Cortex Binary
 cortex-vm
 
+# build directories
+lib/
+build/
+
 # any testing assembly files
 *.s
 
