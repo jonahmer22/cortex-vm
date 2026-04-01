@@ -23,9 +23,10 @@ int main(int argc, char **argv){
 	// add all different args
 	cliargsRegister("assemble", 'a', "Assembles a program at the given path");
 	cliargsRegister("disassemble", 'd', "Disassembles a program at the given path");
+	cliargsRegister("run", 'r', "Executes a compiled binary immediately after execution (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("visual", 'v', "Starts the UI");
 	cliargsRegister("output", 'o', "Designates a path for the output file");
-	
+
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
 
@@ -54,27 +55,46 @@ int main(int argc, char **argv){
 		printf("[DEBUG]: output flag enabled, path: %s\n", outputPath);
 		#endif
 	}
+	// check for -r flag (run after assemble/disassemble)
+	int runAfter = cliargsFlag("run", 'r');
+
 	// check for flags to either assemble, dissassemble, open visual mode
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
 		if(path == NULL)
 			path = cliargsArg("assemble", 'a');
+		if(path == NULL)
+			path = cliargsSubcommand();
 		#ifdef DEBUG
 		printf("[DEBUG]: assemble flag enabled, path: %s\n", path);
 		#endif
 
 		sbuff = readFile(path, &outLen);
-		// call assemble the source; put into buff
+		// call assemble the source; put into buff and write out to file
 		buff = assemble(sbuff, outputPath);
+
+		if(!runAfter){
+			free(buff);
+			free(sbuff);
+			return EXIT_SUCCESS;
+		}
 	}
 	if(cliargsFlag("disassemble", 'd') || cliargsArg("disassemble", 'd') != NULL){
 		if(path == NULL)
 			path = cliargsArg("disassemble", 'd');
+		if(path == NULL)
+			path = cliargsSubcommand();
 		#ifdef DEBUG
 		printf("[DEBUG]: disassemble flag enabled, path: %s\n", path);
 		#endif
 
 		buff = readFileWords(path, &outLen);
-		// TODO: call disassemble the words; put into sbuff
+		// TODO: call disassemble the words; put into sbuff and write out to file
+
+		if(!runAfter){
+			free(buff);
+			free(sbuff);
+			return EXIT_SUCCESS;
+		}
 	}
 	if(cliargsFlag("visual", 'v') || cliargsArg("visual", 'v') != NULL){
 		if(path == NULL)
@@ -83,11 +103,11 @@ int main(int argc, char **argv){
 		printf("[DEBUG]: visual flag enabled\n");
 		#endif
 	}
-	
+
 	// ===================================
 	// default execution of binary at path
 	// ===================================
-	
+
 	// get the path from the args (should always just be the subcommand)
 	if(path == NULL)
 		path = cliargsSubcommand();
@@ -96,7 +116,7 @@ int main(int argc, char **argv){
 		fprintf(stderr, "[FATAL 0x%04X]: Invalid or missing path. A path must be given to a file to either; assemble, disassemble, or execute.\n", 0x0002);
 		return EXIT_FAILURE;
 	}
-	
+
 	// Read in the file and get it's size
 	size_t fileSize = 0;
 	if(buff != NULL)

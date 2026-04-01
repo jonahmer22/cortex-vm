@@ -16,7 +16,7 @@ def run_asm(source: str, stdin: str = "", timeout: int = 10) -> subprocess.Compl
         path = f.name
     try:
         return subprocess.run(
-            [VM_BINARY, "-a", path],
+            [VM_BINARY, "-ra", path],
             input=stdin,
             capture_output=True,
             text=True,
