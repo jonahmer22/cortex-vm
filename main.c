@@ -9,6 +9,7 @@
 #include "include/header.h"
 #include "include/defs.h"
 #include "include/assembler.h"
+#include "include/disassembler.h"
 
 // ==================
 // start of execution
@@ -92,6 +93,7 @@ int main(int argc, char **argv){
 
 		buff = readFileWords(path, &outLen);
 		// TODO: call disassemble the words; put into sbuff and write out to file
+		sbuff = disassemble(buff, outputPath, noOutput);
 
 		if(!runAfter){
 			free(buff);
