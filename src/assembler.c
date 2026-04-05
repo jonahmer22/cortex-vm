@@ -64,7 +64,7 @@ bool cmpChars(const char *head, const char *cmp, size_t len){
 
 void getData(List *list);
 
-void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc, List *list, uint64_t *extensions){
+void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc, List *list, uint64_t *extensions, uint64_t *pDataOffset){
 	// might be the start of the .data section
 	if(*head == '.'){
 		head++;
@@ -72,6 +72,8 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 			head += 4;
 			skipSep();
 			*opcode = OP_DATA;
+			// capture data section start BEFORE any data words are appended
+			*pDataOffset = list->len;
 			// we are now healing with the .data section this must be at the end of the file
 			while(*head != '\0'){	// parse until the end of the file
 				if(*head == '\n'){
@@ -1158,6 +1160,9 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	// create an extensions word to have flags set later
 	uint64_t extensions = 0;
 
+	// data offset to be set later, 0 means no data section
+	uint64_t dataOffset = 0;
+
 	// init the word list
 	List *list = listInit();
 	// init label registry
@@ -1171,6 +1176,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	listAppend(list, 0);	// this is temporary and will be set later (for file length)
 	listAppend(list, 0);	// this is temporary and will be set later (for entry point)
 	listAppend(list, 0);	// this is temporary and will be set later (for extension flags)
+	listAppend(list, 0);	// this is temporary and will be set later (for .data offset)
 
 	head = sbuff;
 	while(*head != '\0'){
@@ -1182,15 +1188,13 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 			continue;
 		}
 
-		// TODO: (FUTURE) check for stuff like to put in the data section
-
 		// the current word we are assembling
 		uint64_t word = 0;
 		
 		// use functions to make the propper word
 		uint8_t opcode, funct, flags;
 		opcode = funct = flags = 0;
-		getOpcodeFunct(&opcode, &funct, &flags, list->len, list, &extensions);
+		getOpcodeFunct(&opcode, &funct, &flags, list->len, list, &extensions, &dataOffset);
 		// consume white space or comma or both
 		skipSep();
 		switch(opcode){
@@ -1285,7 +1289,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 				skipSep();
 				getReg(&rb);
 				skipSep();
-				getImm(&imm, list->len);	// TODO: (FUTURE) should be parsing a label instead and then computing jump address to encode
+				getImm(&imm, list->len);
 
 				word = ENCODE_OPCODE(opcode) | ENCODE_FUNCT(funct) | ENCODE_RA(ra) | ENCODE_B_IMM(imm) | ENCODE_RB(rb);
 				break;
@@ -1299,7 +1303,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 				break;
 			}
 			case OP_DATA:{
-				// reached a .data section and there is nothing to do
+				// dataOffset was already captured inside getOpcodeFunct before data words were appended
 				break;
 			}
 			default:{
@@ -1337,15 +1341,15 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 			case OP_FI:
 			case OP_MI:
 			case OP_I:{
-				word |= ENCODE_I_IMM((int64_t)r->pc - 4);
+				word |= ENCODE_I_IMM((int64_t)r->pc - 5);
 				break;
 			}
 			case OP_S:{
-				word |= ENCODE_S_IMM((int64_t)r->pc - 4);
+				word |= ENCODE_S_IMM((int64_t)r->pc - 5);
 				break;
 			}
 			case OP_L:{
-				word |= ENCODE_L_IMM((int64_t)r->pc - 4);
+				word |= ENCODE_L_IMM((int64_t)r->pc - 5);
 				break;
 			}
 			case OP_FB:
@@ -1369,13 +1373,14 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	listSet(list, 1, list->len);	// set the file length (should be just the length of the list)
 
 	const char *tmp = "main";
-	LabelNode *entry = labelListFind(labelsRegistry, tmp, tmp + 4);
+	LabelNode *entry = labelListFind(labelsRegistry, tmp, tmp + 5);
 	if(entry)
 		listSet(list, 2, entry->pc);
 	else
-		listSet(list, 2, 4);	// if not set the first instruction as entry point
+		listSet(list, 2, HEADER_LEN);	// if not set the first instruction as entry point
 
 	listSet(list, 3, extensions);	// set extension flags, default is 0 so should be all fine if none exist
+	listSet(list, 4, dataOffset);	// set the data offset decault is 0
 
 	// return the raw array of the word list
 	uint64_t *words = listToArray(list);
@@ -1388,9 +1393,9 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	// check if we want to dissable output
 	if(!noOutput){
 		// output the assembled binary at a given path or a.cxv
-		if(outputPath == NULL)
-			outputPath = "a.out";
-		writeFileWords(outputPath, words, words[1]);
+		const char *outPath = outputPath ? outputPath : "a.out";
+
+		writeFileWords(outPath, words, words[1]);
 	}
 	
 	#ifdef DEBUG

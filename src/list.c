@@ -216,4 +216,102 @@ LabelNode *labelListGet(LabelList *list, size_t index){
 	return curr;
 }
 
+// ==========
+// Line List
+// ==========
+
+LineList *lineListInit(void){
+	LineList *list = malloc(sizeof(LineList));
+	if(!list){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not allocate LineList.\n", 0x0420);
+		exit(EXIT_FAILURE);
+	}
+
+	list->head = NULL;
+	list->tail = NULL;
+	list->len = 0;
+	list->totalBytes = 0;
+
+	return list;
+}
+
+void lineListDestroy(LineList *list){
+	if(!list){
+		fprintf(stderr, "[FATAL 0x%04X]: Cannot destroy uninitialized LineList.\n", 0x0421);
+		exit(EXIT_FAILURE);
+	}
+
+	LineNode *curr = list->head;
+	while(curr){
+		LineNode *next = curr->next;
+		free(curr->line);
+		free(curr);
+		curr = next;
+	}
+
+	free(list);
+}
+
+void lineListAppend(LineList *list, const char *line){
+	if(!list){
+		fprintf(stderr, "[FATAL 0x%04X]: Cannot append to uninitialized LineList.\n", 0x0422);
+		exit(EXIT_FAILURE);
+	}
+
+	LineNode *node = malloc(sizeof(LineNode));
+	if(!node){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not allocate LineNode.\n", 0x0423);
+		exit(EXIT_FAILURE);
+	}
+
+	size_t len = strlen(line);
+	node->line = malloc(len + 1);
+	if(!node->line){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not allocate line buffer.\n", 0x0424);
+		exit(EXIT_FAILURE);
+	}
+	memcpy(node->line, line, len + 1);
+	node->next = NULL;
+
+	if(!list->tail){
+		list->head = node;
+		list->tail = node;
+	}
+	else{
+		list->tail->next = node;
+		list->tail = node;
+	}
+
+	list->len++;
+	list->totalBytes += len;
+}
+
+char *lineListJoin(LineList *list, size_t *outLen){
+	if(!list){
+		fprintf(stderr, "[FATAL 0x%04X]: Cannot join uninitialized LineList.\n", 0x0425);
+		exit(EXIT_FAILURE);
+	}
+
+	char *out = malloc(list->totalBytes + 1);
+	if(!out){
+		fprintf(stderr, "[FATAL 0x%04X]: Could not allocate join buffer.\n", 0x0426);
+		exit(EXIT_FAILURE);
+	}
+
+	char *cursor = out;
+	LineNode *curr = list->head;
+	while(curr){
+		size_t len = strlen(curr->line);
+		memcpy(cursor, curr->line, len);
+		cursor += len;
+		curr = curr->next;
+	}
+	*cursor = '\0';
+
+	if(outLen != NULL)
+		*outLen = list->totalBytes;
+
+	return out;
+}
+
 // 	.:

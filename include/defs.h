@@ -1,7 +1,8 @@
 #ifndef DEFS_H
 #define DEFS_H
 
-#define VERSION 0x0000000000000001
+#define VERSION     0x0000000000000001
+#define HEADER_LEN  5   // number of 64-bit words in the binary header
 
 // =============
 // base opcodes

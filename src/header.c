@@ -4,7 +4,7 @@
 #include "../include/defs.h"
 #include "../include/header.h"
 
-void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, const uint64_t *buff){
+void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *dataOffset, const uint64_t *buff){
 	// ================
 	// parse the header
 	// ================
@@ -20,6 +20,8 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 	*offset = buff[2];
 	// parse the extension flags
 	*extensions = buff[3];
+	// parse the data offset (0 means no .data section)
+	*dataOffset = buff[4];
 
 	#ifdef DEBUG
 	// for testing purposes print the values parsed from the header
@@ -32,10 +34,12 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 	for(int i = 63; i >= 0; --i)
 		putchar((*extensions >> i) & 1 ? '1' : '0');
 	printf(" (FLOAT:%d M:%d)\n", (int)((*extensions & EXT_FLOAT) != 0), (int)((*extensions & EXT_M) != 0));
+	printf("[DEBUG]: dataOffset:\t0x%016llX\n", *dataOffset);
 	#endif
 }
 
-void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions){
+void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *dataOffset){
+	(void)dataOffset;	// I don't feel like changing this everywhere or getting rid of the arguement so this is fine
 	// ===================
 	// validate the header
 	// ===================
@@ -55,9 +59,9 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 		fprintf(stderr, "[FILE LENGTH]: A file size of %zu was loaded, while the encoded binary specifies a size of %llu.\n", *fileSize, *fileLength);
 		exit(EXIT_FAILURE);
 	}
-	// make sure that the offset is at least 4
-	if(*offset < 4){
-		fprintf(stderr, "[ENTRY POINT]: The specified entry point of %llu is within the header, minimum entry point is 4.\n", *offset);
+	// make sure that the offset is at least HEADER_LEN (entry point must be past the header)
+	if(*offset < HEADER_LEN){
+		fprintf(stderr, "[ENTRY POINT]: The specified entry point of %llu is within the header, minimum entry point is %d.\n", *offset, HEADER_LEN);
 		exit(EXIT_FAILURE);
 	}
 	// check the extension flags, for version 1 they should all be 0
