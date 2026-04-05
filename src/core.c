@@ -350,11 +350,8 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t ms = regs[A0];
 			#ifdef _WIN32
 			Sleep((DWORD)ms);
-			#elif defined(__linux__)
-			struct timespec ts = { .tv_sec = (time_t)(ms / 1000), .tv_nsec = (long)((ms % 1000) * 1000000L) };
-			nanosleep(&ts, NULL);
 			#else
-			usleep((useconds_t)(ms * 1000));
+			sleep((unsigned int)(ms / 1000));
 			#endif
 			break;
 		}
