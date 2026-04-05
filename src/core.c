@@ -350,7 +350,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			#ifdef _WIN32
 			Sleep((DWORD)ms);
 			#else
-			sleep((uint64_t)(ms * 1000));
+			usleep((useconds_t)(ms * 1000));
 			#endif
 			break;
 		}

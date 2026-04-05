@@ -253,6 +253,113 @@ int main(void) {
 
 
 # ---------------------------------------------------------------------------
+# cortexAssemble tests
+# ---------------------------------------------------------------------------
+
+def test_cortex_assemble_returns_runnable_binary():
+    """cortexAssemble result can be passed directly to cortexExecBinary."""
+    c = r"""
+#include <stdlib.h>
+#include "cortex-vm.h"
+int main(void) {
+    uint64_t *binary = cortexAssemble(
+        "main:\n"
+        "    addi a0, zero, msg\n"
+        "    addi a13, zero, 5\n"
+        "    syscall\n"
+        "    addi a0, zero, 0\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    msg: \"assembled\\n\"\n",
+        "a.out"
+    );
+    int code = cortexExecBinary(binary, binary[1]);
+    free(binary);
+    return code;
+}
+"""
+    result = compile_and_run(c)
+    assert result.returncode == 0
+    assert result.stdout == "assembled\n"
+
+
+def test_cortex_assemble_exit_code():
+    """Exit code is correctly returned through cortexAssemble + cortexExecBinary."""
+    c = r"""
+#include <stdlib.h>
+#include "cortex-vm.h"
+int main(void) {
+    uint64_t *binary = cortexAssemble(
+        "main:\n"
+        "    addi a0, zero, 99\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n",
+        "a.out"
+    );
+    int code = cortexExecBinary(binary, binary[1]);
+    free(binary);
+    return code;
+}
+"""
+    result = compile_and_run(c)
+    assert result.returncode == 99
+
+
+def test_cortex_assemble_compile_once_run_twice():
+    """The binary returned by cortexAssemble can be executed more than once."""
+    c = r"""
+#include <stdlib.h>
+#include "cortex-vm.h"
+int main(void) {
+    uint64_t *binary = cortexAssemble(
+        "main:\n"
+        "    addi a0, zero, 'x'\n"
+        "    addi a13, zero, 3\n"
+        "    syscall\n"
+        "    addi a0, zero, 0\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n",
+        "a.out"
+    );
+    cortexExecBinary(binary, binary[1]);
+    cortexExecBinary(binary, binary[1]);
+    free(binary);
+    return 0;
+}
+"""
+    result = compile_and_run(c)
+    assert result.returncode == 0
+    assert result.stdout == "xx"
+
+
+def test_cortex_assemble_writes_output_file():
+    """cortexAssemble creates the file at the given path."""
+    c = r"""
+#include <stdio.h>
+#include <stdlib.h>
+#include "cortex-vm.h"
+int main(void) {
+    uint64_t *binary = cortexAssemble(
+        "main:\n"
+        "    addi a0, zero, 0\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n",
+        "/tmp/cortex_test_output.out"
+    );
+    free(binary);
+    /* verify the file was actually created */
+    FILE *f = fopen("/tmp/cortex_test_output.out", "rb");
+    if (!f) return 1;
+    fclose(f);
+    return 0;
+}
+"""
+    result = compile_and_run(c)
+    assert result.returncode == 0
+
+
+# ---------------------------------------------------------------------------
 # cortexExecBinary test (needs assembler.h from include/)
 # ---------------------------------------------------------------------------
 

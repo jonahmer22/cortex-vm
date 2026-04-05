@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "../include/cortex-vm.h"
 #include "../include/core.h"
@@ -9,6 +10,10 @@
 #include "../include/header.h"
 #include "../include/defs.h"
 #include "../deps/arena/arena.h"
+
+uint64_t *cortexAssemble(const char *source, const char *outputPath){
+	return assemble(source, outputPath, false);
+}
 
 int cortexExecSource(const char *source){
     // assemble the source

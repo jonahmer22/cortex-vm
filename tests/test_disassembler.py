@@ -590,3 +590,136 @@ def test_round_trip_fbge_not_taken():
         "    addi  r31, r0, 0\n"
         "    syscall\n"
     )
+
+
+# ---------------------------------------------------------------------------
+# .data section
+# ---------------------------------------------------------------------------
+
+def test_data_single_string():
+    # Print one string stored in the data section.
+    assert_round_trip(
+        "main:\n"
+        "    addi r18, r0, greeting\n"
+        "    addi r31, r0, 5\n"
+        "    syscall\n"
+        "    addi r18, r0, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    greeting: \"hello world\"\n"
+    )
+
+def test_data_multiple_strings():
+    # Print two strings stored in the data section, one after the other.
+    assert_round_trip(
+        "main:\n"
+        "    addi r18, r0, first\n"
+        "    addi r31, r0, 5\n"
+        "    syscall\n"
+        "    addi r18, r0, second\n"
+        "    addi r31, r0, 5\n"
+        "    syscall\n"
+        "    addi r18, r0, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    first:  \"foo\"\n"
+        "    second: \"bar\"\n"
+    )
+
+def test_data_string_escape_newline():
+    # String containing an embedded newline escape.
+    assert_round_trip(
+        "main:\n"
+        "    addi r18, r0, msg\n"
+        "    addi r31, r0, 5\n"
+        "    syscall\n"
+        "    addi r18, r0, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    msg: \"line1\\nline2\"\n"
+    )
+
+def test_data_string_escape_tab():
+    # String containing an embedded tab escape.
+    assert_round_trip(
+        "main:\n"
+        "    addi r18, r0, msg\n"
+        "    addi r31, r0, 5\n"
+        "    syscall\n"
+        "    addi r18, r0, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    msg: \"col1\\tcol2\"\n"
+    )
+
+def test_data_integer_as_exit_code():
+    # Load an integer from the data section and use it as exit code.
+    _, _, _, rc = round_trip(
+        "main:\n"
+        "    addi r32, r0, answer\n"
+        "    lw   r18, r32, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    answer: 42\n"
+    )
+    assert rc == 42
+
+def test_data_multiple_integers():
+    # Load two integers from data, add them, use as exit code.
+    _, _, _, rc = round_trip(
+        "main:\n"
+        "    addi r32, r0, x\n"
+        "    lw   r33, r32, 0\n"
+        "    addi r32, r0, y\n"
+        "    lw   r34, r32, 0\n"
+        "    add  r18, r33, r34\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    x: 30\n"
+        "    y: 12\n"
+    )
+    assert rc == 42
+
+def test_data_string_then_integer():
+    # Mixed data section: a string followed by an integer used as exit code.
+    _, _, _, rc = round_trip(
+        "main:\n"
+        "    addi r18, r0, msg\n"
+        "    addi r31, r0, 5\n"
+        "    syscall\n"
+        "    addi r32, r0, code\n"
+        "    lw   r18, r32, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    msg:  \"done\"\n"
+        "    code: 7\n"
+    )
+    assert rc == 7
+
+def test_data_char_by_char():
+    # Walk the data section word-by-word and print each character individually.
+    assert_round_trip(
+        "main:\n"
+        "    addi r32, r0, str\n"
+        "    lw   r33, r32, 0\n"
+        "    addi r18, r33, 0\n"
+        "    addi r31, r0, 3\n"
+        "    syscall\n"
+        "    addi r32, r0, str\n"
+        "    lw   r33, r32, 1\n"
+        "    addi r18, r33, 0\n"
+        "    addi r31, r0, 3\n"
+        "    syscall\n"
+        "    addi r18, r0, 0\n"
+        "    addi r31, r0, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    str: \"hi\"\n"
+    )

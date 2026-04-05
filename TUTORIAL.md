@@ -16,7 +16,8 @@ This tutorial walks you from zero to writing real programs for Cortex-VM. No pri
 8. [Functions and the Stack](#8-functions-and-the-stack)
 9. [The M Extension — Multiply and Divide](#9-the-m-extension--multiply-and-divide)
 10. [The F Extension — Floating Point](#10-the-f-extension--floating-point)
-11. [Syscall Reference Quick Card](#11-syscall-reference-quick-card)
+11. [The Disassembler](#11-the-disassembler)
+12. [Syscall Reference Quick Card](#12-syscall-reference-quick-card)
 
 ---
 
@@ -515,7 +516,59 @@ main:
 
 ---
 
-## 11. Syscall Reference Quick Card
+## 11. The Disassembler
+
+The disassembler converts a compiled binary back into readable assembly source. This is useful for debugging, inspecting what the assembler produced, or understanding an existing binary.
+
+```sh
+./cortex-vm -d program.out             # disassemble to out.s
+./cortex-vm -d program.out -o prog.s   # disassemble to a specific file
+```
+
+**What the output looks like:**
+
+Given:
+```asm
+main:
+    addi a0, zero, msg
+    addi a13, zero, 5
+    syscall
+    addi a0, zero, 0
+    addi a13, zero, 0
+    syscall
+.data
+    msg: "hello"
+```
+
+The disassembler produces something like:
+```asm
+main:
+    addi r18, r0, 6
+    addi r31, r0, 5
+    syscall
+    addi r18, r0, 0
+    addi r31, r0, 0
+    syscall
+.data
+    "hello"
+```
+
+A few things to note:
+
+- **Register aliases become raw numbers** — `a0` → `r18`, `zero` → `r0`, etc. The rebuilt source uses the `r0`–`r63` names directly.
+- **Label references become raw addresses** — `msg` is replaced with its word address (relative to the code base). The address is correct because the re-assembled binary has the same instruction count.
+- **`.data` strings are reconstructed** — the disassembler detects null-terminated printable-ASCII sequences and emits them as quoted string literals, including escape sequences like `\n` and `\t`.
+- **Round-trip fidelity** — `assemble → disassemble → re-assemble` produces a binary that behaves identically to the original.
+
+**Disassemble and run immediately:**
+
+```sh
+./cortex-vm -dr program.out    # disassemble to out.s, then run out.s
+```
+
+---
+
+## 12. Syscall Reference Quick Card
 
 Set `a13` to the call number, fill argument registers, then execute `syscall`. Return values appear in `a0`.
 
@@ -549,4 +602,4 @@ Set `a13` to the call number, fill argument registers, then execute `syscall`. R
 
 ---
 
-*For the full ISA specification including binary format, encoding tables, and extension internals, see [SPEC.md](SPEC.md).*
+*For the full ISA specification including binary format, encoding tables, and extension internals, see [SPEC.md](SPEC.md). For disassembler round-trip test examples, see [tests/test_disassembler.py](tests/test_disassembler.py).*

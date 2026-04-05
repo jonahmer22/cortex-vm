@@ -1157,6 +1157,9 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	// - use macros for destination indeces and addresses so easy to change in the future
 	// - return an array of words representing the code
 
+	// reset line counter for accurate error messages on each call
+	line = 0;
+
 	// create an extensions word to have flags set later
 	uint64_t extensions = 0;
 
@@ -1341,15 +1344,15 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 			case OP_FI:
 			case OP_MI:
 			case OP_I:{
-				word |= ENCODE_I_IMM((int64_t)r->pc - 5);
+				word |= ENCODE_I_IMM((int64_t)r->pc - HEADER_LEN);
 				break;
 			}
 			case OP_S:{
-				word |= ENCODE_S_IMM((int64_t)r->pc - 5);
+				word |= ENCODE_S_IMM((int64_t)r->pc - HEADER_LEN);
 				break;
 			}
 			case OP_L:{
-				word |= ENCODE_L_IMM((int64_t)r->pc - 5);
+				word |= ENCODE_L_IMM((int64_t)r->pc - HEADER_LEN);
 				break;
 			}
 			case OP_FB:
@@ -1366,14 +1369,14 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 		listSet(list, p->pc, word);
 
 		#ifdef DEBUG
-		printf("[DEBUG]: Patched instruction at pc=%zu from 0x%016llX to 0x%016llX\n", (p->pc)-4, temp_word, word);
+		printf("[DEBUG]: Patched instruction at pc=%zu from 0x%016llX to 0x%016llX\n", (p->pc)-HEADER_LEN, temp_word, word);
 		#endif
 	}
 
 	listSet(list, 1, list->len);	// set the file length (should be just the length of the list)
 
 	const char *tmp = "main";
-	LabelNode *entry = labelListFind(labelsRegistry, tmp, tmp + 5);
+	LabelNode *entry = labelListFind(labelsRegistry, tmp, tmp + 4);
 	if(entry)
 		listSet(list, 2, entry->pc);
 	else

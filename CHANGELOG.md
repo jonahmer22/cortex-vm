@@ -10,6 +10,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.5.0] — Disassembler
+
+### Added
+- **Full disassembler** (`-d` flag) — converts any Cortex-VM binary back to assembly source
+  - All base ISA instruction formats: R, I, S, L, B, SYS
+  - M extension: MR, MI (multiply/divide)
+  - F extension: FR, FI, FB (float arithmetic and float branches)
+  - `.data` section reconstruction: detects null-terminated printable-ASCII sequences and emits quoted string literals; non-printable words fall back to decimal integers; escape sequences (`\n`, `\t`, `\r`, `\\`, `\"`) round-trip correctly
+  - Round-trip fidelity: `assemble → disassemble → re-assemble` produces a functionally equivalent binary; output uses raw register names (`r0`–`r63`) and raw immediates
+- **`LineList`** data structure (`include/list.h`, `src/list.c`) — dynamic list of heap-copied line strings with O(1) join allocation via `totalBytes` pre-accounting
+- **`HEADER_LEN` constant** (`include/defs.h`) — replaces all hardcoded header-length literals across the assembler, VM core, library, header module, and disassembler
+- **`cortexAssemble(source, outputPath)`** — new public API function; assembles source, writes binary to disk, and returns the binary as a heap-allocated buffer (`binary[1]` = word count); pairs with `cortexExecBinary` for compile-once-run-many workflows
+- **42 disassembler round-trip pytest tests** — covers every instruction format, both extensions, and `.data` sections (strings, escape sequences, integers)
+- **4 `cortexAssemble` pytest tests** — verifies the returned binary is runnable, exit codes propagate correctly, compile-once-run-twice, and output file is created on disk
+
+### Changed
+- **Binary header expanded from 4 to 5 words** — word 4 stores `dataOffset` (absolute word index of the first data word; 0 if no `.data` section). Binaries from v0.4.0 and earlier are not compatible.
+- All header-length constants replaced with `HEADER_LEN` across all modules
+
+### Fixed
+- **`main` label was never found by the entry-point search** — `labelListFind` was called with `tmp + 5` (length 5, includes null terminator); stored labels have length 4 (`end` points to `:`). Entry point always fell back to `HEADER_LEN`, which was only accidentally correct when `main:` was the very first thing in the file
+- **`SYS_TIME_SLEEP` slept 1000× too long on POSIX** — used `sleep(ms * 1000)` where `sleep()` takes seconds; now uses `usleep(ms * 1000)` (microseconds)
+- **`line` counter not reset between `assemble()` calls** — error line numbers were wrong on the second and subsequent calls within the same process (e.g. via `cortexExecSource`)
+- **`dataOffset` captured after data words were written** — the data section start was recorded inside `case OP_DATA:` after `getData()` had already filled the list, capturing `fileLength` instead of the true section start; now captured at the top of `.data` detection before any data words are appended
+
+---
+
 ## [0.4.0] — Library API & CLI Improvements
 
 ### Added
@@ -87,7 +114,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Label definitions and forward references
   - `.data` section: strings, integer literals
   - Comments via `;`
-- Binary format v1: 4-word header (magic, length, entry point, extensions)
+- Binary format v1: 4-word header (magic, length, entry point, extensions) — expanded to 5 words in v0.5.0
 - 64-register file with aliases (`zero`, `pc`, `sp`, `ra`, `s0`–`s13`, `a0`–`a13`, `t0`–`t31`)
 - Calling convention: argument registers (`a0`–`a12`), callee-saved (`s0`–`s13`), syscall number (`a13`)
 - Arena-based memory management for code and stack regions

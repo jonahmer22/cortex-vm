@@ -11,9 +11,10 @@ A fast, extensible 64-bit virtual machine and assembler designed as the primary 
 - **M extension** — integer multiply and divide (`mul`, `mulh`, `mulhu`, `div`, `divu`, `rem`, `remu`, plus immediate variants)
 - **F extension** — full 64-bit IEEE 754 double-precision floating point (`fadd`, `fsub`, `fmul`, `fdiv`, `fsqrt`, `fabs`, `fneg`, `ftoi`, `ftoui`, `itof`, `uitof`, float branches)
 - **Built-in assembler** — single-pass with two-pass label resolution; supports labels, `.data` section, hex/binary/octal/char literals, and comments
+- **Full disassembler** — converts any binary back to assembly source; reconstructs `.data` strings; round-trips through re-assembly with functional equivalence
 - **Rich syscall set** — print/read int/uint/char/float/string, random numbers, file I/O, and time
 - **Automatic extension detection** — the assembler inspects opcodes and sets extension flags in the binary header; no manual flags needed
-- **Embeddable** — builds as a static library (`libcortex-vm.a`) for use as a runtime inside another project; two-function API
+- **Embeddable** — builds as a static library (`libcortex-vm.a`) for use as a runtime inside another project; three-function API: `cortexAssemble`, `cortexExecSource`, `cortexExecBinary`
 - **Fast** — ~400M instructions/sec at `-O3 -march=native` on modern hardware (GCC-15)
 
 ---
@@ -69,6 +70,9 @@ main:
 ./cortex-vm -a <source.s> -o <out>     # assemble to a specific path
 ./cortex-vm -ar <source.s>             # assemble and run immediately
 ./cortex-vm -ar <source.s> -o <out>    # assemble to a specific path and run
+./cortex-vm -d <binary>                # disassemble to out.s
+./cortex-vm -d <binary> -o <out.s>     # disassemble to a specific path
+./cortex-vm -dr <binary>               # disassemble and run the result
 ```
 
 ---
@@ -190,7 +194,7 @@ The test suite uses pytest and runs the assembler/VM as a subprocess, verifying 
 pytest
 ```
 
-146 tests — base ISA, M extension, F extension, syscalls, memory.
+201 tests — base ISA, M extension, F extension, syscalls, memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
 
 ---
 

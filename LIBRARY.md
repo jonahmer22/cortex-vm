@@ -85,6 +85,18 @@ Include the header:
 #include "cortex-vm.h"
 ```
 
+### `cortexAssemble`
+
+```c
+uint64_t *cortexAssemble(const char *source, const char *outputPath);
+```
+
+Assembles the given source string and writes the binary to `outputPath`. If `outputPath` is `NULL`, the binary is written to `"a.out"`.
+
+Returns a heap-allocated word buffer containing the assembled binary. `binary[1]` holds the word count. The caller is responsible for freeing the returned pointer.
+
+Use this when you need the binary in memory (to run, cache, or inspect it) and also want it written to disk.
+
 ### `cortexExecSource`
 
 ```c
@@ -103,7 +115,7 @@ int cortexExecBinary(const uint64_t *binary, size_t wordCount);
 
 Executes a pre-assembled binary given as a word buffer. Returns the program's exit code.
 
-`binary` must point to a valid Cortex-VM binary (4-word header followed by instructions and optional data). The caller is responsible for freeing `binary` after this call returns.
+`binary` must point to a valid Cortex-VM binary (5-word header followed by instructions and optional data). The caller is responsible for freeing `binary` after this call returns.
 
 ---
 
@@ -130,16 +142,12 @@ int main(void) {
 }
 ```
 
-### Assemble to a buffer, inspect, then run
+### Compile to disk and run
 
 ```c
 #include <stdint.h>
 #include <stdio.h>
 #include "cortex-vm.h"
-
-// cortexExecBinary is the lower-level entry point if you need
-// to hold onto the binary (e.g. cache it, write it to disk first).
-// To assemble without running, call assemble() directly from assembler.h.
 
 int main(void) {
     const char *src =
@@ -148,8 +156,42 @@ int main(void) {
         "    addi a13, zero, 0\n"   // SYS_EXIT with code 42
         "    syscall\n";
 
-    int code = cortexExecSource(src);
+    // assemble and write to disk; also get the binary in memory
+    uint64_t *binary = cortexAssemble(src, "output.out");
+
+    // run from the in-memory buffer — no second disk read needed
+    int code = cortexExecBinary(binary, binary[1]);
     printf("program exited with code %d\n", code);   // 42
+
+    free(binary);
+    return 0;
+}
+```
+
+### Compile once, run multiple times
+
+```c
+#include <stdlib.h>
+#include "cortex-vm.h"
+
+int main(void) {
+    const char *src =
+        "main:\n"
+        "    addi a0, zero, msg\n"
+        "    addi a13, zero, 5\n"
+        "    syscall\n"
+        "    addi a0, zero, 0\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n"
+        ".data\n"
+        "    msg: \"hello\\n\"\n";
+
+    uint64_t *binary = cortexAssemble(src, NULL);   // writes to a.out
+
+    cortexExecBinary(binary, binary[1]);
+    cortexExecBinary(binary, binary[1]);   // second run — no re-assembly
+
+    free(binary);
     return 0;
 }
 ```
