@@ -72,11 +72,11 @@ static void fmtFloat(char *buf, size_t bufsize, double d){
 // ====================
 
 void disOpR(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t flags	= DECODE_FLAGS(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rd		= DECODE_RD(w);
-	uint8_t rb		= DECODE_RB(w);
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t flags = DECODE_FLAGS(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	uint8_t rb = DECODE_RB(w);
 
 	const char *mn;
 	switch(funct){
@@ -109,15 +109,15 @@ void disOpR(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, r%d\n", mn, rd, ra, rb);
+	sprintf(line, "\t%s r%d, r%d, r%d\n", mn, rd, ra, rb);
 }
 
 void disOpI(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t flags	= DECODE_FLAGS(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rd		= DECODE_RD(w);
-	int64_t imm		= SIGN_EXT32(DECODE_I_IMM(w));
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t flags = DECODE_FLAGS(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	int64_t imm = SIGN_EXT32(DECODE_I_IMM(w));
 
 	const char *mn;
 	switch(funct){
@@ -154,28 +154,28 @@ void disOpI(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, %lld\n", mn, rd, ra, (long long)imm);
+	sprintf(line, "\t%s r%d, r%d, %lld\n", mn, rd, ra, (long long)imm);
 }
 
 void disOpS(char *line, uint64_t w){
-	uint8_t ra	= DECODE_RA(w);
-	uint8_t rb	= DECODE_RB(w);
-	int64_t imm	= SIGN_EXT36(DECODE_S_IMM(w));
-	sprintf(line, "    sw r%d, r%d, %lld\n", ra, rb, (long long)imm);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rb = DECODE_RB(w);
+	int64_t imm = SIGN_EXT36(DECODE_S_IMM(w));
+	sprintf(line, "\tsw r%d, r%d, %lld\n", ra, rb, (long long)imm);
 }
 
 void disOpL(char *line, uint64_t w){
-	uint8_t ra	= DECODE_RA(w);
-	uint8_t rd	= DECODE_RD(w);
-	int64_t imm	= SIGN_EXT36(DECODE_L_IMM(w));
-	sprintf(line, "    lw r%d, r%d, %lld\n", rd, ra, (long long)imm);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	int64_t imm = SIGN_EXT36(DECODE_L_IMM(w));
+	sprintf(line, "\tlw r%d, r%d, %lld\n", rd, ra, (long long)imm);
 }
 
 void disOpB(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rb		= DECODE_RB(w);
-	int64_t imm		= SIGN_EXT36(DECODE_B_IMM(w));
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rb = DECODE_RB(w);
+	int64_t imm = SIGN_EXT36(DECODE_B_IMM(w));
 
 	const char *mn;
 	switch(funct){
@@ -200,7 +200,7 @@ void disOpB(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, %lld\n", mn, ra, rb, (long long)imm);
+	sprintf(line, "\t%s r%d, r%d, %lld\n", mn, ra, rb, (long long)imm);
 }
 
 void disOpSYS(char *line, uint64_t w){
@@ -229,7 +229,7 @@ void disOpSYS(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s\n", mn);
+	sprintf(line, "\t%s\n", mn);
 }
 
 // ====================
@@ -237,10 +237,10 @@ void disOpSYS(char *line, uint64_t w){
 // ====================
 
 void disOpFR(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rd		= DECODE_RD(w);
-	uint8_t rb		= DECODE_RB(w);
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	uint8_t rb = DECODE_RB(w);
 
 	const char *mn;
 	switch(funct){
@@ -265,15 +265,15 @@ void disOpFR(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, r%d\n", mn, rd, ra, rb);
+	sprintf(line, "\t%s r%d, r%d, r%d\n", mn, rd, ra, rb);
 }
 
 void disOpFI(char *line, uint64_t w){
-	uint8_t funct		= DECODE_FUNCT(w);
-	uint8_t flags		= DECODE_FLAGS(w);
-	uint8_t ra			= DECODE_RA(w);
-	uint8_t rd			= DECODE_RD(w);
-	uint32_t immBits	= (uint32_t)DECODE_I_IMM(w);
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t flags = DECODE_FLAGS(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	uint32_t immBits = (uint32_t)DECODE_I_IMM(w);
 	float immF = 0;
 	memcpy(&immF, &immBits, sizeof(immF));
 	double imm = (double)immF;
@@ -283,46 +283,46 @@ void disOpFI(char *line, uint64_t w){
 
 	switch(funct){
 		case FN_FSQRT:{
-			sprintf(line, "    fsqrt r%d, r%d\n", rd, ra);
+			sprintf(line, "\tfsqrt r%d, r%d\n", rd, ra);
 			break;
 		}
 		case FN_FABS:{
-			sprintf(line, "    fabs r%d, r%d\n", rd, ra);
+			sprintf(line, "\tfabs r%d, r%d\n", rd, ra);
 			break;
 		}
 		case FN_FTOI:{
-			sprintf(line, "    ftoi r%d, r%d\n", rd, ra);
+			sprintf(line, "\tftoi r%d, r%d\n", rd, ra);
 			break;
 		}
 		case FN_FTOUI:{
-			sprintf(line, "    ftoui r%d, r%d\n", rd, ra);
+			sprintf(line, "\tftoui r%d, r%d\n", rd, ra);
 			break;
 		}
 		case FN_ITOF:{
-			sprintf(line, "    itof r%d, r%d\n", rd, ra);
+			sprintf(line, "\titof r%d, r%d\n", rd, ra);
 			break;
 		}
 		case FN_UITOF:{
-			sprintf(line, "    uitof r%d, r%d\n", rd, ra);
+			sprintf(line, "\tuitof r%d, r%d\n", rd, ra);
 			break;
 		}
 		case FN_FSUB:{
 			if(flags & 1)
-				sprintf(line, "    fneg r%d, r%d\n", rd, ra);
+				sprintf(line, "\tfneg r%d, r%d\n", rd, ra);
 			else
-				sprintf(line, "    fsubi r%d, r%d, %s\n", rd, ra, fbuf);
+				sprintf(line, "\tfsubi r%d, r%d, %s\n", rd, ra, fbuf);
 			break;
 		}
 		case FN_FADD:{
-			sprintf(line, "    faddi r%d, r%d, %s\n", rd, ra, fbuf);
+			sprintf(line, "\tfaddi r%d, r%d, %s\n", rd, ra, fbuf);
 			break;
 		}
 		case FN_FMUL:{
-			sprintf(line, "    fmuli r%d, r%d, %s\n", rd, ra, fbuf);
+			sprintf(line, "\tfmuli r%d, r%d, %s\n", rd, ra, fbuf);
 			break;
 		}
 		case FN_FDIV:{
-			sprintf(line, "    fdivi r%d, r%d, %s\n", rd, ra, fbuf);
+			sprintf(line, "\tfdivi r%d, r%d, %s\n", rd, ra, fbuf);
 			break;
 		}
 		default:{
@@ -333,10 +333,10 @@ void disOpFI(char *line, uint64_t w){
 }
 
 void disOpFB(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rb		= DECODE_RB(w);
-	int64_t imm		= SIGN_EXT36(DECODE_B_IMM(w));
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rb = DECODE_RB(w);
+	int64_t imm = SIGN_EXT36(DECODE_B_IMM(w));
 
 	const char *mn;
 	switch(funct){
@@ -361,7 +361,7 @@ void disOpFB(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, %lld\n", mn, ra, rb, (long long)imm);
+	sprintf(line, "\t%s r%d, r%d, %lld\n", mn, ra, rb, (long long)imm);
 }
 
 // ====================
@@ -369,10 +369,10 @@ void disOpFB(char *line, uint64_t w){
 // ====================
 
 void disOpMR(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rd		= DECODE_RD(w);
-	uint8_t rb		= DECODE_RB(w);
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	uint8_t rb = DECODE_RB(w);
 
 	const char *mn;
 	switch(funct){
@@ -409,14 +409,14 @@ void disOpMR(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, r%d\n", mn, rd, ra, rb);
+	sprintf(line, "\t%s r%d, r%d, r%d\n", mn, rd, ra, rb);
 }
 
 void disOpMI(char *line, uint64_t w){
-	uint8_t funct	= DECODE_FUNCT(w);
-	uint8_t ra		= DECODE_RA(w);
-	uint8_t rd		= DECODE_RD(w);
-	int64_t imm		= SIGN_EXT32(DECODE_I_IMM(w));
+	uint8_t funct = DECODE_FUNCT(w);
+	uint8_t ra = DECODE_RA(w);
+	uint8_t rd = DECODE_RD(w);
+	int64_t imm = SIGN_EXT32(DECODE_I_IMM(w));
 
 	const char *mn;
 	switch(funct){
@@ -445,7 +445,7 @@ void disOpMI(char *line, uint64_t w){
 			exit(EXIT_FAILURE);
 		}
 	}
-	sprintf(line, "    %s r%d, r%d, %lld\n", mn, rd, ra, (long long)imm);
+	sprintf(line, "\t%s r%d, r%d, %lld\n", mn, rd, ra, (long long)imm);
 }
 
 // =============
@@ -457,12 +457,12 @@ char *disassemble(const uint64_t *buff, const char *outputPath, int noOutput){
 	LineList *list = lineListInit();
 
 	// parse the header
-	uint64_t magic		= 0;
-	uint16_t version	= 0;
-	uint64_t fileLength	= 0;
-	uint64_t offset		= 0;
-	uint64_t extensions	= 0;
-	uint64_t dataOffset	= 0;
+	uint64_t magic = 0;
+	uint16_t version = 0;
+	uint64_t fileLength = 0;
+	uint64_t offset = 0;
+	uint64_t extensions = 0;
+	uint64_t dataOffset = 0;
 
 	headerParse(&magic, &version, &fileLength, &offset, &extensions, &dataOffset, buff);
 
@@ -582,9 +582,9 @@ char *disassemble(const uint64_t *buff, const char *outputPath, int noOutput){
 				}
 			}
 
-			// fallback: emit as a decimal number
+			// fallback: emit as a decimal number (not sure the floats work but whatever)
 			char nline[64];
-			sprintf(nline, "    %llu\n", (unsigned long long)word);
+			sprintf(nline, "\t%llu\n", (unsigned long long)word);
 			lineListAppend(list, nline);
 			i++;
 		}
