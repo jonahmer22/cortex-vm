@@ -37,15 +37,16 @@ int cortexExecBinary(const uint64_t *binary, size_t wordCount){
 	uint64_t fileLength = 0;
 	uint64_t offset = 0;
 	uint64_t extensions = 0;
+	uint64_t dataOffset = 0;
 
-	headerParse(&magic, &version, &fileLength, &offset, &extensions, binary);
+	headerParse(&magic, &version, &fileLength, &offset, &extensions, &dataOffset, binary);
 
 	// ===================
 	// validate the header
 	// ===================
 
     // we just pass in fileLength here twice since we don't actually care
-	headerValidate(&magic, &version, &wordCount, &fileLength, &offset, &extensions);
+	headerValidate(&magic, &version, &wordCount, &fileLength, &offset, &extensions, &dataOffset);
 
     // ===========
 	// init the vm
@@ -56,19 +57,19 @@ int cortexExecBinary(const uint64_t *binary, size_t wordCount){
 	// Arena *heap = arenaLocalInit();
 	Arena *stack = arenaLocalInit();
 
-	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - 4));
+	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
 	// TODO: when the heap is implemented initialize it here, for now do nothing
 	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
 
 	// move code into the code section
-	for(size_t i = 4; i < fileLength; i++){
-		codeBase[i - 4] = binary[i];
+	for(size_t i = HEADER_LEN; i < fileLength; i++){
+		codeBase[i - HEADER_LEN] = binary[i];
 	}
-	fileLength -= 4;
+	fileLength -= HEADER_LEN;
 
 	// initialize all registers to 0s
 	uint64_t regs[64] = {0};
-	regs[1] = offset - 4;		// set PC to offset - 4
+	regs[1] = offset - HEADER_LEN;		// set PC to entry point relative to code base
 	regs[2] = 0x0008000000000000;	// set sp to the stack base (top 16 bits is 0x0008)
 	
 	// exit_code

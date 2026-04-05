@@ -564,7 +564,7 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 		}
 	}
 	if(!handled && extensions & EXT_M){
-		// TODO: we have multiply extensions and should check for them as opcodes
+		// we have multiple extensions and should check for them as opcodes
 		switch(opcode){
 			// no default so it falls through to other extension checks
 			case OP_MR:{

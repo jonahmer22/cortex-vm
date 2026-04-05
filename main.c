@@ -2,13 +2,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "arena.h"
-#include "cliargs.h"
+#include "deps/arena/arena.h"
+#include "deps/cliargs/cliargs.h"
 #include "include/core.h"
 #include "include/utils.h"
 #include "include/header.h"
 #include "include/defs.h"
 #include "include/assembler.h"
+#include "include/disassembler.h"
 
 // ==================
 // start of execution
@@ -92,6 +93,7 @@ int main(int argc, char **argv){
 
 		buff = readFileWords(path, &outLen);
 		// TODO: call disassemble the words; put into sbuff and write out to file
+		sbuff = disassemble(buff, outputPath, noOutput);
 
 		if(!runAfter){
 			free(buff);
@@ -137,14 +139,15 @@ int main(int argc, char **argv){
 	uint64_t fileLength = 0;
 	uint64_t offset = 0;
 	uint64_t extensions = 0;
+	uint64_t dataOffset = 0;
 
-	headerParse(&magic, &version, &fileLength, &offset, &extensions, buff);
+	headerParse(&magic, &version, &fileLength, &offset, &extensions, &dataOffset, buff);
 
 	// ===================
 	// validate the header
 	// ===================
 
-	headerValidate(&magic, &version, &fileSize, &fileLength, &offset, &extensions);
+	headerValidate(&magic, &version, &fileSize, &fileLength, &offset, &extensions, &dataOffset);
 
 	// ===========
 	// init the vm
@@ -155,19 +158,19 @@ int main(int argc, char **argv){
 	// Arena *heap = arenaLocalInit();
 	Arena *stack = arenaLocalInit();
 
-	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - 4));
+	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
 	// TODO: when the heap is implemented initialize it here, for now do nothing
 	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
 
 	// move code into the code section
-	for(size_t i = 4; i < fileLength; i++){
-		codeBase[i - 4] = buff[i];
+	for(size_t i = HEADER_LEN; i < fileLength; i++){
+		codeBase[i - HEADER_LEN] = buff[i];
 	}
-	fileLength -= 4;
+	fileLength -= HEADER_LEN;
 
 	// initialize all registers to 0s
 	uint64_t regs[64] = {0};
-	regs[1] = offset - 4;		// set PC to offset - 4
+	regs[1] = offset - HEADER_LEN;		// set PC to entry point relative to code base
 	regs[2] = 0x0008000000000000;	// set sp to the stack base (top 16 bits is 0x0008)
 	
 	// exit_code

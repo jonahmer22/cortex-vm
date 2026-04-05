@@ -51,6 +51,27 @@ LabelNode *labelListFind(LabelList *list, const char *start, const char *end);
 // returns the node at the given index
 LabelNode *labelListGet(LabelList *list, size_t index);
 
+// ==========
+// Line List
+// ==========
+
+typedef struct LineNode{
+	char *line;             // heap-allocated copy of the line
+	struct LineNode *next;
+} LineNode;
+
+typedef struct LineList{
+	LineNode *head;
+	LineNode *tail;
+	size_t len;             // number of lines
+	size_t totalBytes;      // sum of strlen of all lines (excludes null terminator)
+} LineList;
+
+LineList *lineListInit(void);
+void lineListDestroy(LineList *list);
+void lineListAppend(LineList *list, const char *line);
+char *lineListJoin(LineList *list, size_t *outLen);
+
 #endif
 
 // 	.:
