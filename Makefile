@@ -33,7 +33,7 @@ $(LIB_TARGET): $(LIB_OBJS)
 	cp $(INC_DIR)/cortex-vm.h $(LIB_DIR)/cortex-vm.h
 
 $(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $^ $(LDFLAGS) -o $@
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
