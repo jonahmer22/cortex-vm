@@ -1,0 +1,5 @@
+# Python dependencies for the Cortex-VM test suite and benchmarking tools.
+# Install with: pip install -r requirements.txt
+
+pytest       # test suite (tests/) and benchmark performance floors (benchmarks/)
+matplotlib   # benchmark graph generation (benchmarks/run.py); optional if --no-graphs is used
