@@ -104,6 +104,18 @@ void disOpR(char *line, uint64_t w){
 			mn = (flags & 1) ? "sra" : "srl";
 			break;
 		}
+		case FN_SLT:{
+			mn = "slt";
+			break;
+		}
+		case FN_SLTU:{
+			mn = "sltu";
+			break;
+		}
+		case FN_SEQ:{
+			mn = "seq";
+			break;
+		}
 		default:{
 			fprintf(stderr, "[FATAL 0x%04X]: Unknown R-type funct 0x%02X.\n", 0x0601, funct);
 			exit(EXIT_FAILURE);
@@ -193,6 +205,22 @@ void disOpB(char *line, uint64_t w){
 		}
 		case FN_BLTU:{
 			mn = "bltu";
+			break;
+		}
+		case FN_BLE:{
+			mn = "ble";
+			break;
+		}
+		case FN_BGT:{
+			mn = "bgt";
+			break;
+		}
+		case FN_BGTU:{
+			mn = "bgtu";
+			break;
+		}
+		case FN_BGE:{
+			mn = "bge";
 			break;
 		}
 		default:{
