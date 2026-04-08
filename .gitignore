@@ -9,7 +9,7 @@ lib/
 build/
 
 # any testing assembly files
-*.s
+/*.s
 
 # any saved outputs from debug
 output*
