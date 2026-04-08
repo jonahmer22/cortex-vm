@@ -42,7 +42,6 @@
 #define FN_BNE      0x02    // branch if ra != rb
 #define FN_BLT      0x03    // branch if ra < rb  (signed)
 #define FN_BLTU     0x04    // branch if ra < rb  (unsigned)
-// TODO: probably should add these; no reason not to I guess...
 #define FN_BGE      0x05    // branch if ra >= rb
 #define FN_BGT      0x06    // branch if ra > rb
 #define FN_BGTU     0x07    // branch if ra > rb (unsigned)
