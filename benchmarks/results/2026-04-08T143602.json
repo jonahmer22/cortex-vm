@@ -1,213 +1,213 @@
 {
-  "timestamp": "2026-04-07T200030",
+  "timestamp": "2026-04-08T143602",
   "host": "Darwin arm64",
   "results": [
     {
       "name": "addi",
       "category": "alu",
       "iterations": 100000000,
-      "elapsed_ms": 875.9072499960894,
-      "metric_value": 114.16733906523375,
+      "elapsed_ms": 771.2532919831574,
+      "metric_value": 129.6590900025407,
       "metric_unit": "MIPS",
-      "stddev_ms": 4.64794644003422
+      "stddev_ms": 13.213505532346197
     },
     {
       "name": "add",
       "category": "alu",
       "iterations": 100000000,
-      "elapsed_ms": 881.817791989306,
-      "metric_value": 113.40211198779342,
+      "elapsed_ms": 824.4032500078902,
+      "metric_value": 121.29986144407233,
       "metric_unit": "MIPS",
-      "stddev_ms": 2.1869433659529385
+      "stddev_ms": 20.215816445963526
     },
     {
       "name": "shift",
       "category": "alu",
       "iterations": 100000000,
-      "elapsed_ms": 876.9122500088997,
-      "metric_value": 114.03649566873437,
+      "elapsed_ms": 792.3474999843165,
+      "metric_value": 126.20725124011797,
       "metric_unit": "MIPS",
-      "stddev_ms": 2.4361605482896316
+      "stddev_ms": 13.519281336473005
     },
     {
       "name": "bitwise",
       "category": "alu",
       "iterations": 100000000,
-      "elapsed_ms": 851.3250830001198,
-      "metric_value": 117.46394179717353,
+      "elapsed_ms": 790.8660829998553,
+      "metric_value": 126.44365733916332,
       "metric_unit": "MIPS",
-      "stddev_ms": 8.73994102369461
+      "stddev_ms": 7.329858273262434
     },
     {
       "name": "mul",
       "category": "mext",
       "iterations": 50000000,
-      "elapsed_ms": 425.53091699664947,
-      "metric_value": 117.50027554494633,
+      "elapsed_ms": 398.6319999967236,
+      "metric_value": 125.42896706840132,
       "metric_unit": "MIPS",
-      "stddev_ms": 12.810766372280534
+      "stddev_ms": 16.20041832710444
     },
     {
       "name": "div",
       "category": "mext",
       "iterations": 10000000,
-      "elapsed_ms": 89.38404200307559,
-      "metric_value": 111.87679339513325,
+      "elapsed_ms": 83.18954199785367,
+      "metric_value": 120.20741742102638,
       "metric_unit": "MIPS",
-      "stddev_ms": 2.034937878330873
+      "stddev_ms": 3.33599953895923
     },
     {
       "name": "rem",
       "category": "mext",
       "iterations": 10000000,
-      "elapsed_ms": 89.62045800581109,
-      "metric_value": 111.58166586642069,
+      "elapsed_ms": 83.42608399107121,
+      "metric_value": 119.86658754197624,
       "metric_unit": "MIPS",
-      "stddev_ms": 1.9909194030191928
+      "stddev_ms": 1.1790311139321445
     },
     {
       "name": "fadd",
       "category": "float",
       "iterations": 50000000,
-      "elapsed_ms": 417.66012499283534,
-      "metric_value": 119.71456456576436,
+      "elapsed_ms": 403.99037502356805,
+      "metric_value": 123.76532484736323,
       "metric_unit": "MFLOPS",
-      "stddev_ms": 9.1375822597838
+      "stddev_ms": 1.081579189047158
     },
     {
       "name": "fmul",
       "category": "float",
       "iterations": 50000000,
-      "elapsed_ms": 410.3883749921806,
-      "metric_value": 121.83580980078366,
+      "elapsed_ms": 399.94245901471004,
+      "metric_value": 125.01798414496666,
       "metric_unit": "MFLOPS",
-      "stddev_ms": 6.733363684386898
+      "stddev_ms": 16.471233491660033
     },
     {
       "name": "fdiv",
       "category": "float",
       "iterations": 10000000,
-      "elapsed_ms": 85.58533299947158,
-      "metric_value": 116.84245009669755,
+      "elapsed_ms": 82.74537499528378,
+      "metric_value": 120.85267606280071,
       "metric_unit": "MFLOPS",
-      "stddev_ms": 1.839487896913665
+      "stddev_ms": 0.30822701362318694
     },
     {
       "name": "fsqrt",
       "category": "float",
       "iterations": 10000000,
-      "elapsed_ms": 90.44795799127314,
-      "metric_value": 110.56081554616024,
+      "elapsed_ms": 83.11666600639,
+      "metric_value": 120.3128142703799,
       "metric_unit": "MFLOPS",
-      "stddev_ms": 2.935008320471199
+      "stddev_ms": 2.177447014801604
     },
     {
       "name": "sequential",
       "category": "mem",
       "iterations": 10000000,
-      "elapsed_ms": 108.19991600874346,
-      "metric_value": 92.42151351755132,
+      "elapsed_ms": 104.19974999967963,
+      "metric_value": 95.96952008071753,
       "metric_unit": "MIPS",
-      "stddev_ms": 1.2766174714885696
+      "stddev_ms": 1.7469001546781702
     },
     {
       "name": "stride-64",
       "category": "mem",
       "iterations": 10000000,
-      "elapsed_ms": 146.12091600429267,
-      "metric_value": 68.43647215916867,
+      "elapsed_ms": 141.13262502360158,
+      "metric_value": 70.85533907080452,
       "metric_unit": "MIPS",
-      "stddev_ms": 3.0158083306958847
+      "stddev_ms": 1.8078119799259844
     },
     {
       "name": "taken",
       "category": "branch",
       "iterations": 100000000,
-      "elapsed_ms": 647.5930419983342,
-      "metric_value": 154.41796547322573,
+      "elapsed_ms": 550.8238339971285,
+      "metric_value": 181.5462473261847,
       "metric_unit": "BOPS",
-      "stddev_ms": 5.578764314326866
+      "stddev_ms": 54.17300419279998
     },
     {
       "name": "not-taken",
       "category": "branch",
       "iterations": 100000000,
-      "elapsed_ms": 781.150416994933,
-      "metric_value": 128.01631775951373,
+      "elapsed_ms": 727.2514579817653,
+      "metric_value": 137.50402134292779,
       "metric_unit": "BOPS",
-      "stddev_ms": 9.293793351655145
+      "stddev_ms": 45.70496039917003
     },
     {
       "name": "mixed",
       "category": "branch",
       "iterations": 100000000,
-      "elapsed_ms": 1180.0351659912849,
-      "metric_value": 84.74323722038852,
+      "elapsed_ms": 1075.4226249991916,
+      "metric_value": 92.98669906640208,
       "metric_unit": "BOPS",
-      "stddev_ms": 4.91269993854922
+      "stddev_ms": 25.151491438814663
     },
     {
       "name": "fib(40) iter",
       "category": "realworld",
       "iterations": 0,
-      "elapsed_ms": 2.362792001804337,
-      "metric_value": 2.362792001804337,
+      "elapsed_ms": 2.065125008812174,
+      "metric_value": 2.065125008812174,
       "metric_unit": "ms",
-      "stddev_ms": 0.5184313131122553
+      "stddev_ms": 0.1254396035285145
     },
     {
       "name": "fib(30) rec",
       "category": "realworld",
       "iterations": 0,
-      "elapsed_ms": 112.3057500080904,
-      "metric_value": 112.3057500080904,
+      "elapsed_ms": 106.3163340149913,
+      "metric_value": 106.3163340149913,
       "metric_unit": "ms",
-      "stddev_ms": 1.3288902500207402
+      "stddev_ms": 5.032119178001945
     },
     {
       "name": "sieve(1000)",
       "category": "realworld",
       "iterations": 0,
-      "elapsed_ms": 2.431374989100732,
-      "metric_value": 2.431374989100732,
+      "elapsed_ms": 2.028083021286875,
+      "metric_value": 2.028083021286875,
       "metric_unit": "ms",
-      "stddev_ms": 0.3362358654914263
+      "stddev_ms": 0.19537658763712784
     },
     {
       "name": "newton sqrt(2)",
       "category": "realworld",
       "iterations": 0,
-      "elapsed_ms": 2.072000002954155,
-      "metric_value": 2.072000002954155,
+      "elapsed_ms": 1.9892500131390989,
+      "metric_value": 1.9892500131390989,
       "metric_unit": "ms",
-      "stddev_ms": 0.24169777713064314
+      "stddev_ms": 0.13269775815791707
     },
     {
       "name": "assemble_1KB",
       "category": "asm",
       "iterations": 1007,
-      "elapsed_ms": 2.303000001120381,
-      "metric_value": 0.41699958148236876,
+      "elapsed_ms": 2.124292019288987,
+      "metric_value": 0.45208004732914664,
       "metric_unit": "MB/s",
-      "stddev_ms": 0.16881087531530384
+      "stddev_ms": 0.18730619110938562
     },
     {
       "name": "assemble_10KB",
       "category": "asm",
       "iterations": 10222,
-      "elapsed_ms": 2.296542006661184,
-      "metric_value": 4.24484239087681,
+      "elapsed_ms": 2.2480000043287873,
+      "metric_value": 4.336503044276196,
       "metric_unit": "MB/s",
-      "stddev_ms": 0.2569009457681514
+      "stddev_ms": 0.13728475548964386
     },
     {
       "name": "assemble_100KB",
       "category": "asm",
       "iterations": 102391,
-      "elapsed_ms": 2.811917001963593,
-      "metric_value": 34.72636883057497,
+      "elapsed_ms": 2.5819999864324927,
+      "metric_value": 37.81861636105992,
       "metric_unit": "MB/s",
-      "stddev_ms": 0.2856933462415671
+      "stddev_ms": 0.16588132241417852
     }
   ]
 }

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "deps/arena/arena.h"
 #include "deps/cliargs/cliargs.h"
@@ -189,7 +188,7 @@ int main(int argc, char **argv){
 	free(buff);
 	free(sbuff);
 
-	return exit_code;
+	return (uint8_t)exit_code;
 }
 
 //	.:

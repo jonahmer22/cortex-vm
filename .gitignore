@@ -26,6 +26,8 @@ __pycache__
 # Swap
 *.swp
 
+.idea/
+
 # Prerequisites
 *.d
 
