@@ -736,6 +736,18 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					}
 					break;
 				}
+				case FN_SLTU:{
+					regs[rd] = (((uint64_t)regs[ra] < (uint64_t)regs[rb]) ? 1 : 0);
+					break;
+				}
+				case FN_SLT:{
+					regs[rd] = (((int64_t)regs[ra] < (int64_t)regs[rb]) ? 1 : 0);
+					break;
+				}
+				case FN_SEQ:{
+					regs[rd] = (((uint64_t)regs[ra] == (uint64_t)regs[rb]) ? 1 : 0);
+					break;
+				}
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 					exit(EXIT_FAILURE);
@@ -878,6 +890,30 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				}
 				case FN_BLTU:{
 					if((uint64_t)regs[ra] < (uint64_t)regs[rb]){
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+					}
+					break;
+				}
+				case FN_BLE:{
+					if((int64_t)regs[ra] <= (int64_t)regs[rb]){
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+					}
+					break;
+				}
+				case FN_BGT:{
+					if((int64_t)regs[ra] > (int64_t)regs[rb]){
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+					}
+					break;
+				}
+				case FN_BGTU:{
+					if((uint64_t)regs[ra] > (uint64_t)regs[rb]){
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+					}
+					break;
+				}
+				case FN_BGE:{
+					if((int64_t)regs[ra] >= (int64_t)regs[rb]){
 						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;

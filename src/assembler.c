@@ -267,6 +267,18 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 						*opcode = OP_R;
 						*funct = FN_SLL;
 					}
+					else if(cmpChars(head, "tu", 2)){
+						head += 2;
+						// is sltu
+						*opcode = OP_R;
+						*funct = FN_SLTU;
+					}
+					else if(cmpChars(head, "t", 1)){
+						head++;
+						// is slt
+						*opcode = OP_R;
+						*funct = FN_SLT;
+					}
 					else
 						goto OP_FAILURE;
 					break;
@@ -342,6 +354,19 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 						// is syscall
 						*opcode = OP_SYS;
 						*funct = FN_SYSCALL;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'E':
+				case 'e':{
+					head++;
+					if(cmpChars(head, "q", 1)){
+						head++;
+						// is seq
+						*opcode = OP_R;
+						*funct = FN_SEQ;
 					}
 					else
 						goto OP_FAILURE;
@@ -431,7 +456,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				case 'L':
 				case 'l':{
 					head++;
-					// should be blt or bltu
+					// should be blt or bltu or ble now
 					if(cmpChars(head, "tu", 2)){
 						head += 2;
 						// is bltu
@@ -443,6 +468,37 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 						// is blt
 						*opcode = OP_B;
 						*funct = FN_BLT;
+					}
+					else if(cmpChars(head, "e", 1)){
+						head++;
+						// is ble
+						*opcode = OP_B;
+						*funct = FN_BLE;
+					}
+					else
+						goto OP_FAILURE;
+					break;
+				}
+				case 'G':
+				case 'g':{
+					head++;
+					// could be bgt, bgtu, or bge
+					if(cmpChars(head, "tu", 2)){
+						head += 2;
+						// is bgtu
+						*opcode = OP_B;
+						*funct = FN_BGTU;
+					}
+					else if(cmpChars(head, "t", 1)){
+						head++;
+						// is bgt
+						*opcode = OP_B;
+						*funct = FN_BGT;
+					}
+					else if(cmpChars(head, "e", 1)){
+						head++;
+						*opcode = OP_B;
+						*funct = FN_BGE;
 					}
 					else
 						goto OP_FAILURE;

@@ -27,6 +27,9 @@
 #define FN_SLL      0x05    // shift left logical
 #define FN_SR       0x06    // shift right logical (flags=0) / arithmetic (flags=1)
 #define FN_JMP      0x07    // rd = pc; pc = ra + imm
+#define FN_SLT      0x08    // rd = ra < rb ? 1 : 0
+#define FN_SLTU     0x09    // rd = ra < rb ? 1 : 0 (but unsigned this time)
+#define FN_SEQ      0x0A    // rd = ra == rb ? 1 : 0
 
 // S-type function codes
 #define FN_SW       0x01    // store word: mem[ra + imm] = rb
@@ -40,12 +43,10 @@
 #define FN_BLT      0x03    // branch if ra < rb  (signed)
 #define FN_BLTU     0x04    // branch if ra < rb  (unsigned)
 // TODO: probably should add these; no reason not to I guess...
-#define FN_BGE      0x05
-#define FN_BGT      0x06
-#define FN_BGTU     0x07
-#define FN_BLE      0x08
-#define FN_SLT      0x09
-#define FN_SLTU     0x0A
+#define FN_BGE      0x05    // branch if ra >= rb
+#define FN_BGT      0x06    // branch if ra > rb
+#define FN_BGTU     0x07    // branch if ra > rb (unsigned)
+#define FN_BLE      0x08    // branch if ra <= rb
 
 // SYS-type function codes
 #define FN_HALT     0x01    // stop execution
