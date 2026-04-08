@@ -167,3 +167,111 @@ def test_binary_literal():
 def test_char_literal():
     src = "    addi t2, zero, 'A'\n"
     assert asm_out(prog(f"{src}{print_int()}")) == "65"
+
+
+# ---------------------------------------------------------------------------
+# SLT (set if less-than, signed)
+# ---------------------------------------------------------------------------
+
+def test_slt_taken():
+    # 3 < 7 → 1
+    src = "    addi t0, zero, 3\n    addi t1, zero, 7\n    slt t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_slt_not_taken():
+    # 7 < 3 → 0
+    src = "    addi t0, zero, 7\n    addi t1, zero, 3\n    slt t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+def test_slt_equal():
+    # 5 < 5 → 0
+    src = "    addi t0, zero, 5\n    addi t1, zero, 5\n    slt t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+def test_slt_negative_less_than_positive():
+    # -1 < 1 → 1 (signed comparison)
+    src = "    subi t0, zero, 1\n    addi t1, zero, 1\n    slt t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_slt_negative_less_than_negative():
+    # -5 < -2 → 1
+    src = "    subi t0, zero, 5\n    subi t1, zero, 2\n    slt t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_slt_greater_negative():
+    # -2 < -5 → 0
+    src = "    subi t0, zero, 2\n    subi t1, zero, 5\n    slt t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+# ---------------------------------------------------------------------------
+# SLTU (set if less-than, unsigned)
+# ---------------------------------------------------------------------------
+
+def test_sltu_taken():
+    # 3 < 7 → 1
+    src = "    addi t0, zero, 3\n    addi t1, zero, 7\n    sltu t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_sltu_not_taken():
+    # 7 < 3 → 0
+    src = "    addi t0, zero, 7\n    addi t1, zero, 3\n    sltu t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+def test_sltu_equal():
+    # 5 < 5 → 0
+    src = "    addi t0, zero, 5\n    addi t1, zero, 5\n    sltu t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+def test_sltu_negative_treated_as_large():
+    # -1 as uint64 = 0xFFFFFFFF... which is NOT less than 1
+    src = "    subi t0, zero, 1\n    addi t1, zero, 1\n    sltu t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+def test_sltu_small_less_than_large_unsigned():
+    # 1 < 0xFFFF... (−1 unsigned) → 1
+    src = "    addi t0, zero, 1\n    subi t1, zero, 1\n    sltu t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+# ---------------------------------------------------------------------------
+# SEQ (set if equal)
+# ---------------------------------------------------------------------------
+
+def test_seq_equal():
+    # 5 == 5 → 1
+    src = "    addi t0, zero, 5\n    addi t1, zero, 5\n    seq t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_seq_not_equal():
+    # 5 == 6 → 0
+    src = "    addi t0, zero, 5\n    addi t1, zero, 6\n    seq t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "0"
+
+
+def test_seq_zero_equal():
+    # 0 == 0 → 1
+    src = "    seq t2, zero, zero\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_seq_self():
+    # any register compared with itself → 1
+    src = "    addi t0, zero, 42\n    seq t2, t0, t0\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"
+
+
+def test_seq_negative_equal():
+    # -7 == -7 → 1
+    src = "    subi t0, zero, 7\n    subi t1, zero, 7\n    seq t2, t0, t1\n"
+    assert asm_out(prog(f"{src}{print_int()}")) == "1"

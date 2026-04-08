@@ -1,0 +1,213 @@
+{
+  "timestamp": "2026-04-07T200030",
+  "host": "Darwin arm64",
+  "results": [
+    {
+      "name": "addi",
+      "category": "alu",
+      "iterations": 100000000,
+      "elapsed_ms": 875.9072499960894,
+      "metric_value": 114.16733906523375,
+      "metric_unit": "MIPS",
+      "stddev_ms": 4.64794644003422
+    },
+    {
+      "name": "add",
+      "category": "alu",
+      "iterations": 100000000,
+      "elapsed_ms": 881.817791989306,
+      "metric_value": 113.40211198779342,
+      "metric_unit": "MIPS",
+      "stddev_ms": 2.1869433659529385
+    },
+    {
+      "name": "shift",
+      "category": "alu",
+      "iterations": 100000000,
+      "elapsed_ms": 876.9122500088997,
+      "metric_value": 114.03649566873437,
+      "metric_unit": "MIPS",
+      "stddev_ms": 2.4361605482896316
+    },
+    {
+      "name": "bitwise",
+      "category": "alu",
+      "iterations": 100000000,
+      "elapsed_ms": 851.3250830001198,
+      "metric_value": 117.46394179717353,
+      "metric_unit": "MIPS",
+      "stddev_ms": 8.73994102369461
+    },
+    {
+      "name": "mul",
+      "category": "mext",
+      "iterations": 50000000,
+      "elapsed_ms": 425.53091699664947,
+      "metric_value": 117.50027554494633,
+      "metric_unit": "MIPS",
+      "stddev_ms": 12.810766372280534
+    },
+    {
+      "name": "div",
+      "category": "mext",
+      "iterations": 10000000,
+      "elapsed_ms": 89.38404200307559,
+      "metric_value": 111.87679339513325,
+      "metric_unit": "MIPS",
+      "stddev_ms": 2.034937878330873
+    },
+    {
+      "name": "rem",
+      "category": "mext",
+      "iterations": 10000000,
+      "elapsed_ms": 89.62045800581109,
+      "metric_value": 111.58166586642069,
+      "metric_unit": "MIPS",
+      "stddev_ms": 1.9909194030191928
+    },
+    {
+      "name": "fadd",
+      "category": "float",
+      "iterations": 50000000,
+      "elapsed_ms": 417.66012499283534,
+      "metric_value": 119.71456456576436,
+      "metric_unit": "MFLOPS",
+      "stddev_ms": 9.1375822597838
+    },
+    {
+      "name": "fmul",
+      "category": "float",
+      "iterations": 50000000,
+      "elapsed_ms": 410.3883749921806,
+      "metric_value": 121.83580980078366,
+      "metric_unit": "MFLOPS",
+      "stddev_ms": 6.733363684386898
+    },
+    {
+      "name": "fdiv",
+      "category": "float",
+      "iterations": 10000000,
+      "elapsed_ms": 85.58533299947158,
+      "metric_value": 116.84245009669755,
+      "metric_unit": "MFLOPS",
+      "stddev_ms": 1.839487896913665
+    },
+    {
+      "name": "fsqrt",
+      "category": "float",
+      "iterations": 10000000,
+      "elapsed_ms": 90.44795799127314,
+      "metric_value": 110.56081554616024,
+      "metric_unit": "MFLOPS",
+      "stddev_ms": 2.935008320471199
+    },
+    {
+      "name": "sequential",
+      "category": "mem",
+      "iterations": 10000000,
+      "elapsed_ms": 108.19991600874346,
+      "metric_value": 92.42151351755132,
+      "metric_unit": "MIPS",
+      "stddev_ms": 1.2766174714885696
+    },
+    {
+      "name": "stride-64",
+      "category": "mem",
+      "iterations": 10000000,
+      "elapsed_ms": 146.12091600429267,
+      "metric_value": 68.43647215916867,
+      "metric_unit": "MIPS",
+      "stddev_ms": 3.0158083306958847
+    },
+    {
+      "name": "taken",
+      "category": "branch",
+      "iterations": 100000000,
+      "elapsed_ms": 647.5930419983342,
+      "metric_value": 154.41796547322573,
+      "metric_unit": "BOPS",
+      "stddev_ms": 5.578764314326866
+    },
+    {
+      "name": "not-taken",
+      "category": "branch",
+      "iterations": 100000000,
+      "elapsed_ms": 781.150416994933,
+      "metric_value": 128.01631775951373,
+      "metric_unit": "BOPS",
+      "stddev_ms": 9.293793351655145
+    },
+    {
+      "name": "mixed",
+      "category": "branch",
+      "iterations": 100000000,
+      "elapsed_ms": 1180.0351659912849,
+      "metric_value": 84.74323722038852,
+      "metric_unit": "BOPS",
+      "stddev_ms": 4.91269993854922
+    },
+    {
+      "name": "fib(40) iter",
+      "category": "realworld",
+      "iterations": 0,
+      "elapsed_ms": 2.362792001804337,
+      "metric_value": 2.362792001804337,
+      "metric_unit": "ms",
+      "stddev_ms": 0.5184313131122553
+    },
+    {
+      "name": "fib(30) rec",
+      "category": "realworld",
+      "iterations": 0,
+      "elapsed_ms": 112.3057500080904,
+      "metric_value": 112.3057500080904,
+      "metric_unit": "ms",
+      "stddev_ms": 1.3288902500207402
+    },
+    {
+      "name": "sieve(1000)",
+      "category": "realworld",
+      "iterations": 0,
+      "elapsed_ms": 2.431374989100732,
+      "metric_value": 2.431374989100732,
+      "metric_unit": "ms",
+      "stddev_ms": 0.3362358654914263
+    },
+    {
+      "name": "newton sqrt(2)",
+      "category": "realworld",
+      "iterations": 0,
+      "elapsed_ms": 2.072000002954155,
+      "metric_value": 2.072000002954155,
+      "metric_unit": "ms",
+      "stddev_ms": 0.24169777713064314
+    },
+    {
+      "name": "assemble_1KB",
+      "category": "asm",
+      "iterations": 1007,
+      "elapsed_ms": 2.303000001120381,
+      "metric_value": 0.41699958148236876,
+      "metric_unit": "MB/s",
+      "stddev_ms": 0.16881087531530384
+    },
+    {
+      "name": "assemble_10KB",
+      "category": "asm",
+      "iterations": 10222,
+      "elapsed_ms": 2.296542006661184,
+      "metric_value": 4.24484239087681,
+      "metric_unit": "MB/s",
+      "stddev_ms": 0.2569009457681514
+    },
+    {
+      "name": "assemble_100KB",
+      "category": "asm",
+      "iterations": 102391,
+      "elapsed_ms": 2.811917001963593,
+      "metric_value": 34.72636883057497,
+      "metric_unit": "MB/s",
+      "stddev_ms": 0.2856933462415671
+    }
+  ]
+}

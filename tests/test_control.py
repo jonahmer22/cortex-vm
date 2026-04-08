@@ -157,6 +157,251 @@ def test_bltu_negative_treated_as_large():
 
 
 # ---------------------------------------------------------------------------
+# BGE (branch if >=, signed)
+# ---------------------------------------------------------------------------
+
+def test_bge_taken_greater():
+    src = (
+        "    addi t0, zero, 7\n"
+        "    addi t1, zero, 3\n"
+        "    bge t0, t1, ge_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "ge_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bge_taken_equal():
+    src = (
+        "    addi t0, zero, 5\n"
+        "    addi t1, zero, 5\n"
+        "    bge t0, t1, ge_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "ge_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bge_not_taken():
+    src = (
+        "    addi t0, zero, 3\n"
+        "    addi t1, zero, 7\n"
+        "    bge t0, t1, ge_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "ge_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bge_signed_negative():
+    # 1 >= -1 → taken (signed)
+    src = (
+        "    addi t0, zero, 1\n"
+        "    subi t1, zero, 1\n"
+        "    bge t0, t1, ge_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "ge_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+# ---------------------------------------------------------------------------
+# BGT (branch if >, signed)
+# ---------------------------------------------------------------------------
+
+def test_bgt_taken():
+    src = (
+        "    addi t0, zero, 7\n"
+        "    addi t1, zero, 3\n"
+        "    bgt t0, t1, gt_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gt_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bgt_not_taken_equal():
+    src = (
+        "    addi t0, zero, 5\n"
+        "    addi t1, zero, 5\n"
+        "    bgt t0, t1, gt_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gt_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bgt_not_taken_less():
+    src = (
+        "    addi t0, zero, 3\n"
+        "    addi t1, zero, 7\n"
+        "    bgt t0, t1, gt_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gt_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bgt_signed_negative():
+    # 1 > -1 → taken (signed)
+    src = (
+        "    addi t0, zero, 1\n"
+        "    subi t1, zero, 1\n"
+        "    bgt t0, t1, gt_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gt_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+# ---------------------------------------------------------------------------
+# BGTU (branch if >, unsigned)
+# ---------------------------------------------------------------------------
+
+def test_bgtu_taken():
+    src = (
+        "    addi t0, zero, 10\n"
+        "    addi t1, zero, 3\n"
+        "    bgtu t0, t1, gtu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gtu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bgtu_not_taken_equal():
+    src = (
+        "    addi t0, zero, 5\n"
+        "    addi t1, zero, 5\n"
+        "    bgtu t0, t1, gtu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gtu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bgtu_negative_as_large_unsigned():
+    # -1 as uint64 = 0xFFFF... > 1 → taken
+    src = (
+        "    subi t0, zero, 1\n"
+        "    addi t1, zero, 1\n"
+        "    bgtu t0, t1, gtu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "gtu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+# ---------------------------------------------------------------------------
+# BLE (branch if <=, signed)
+# ---------------------------------------------------------------------------
+
+def test_ble_taken_less():
+    src = (
+        "    addi t0, zero, 3\n"
+        "    addi t1, zero, 7\n"
+        "    ble t0, t1, le_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "le_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_ble_taken_equal():
+    src = (
+        "    addi t0, zero, 5\n"
+        "    addi t1, zero, 5\n"
+        "    ble t0, t1, le_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "le_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_ble_not_taken():
+    src = (
+        "    addi t0, zero, 7\n"
+        "    addi t1, zero, 3\n"
+        "    ble t0, t1, le_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "le_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_ble_signed_negative():
+    # -1 <= 1 → taken (signed)
+    src = (
+        "    subi t0, zero, 1\n"
+        "    addi t1, zero, 1\n"
+        "    ble t0, t1, le_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "le_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+# ---------------------------------------------------------------------------
 # JMP (unconditional jump / call-return)
 # ---------------------------------------------------------------------------
 

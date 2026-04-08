@@ -188,6 +188,12 @@ Full details in [SPEC.md](SPEC.md).
 
 ## Testing
 
+Install Python dependencies first:
+
+```sh
+pip install -r requirements.txt
+```
+
 The test suite uses pytest and runs the assembler/VM as a subprocess, verifying stdout for every instruction and syscall.
 
 ```sh
@@ -195,6 +201,25 @@ pytest
 ```
 
 201 tests — base ISA, M extension, F extension, syscalls, memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
+
+## Benchmarking
+
+A Python benchmarking suite lives in `benchmarks/`. It measures throughput across 7 categories and produces a console table, a timestamped JSON file, and matplotlib graphs.
+
+```sh
+python benchmarks/run.py                       # full suite (all categories)
+python benchmarks/run.py --category alu        # single category
+python benchmarks/run.py --no-graphs           # skip PNG generation
+python benchmarks/run.py --repeats 10          # more repetitions for stable numbers
+```
+
+Categories: integer ALU (MIPS), M extension (MIPS), float ALU (MFLOPS), memory (MIPS), branches (BOPS), real-world programs (ms), assembler throughput (MB/s).
+
+Performance floor assertions can be run via pytest:
+
+```sh
+pytest benchmarks/conftest.py -m benchmark
+```
 
 ---
 
