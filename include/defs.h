@@ -39,6 +39,13 @@
 #define FN_BNE      0x02    // branch if ra != rb
 #define FN_BLT      0x03    // branch if ra < rb  (signed)
 #define FN_BLTU     0x04    // branch if ra < rb  (unsigned)
+// TODO: probably should add these; no reason not to I guess...
+#define FN_BGE      0x05
+#define FN_BGT      0x06
+#define FN_BGTU     0x07
+#define FN_BLE      0x08
+#define FN_SLT      0x09
+#define FN_SLTU     0x0A
 
 // SYS-type function codes
 #define FN_HALT     0x01    // stop execution
