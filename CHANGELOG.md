@@ -8,6 +8,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Python benchmarking suite** (`benchmarks/`) — measures VM throughput across 7 categories: integer ALU (MIPS), M extension (MIPS), float ALU (MFLOPS), memory (MIPS), branches (BOPS), real-world programs (wall-clock ms), and assembler throughput (MB/s)
+  - `benchmarks/run.py` — CLI entry point; `--category`, `--repeats`, `--no-graphs` flags
+  - `benchmarks/bench_core.py` — `BenchmarkResult` dataclass and `BenchmarkRunner` (Python-side `perf_counter` timing; assembles once, runs N times, takes median)
+  - `benchmarks/report.py` — console table and matplotlib graph generation (6 PNG files saved to `benchmarks/results/`)
+  - `benchmarks/conftest.py` — 12 pytest performance-floor and correctness assertions (`pytest benchmarks/conftest.py -m benchmark`)
+  - 20 assembly workloads in `benchmarks/asm/` covering all categories
+  - Results saved as timestamped JSON in `benchmarks/results/`
+- **`requirements.txt`** — lists Python dependencies (`pytest`, `matplotlib`) for the test suite and benchmarking tools
+
 ---
 
 ## [0.5.0] — Disassembler
