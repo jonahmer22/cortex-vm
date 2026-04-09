@@ -155,16 +155,25 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					scanf("%lld", (int64_t *)&v);
+					if(scanf("%lld", (int64_t *)&v) != 1){
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8011);
+						v = 0;
+					}
 					break;
 				}
 				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
-					scanf("%llo", &v);
+					if (scanf("%llo", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8012);
+						v = 0;
+					}
 					break;
 				}
 				case 3:{
-					scanf("%llx", &v);
+					if (scanf("%llx", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8013);
+						v = 0;
+					}
 					break;
 				}
 				default:
@@ -181,16 +190,25 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					scanf("%llu", &v);
+					if (scanf("%llu", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8014);
+						v = 0;
+					}
 					break;
 				}
 				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
-					scanf("%llo", &v);
+					if (scanf("%llo", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8015);
+						v = 0;
+					}
 					break;
 				}
 				case 3:{
-					scanf("%llx", &v);
+					if (scanf("%llx", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8016);
+						v = 0;
+					}
 					break;
 				}
 				default:
@@ -351,7 +369,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		}
 		case SYS_READ_FLOAT:{
 			double v = 0;
-			scanf("%lf", &v);
+			if (scanf("%lf", &v) != 1) {
+				fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8017);
+				v = 0;
+			}
 			memcpy(&regs[A0], &v, sizeof(v));
 			int ch;
 			while((ch = getchar()) != '\n' && ch != EOF) continue;
