@@ -589,6 +589,11 @@ char *disassemble(const uint64_t *buff, const char *outputPath, int noOutput){
 					int pos = 0;
 					pos += sprintf(sline + pos, "    \"");
 					for(uint64_t k = i; k < j; k++){
+						if (pos >= (int)sizeof(sline) - 4) {
+							fprintf(stderr, "[FATAL 0x%04x]: String too large to disassemble.\n", 0xE021);
+							exit(EXIT_FAILURE);
+						}
+
 						char c = (char)buff[k];
 						if(c == '\n')
 							pos += sprintf(sline + pos, "\\n");
@@ -603,7 +608,8 @@ char *disassemble(const uint64_t *buff, const char *outputPath, int noOutput){
 						else
 							pos += sprintf(sline + pos, "%c", c);
 					}
-					sprintf(sline + pos, "\"\n");
+					if (pos <= (int)sizeof(sline) - 3)
+						sprintf(sline + pos, "\"\n");
 					lineListAppend(list, sline);
 					i = j + 1;	// consume the null terminator
 					continue;

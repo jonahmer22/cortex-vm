@@ -48,13 +48,21 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 	}
 	else{
 		// memory must be on the stack
+		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))) {
+			fprintf(stderr, "[ERROR 0x%04X]: Write outside of stack bounds rejected.\n", 0xD041);
+			// since we don't want to write just return early
+			return;
+		}
 		stackBase[addr - STACK_ADDR] = val;
 	}
 }
-uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
-	(void)codeBase;	// just to shut up the compiler
-
+uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase, uint64_t codeBaseSize){
 	if(addr < HEAP_ADDR){
+		if (addr >= codeBaseSize) {
+			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x%016llX is out of bounds (arena size %llu words).\n", 0xD042, addr, codeBaseSize);
+			// return early with an empty (0) value
+			return 0;
+		}
 		// allow reading of values from code section (useful for .data)
 		return codeBase[addr];
 	}
@@ -66,12 +74,17 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 	else{
 		// memory must be on the stack
+		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))) {
+			fprintf(stderr, "[ERROR 0x%04X]: Read outside of stack bounds rejected.\n", 0xD042);
+			// since we don't want to write just return early with a 0
+			return 0;
+		}
 		return stackBase[addr - STACK_ADDR];
 	}
 }
 
 // returns false if the VM should stop running (SYS_EXIT)
-static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code){
+static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code, uint64_t fileLength){
 	switch(regs[A13]){
 		// exit syscall
 		case SYS_EXIT:{
@@ -142,7 +155,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_STR:{
 			// print a string whose address is at A0
 			for(size_t i = 0; ; i++){
-				char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase);
+				char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase, fileLength);
 				if(chars == '\0'){
 					break;
 				}
@@ -155,16 +168,25 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					scanf("%lld", (int64_t *)&v);
+					if(scanf("%lld", (int64_t *)&v) != 1){
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8011);
+						v = 0;
+					}
 					break;
 				}
 				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
-					scanf("%llo", &v);
+					if (scanf("%llo", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8012);
+						v = 0;
+					}
 					break;
 				}
 				case 3:{
-					scanf("%llx", &v);
+					if (scanf("%llx", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8013);
+						v = 0;
+					}
 					break;
 				}
 				default:
@@ -181,16 +203,25 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					scanf("%llu", &v);
+					if (scanf("%llu", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8014);
+						v = 0;
+					}
 					break;
 				}
 				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
-					scanf("%llo", &v);
+					if (scanf("%llo", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8015);
+						v = 0;
+					}
 					break;
 				}
 				case 3:{
-					scanf("%llx", &v);
+					if (scanf("%llx", &v) != 1) {
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8016);
+						v = 0;
+					}
 					break;
 				}
 				default:
@@ -215,6 +246,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t maxLen = regs[A1];
 			size_t i = 0;
 			int c;
+			if (maxLen == 0) {
+				fprintf(stderr, "[ERROR 0x%04X]: Underflow prevented on readstring syscall with maxlen 0.\n", 0xE026);
+				break;
+			}
 			while(i < maxLen - 1 && (c = getchar()) != EOF && c != '\n'){
 				setWord(addr + i, (uint64_t)(unsigned char)c, codeBase, stackBase);
 				i++;
@@ -238,7 +273,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (%lld) is less than min (%lld).\n", 0x0213, mx, mn);
 				exit(EXIT_FAILURE);
 			}
-			uint64_t range = (uint64_t)(mx - mn) + 1;
+			uint64_t range = (uint64_t)mx - (uint64_t)mn + 1;
 			regs[A0] = (uint64_t)(mn + (int64_t)(((uint64_t)rand() << 32 | (uint64_t)rand()) % range));
 			break;
 		}
@@ -249,7 +284,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			size_t pi = 0;
 			uint64_t addr = regs[A0];
 			char c;
-			while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, stackBase)) != '\0')
+			while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, stackBase, fileLength)) != '\0')
 				path[pi++] = c;
 			path[pi] = '\0';
 
@@ -301,11 +336,17 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			int c;
 			uint64_t wi = 0;
 			while((c = fgetc(fdTable[fd])) != EOF){
+				if ((bufAddr - STACK_ADDR + wi) >= (STACKSIZE / sizeof(uint64_t))) {
+					fprintf(stderr, "[FATAL 0x%04X]: File descriptor table overflow.\n", 0xD212);
+					break;
+				}
 				stackBase[bufAddr - STACK_ADDR + wi] = (uint64_t)(unsigned char)c;
 				wi++;
 			}
 			// null terminate
-			stackBase[bufAddr - STACK_ADDR + wi] = 0;
+			if ((bufAddr - STACK_ADDR + wi) < (STACKSIZE / sizeof(uint64_t))) {
+				stackBase[bufAddr - STACK_ADDR + wi] = 0;
+			}
 			regs[A0] = bufAddr;
 			break;
 		}
@@ -325,7 +366,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			}
 			uint64_t addr = regs[A1];
 			char c;
-			while((c = (char)loadWord(addr++, codeBase, stackBase)) != '\0')
+			while((c = (char)loadWord(addr++, codeBase, stackBase, fileLength)) != '\0')
 				fputc(c, fdTable[fd]);
 			break;
 		}
@@ -351,7 +392,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		}
 		case SYS_READ_FLOAT:{
 			double v = 0;
-			scanf("%lf", &v);
+			if (scanf("%lf", &v) != 1) {
+				fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8017);
+				v = 0;
+			}
 			memcpy(&regs[A0], &v, sizeof(v));
 			int ch;
 			while((ch = getchar()) != '\n' && ch != EOF) continue;
@@ -837,7 +881,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 
 			switch(funct){
 				case FN_LW:{
-					regs[rd] = loadWord((uint64_t)(regs[ra] + imm), codeBase, stackBase);
+					regs[rd] = loadWord((uint64_t)(regs[ra] + imm), codeBase, stackBase, fileLength);
 					break;
 				}
 				default:
@@ -916,7 +960,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;
 				}
 				case FN_SYSCALL:{
-					if(!handleSyscall(regs, codeBase, stackBase, exit_code))
+					if(!handleSyscall(regs, codeBase, stackBase, exit_code, fileLength))
 						running = false;
 					break;
 				}
