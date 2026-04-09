@@ -332,16 +332,15 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			int c;
 			uint64_t wi = 0;
 			while((c = fgetc(fdTable[fd])) != EOF){
-				if (bufAddr + wi >= STACKSIZE) {
+				if ((bufAddr - STACK_ADDR + wi) >= (STACKSIZE / sizeof(uint64_t))) {
 					fprintf(stderr, "[FATAL 0x%04X]: File descriptor table overflow.\n", 0xD212);
-					stackBase[STACK_ADDR + STACKSIZE - 1] = 0;
-					continue;
+					break;
 				}
 				stackBase[bufAddr - STACK_ADDR + wi] = (uint64_t)(unsigned char)c;
 				wi++;
 			}
 			// null terminate
-			if ((bufAddr - STACKSIZE + wi) < STACKSIZE) {
+			if ((bufAddr - STACK_ADDR + wi) < (STACKSIZE / sizeof(uint64_t))) {
 				stackBase[bufAddr - STACK_ADDR + wi] = 0;
 			}
 			regs[A0] = bufAddr;
