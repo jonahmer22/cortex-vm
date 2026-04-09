@@ -269,7 +269,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (%lld) is less than min (%lld).\n", 0x0213, mx, mn);
 				exit(EXIT_FAILURE);
 			}
-			uint64_t range = (uint64_t)(mx - mn) + 1;
+			uint64_t range = (uint64_t)mx - (uint64_t)mn + 1;
 			regs[A0] = (uint64_t)(mn + (int64_t)(((uint64_t)rand() << 32 | (uint64_t)rand()) % range));
 			break;
 		}
