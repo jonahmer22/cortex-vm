@@ -48,12 +48,15 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 	}
 	else{
 		// memory must be on the stack
+		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))) {
+			fprintf(stderr, "[ERROR 0x%04X]: Write outside of stack bounds rejected.\n", 0xD041);
+			// since we don't want to write just return early
+			return;
+		}
 		stackBase[addr - STACK_ADDR] = val;
 	}
 }
 uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
-	(void)codeBase;	// just to shut up the compiler
-
 	if(addr < HEAP_ADDR){
 		// allow reading of values from code section (useful for .data)
 		return codeBase[addr];
@@ -66,6 +69,11 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 	else{
 		// memory must be on the stack
+		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))) {
+			fprintf(stderr, "[ERROR 0x%04X]: Read outside of stack bounds rejected.\n", 0xD042);
+			// since we don't want to write just return early with a 0
+			return 0;
+		}
 		return stackBase[addr - STACK_ADDR];
 	}
 }
@@ -156,7 +164,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			switch(regs[A1]){
 				case 0:{
 					if(scanf("%lld", (int64_t *)&v) != 1){
-						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8011);
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8011);
 						v = 0;
 					}
 					break;
@@ -164,14 +172,14 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
 					if (scanf("%llo", &v) != 1) {
-						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8012);
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8012);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
 					if (scanf("%llx", &v) != 1) {
-						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8013);
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8013);
 						v = 0;
 					}
 					break;
@@ -191,7 +199,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			switch(regs[A1]){
 				case 0:{
 					if (scanf("%llu", &v) != 1) {
-						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8014);
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8014);
 						v = 0;
 					}
 					break;
@@ -199,14 +207,14 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
 					if (scanf("%llo", &v) != 1) {
-						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8015);
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8015);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
 					if (scanf("%llx", &v) != 1) {
-						fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8016);
+						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8016);
 						v = 0;
 					}
 					break;
@@ -370,7 +378,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_READ_FLOAT:{
 			double v = 0;
 			if (scanf("%lf", &v) != 1) {
-				fprintf(stderr, "[ERROR 0x%04X]: Improper input.", 0x8017);
+				fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8017);
 				v = 0;
 			}
 			memcpy(&regs[A0], &v, sizeof(v));
