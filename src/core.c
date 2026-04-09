@@ -341,7 +341,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				wi++;
 			}
 			// null terminate
-			if (!bufAddr + wi >= STACKSIZE) {
+			if ((bufAddr - STACKSIZE + wi) < STACKSIZE) {
 				stackBase[bufAddr - STACK_ADDR + wi] = 0;
 			}
 			regs[A0] = bufAddr;
