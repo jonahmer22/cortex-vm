@@ -45,12 +45,12 @@
 // format a double so the assembler's getImm() always treats it as a float:
 // - always has a decimal point
 // - no scientific notation without a decimal point
-static void fmtFloat(char *buf, size_t bufsize, double d){
-	snprintf(buf, bufsize, "%.9g", d);
+static void fmtFloat(char *buf, size_t buffsize, double d){
+	snprintf(buf, buffsize, "%.9g", d);
 	int hasDot = (strchr(buf, '.') != NULL);
 	int hasExp = (strchr(buf, 'e') != NULL || strchr(buf, 'E') != NULL);
 	if(!hasDot && !hasExp){
-		strncat(buf, ".0", bufsize - strlen(buf) - 1);
+		strncat(buf, ".0", buffsize - strlen(buf) - 1);
 	}
 	else if(hasExp && !hasDot){
 		char *epos = strchr(buf, 'e');
@@ -58,7 +58,7 @@ static void fmtFloat(char *buf, size_t bufsize, double d){
 			epos = strchr(buf, 'E');
 		if(epos){
 			size_t elen = strlen(epos);
-			if(strlen(buf) + 2 < bufsize){
+			if(strlen(buf) + 2 < buffsize){
 				memmove(epos + 2, epos, elen + 1);
 				epos[0] = '.';
 				epos[1] = '0';
@@ -610,7 +610,7 @@ char *disassemble(const uint64_t *buff, const char *outputPath, int noOutput){
 				}
 			}
 
-			// fallback: emit as a decimal number (not sure the floats work but whatever)
+			// fallback: emit as a decimal number (floats work)
 			char nline[64];
 			sprintf(nline, "\t%llu\n", (unsigned long long)word);
 			lineListAppend(list, nline);

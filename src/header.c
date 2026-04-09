@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "../include/defs.h"
 #include "../include/header.h"
@@ -39,7 +40,7 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 }
 
 void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *dataOffset){
-	(void)dataOffset;	// I don't feel like changing this everywhere or getting rid of the arguement so this is fine
+	(void)dataOffset;	// I don't feel like changing this everywhere or getting rid of the argument so this is fine
 	// ===================
 	// validate the header
 	// ===================
@@ -51,7 +52,7 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 	}
 	// make sure that the magic number is the same should be ".:CORT" in ascii
 	if(*magic != 0x00002E3A434F5254){
-		fprintf(stderr, "[HEADER FORMATTING]: Binary header is not propperly formatted.\n");
+		fprintf(stderr, "[HEADER FORMATTING]: Binary header is not properly formatted.\n");
 		exit(EXIT_FAILURE);
 	}
 	// make sure that the fileSize and fileLength match

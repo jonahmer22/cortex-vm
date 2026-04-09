@@ -2,7 +2,6 @@
 #define UTILS_H
 
 #include <stdint.h>
-#include <stddef.h>
 
 // read a file into a char buffer and returns a pointer to that
 char *readFile(const char *path, size_t *outLen);

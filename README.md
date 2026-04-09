@@ -79,12 +79,12 @@ main:
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [TUTORIAL.md](TUTORIAL.md) | Step-by-step introduction — from building to writing real programs |
-| [LIBRARY.md](LIBRARY.md) | How to embed Cortex-VM as a library in another C project |
-| [SPEC.md](SPEC.md) | Full ISA and implementation reference |
-| [CHANGELOG.md](CHANGELOG.md) | Version history |
+| Document                     | Description                                                         |
+|------------------------------|---------------------------------------------------------------------|
+| [TUTORIAL.md](TUTORIAL.md)   | Step-by-step introduction — from building to writing real programs  |
+| [LIBRARY.md](LIBRARY.md)     | How to embed Cortex-VM as a library in another C project            |
+| [SPEC.md](SPEC.md)           | Full ISA and implementation reference                               |
+| [CHANGELOG.md](CHANGELOG.md) | Version history                                                     |
 
 ---
 
@@ -94,28 +94,28 @@ main:
 
 64 general-purpose 64-bit registers with conventional aliases:
 
-| Alias | Physical | Role |
-|-------|----------|------|
-| `zero` | r0 | Hardwired zero |
-| `pc` | r1 | Program counter |
-| `sp` | r2 | Stack pointer |
-| `ra` | r3 | Return address |
-| `s0`–`s13` | r4–r17 | Callee-saved |
-| `a0`–`a13` | r18–r31 | Caller-saved; args, return values, syscall number (`a13`) |
-| `t0`–`t31` | r32–r63 | Temporaries |
+| Alias      | Physical | Role                                                      |
+|------------|----------|-----------------------------------------------------------|
+| `zero`     | r0       | Hardwired zero                                            |
+| `pc`       | r1       | Program counter                                           |
+| `sp`       | r2       | Stack pointer                                             |
+| `ra`       | r3       | Return address                                            |
+| `s0`–`s13` | r4–r17   | Callee-saved                                              |
+| `a0`–`a13` | r18–r31  | Caller-saved; args, return values, syscall number (`a13`) |
+| `t0`–`t31` | r32–r63  | Temporaries                                               |
 
 ### Instruction Formats
 
-| Format | Opcode | Description |
-|--------|--------|-------------|
-| R | `0x81` | Register-to-register ALU |
-| I | `0x82` | Immediate ALU / jump |
-| S | `0x83` | Store |
-| L | `0x84` | Load |
-| B | `0x85` | Branch (PC-relative, 36-bit offset) |
-| SYS | `0x86` | System (`halt`, `syscall`, `nop`, `break`) |
-| MR / MI | `0xE1` / `0xE2` | M extension: multiply/divide |
-| FR / FI / FB | `0xF1` / `0xF2` / `0xF3` | F extension: float ALU and branches |
+| Format       | Opcode                   | Description                                |
+|--------------|--------------------------|--------------------------------------------|
+| R            | `0x81`                   | Register-to-register ALU                   |
+| I            | `0x82`                   | Immediate ALU / jump                       |
+| S            | `0x83`                   | Store                                      |
+| L            | `0x84`                   | Load                                       |
+| B            | `0x85`                   | Branch (PC-relative, 36-bit offset)        |
+| SYS          | `0x86`                   | System (`halt`, `syscall`, `nop`, `break`) |
+| MR / MI      | `0xE1` / `0xE2`          | M extension: multiply/divide               |
+| FR / FI / FB | `0xF1` / `0xF2` / `0xF3` | F extension: float ALU and branches        |
 
 ### Example: Loop and Sum
 
@@ -169,18 +169,18 @@ Float values live in the same register file — float instructions reinterpret t
 
 ## Syscalls
 
-| Number | Name | Description |
-|--------|------|-------------|
-| 0 | `SYS_EXIT` | Terminate |
-| 1 | `SYS_PRINT_INT` | Print signed integer (a1: 0=dec, 1=bin, 2=oct, 3=hex) |
-| 2 | `SYS_PRINT_UINT` | Print unsigned integer |
-| 3 | `SYS_PRINT_CHAR` | Print character |
-| 4 | `SYS_PRINT_FLOAT` | Print float (a1=decimal precision) |
-| 5 | `SYS_PRINT_STR` | Print null-terminated string |
-| 11–15 | `SYS_READ_*` | Read int/uint/char/float/string from stdin |
-| 21–24 | `SYS_RAND_*` | Seed, rand int, ranged int, rand float |
-| 31–34 | `SYS_FILE_*` | Open/read/write/close files |
-| 41–42 | `SYS_TIME_*` | Get time (ms), sleep |
+| Number | Name              | Description                                           |
+|--------|-------------------|-------------------------------------------------------|
+| 0      | `SYS_EXIT`        | Terminate                                             |
+| 1      | `SYS_PRINT_INT`   | Print signed integer (a1: 0=dec, 1=bin, 2=oct, 3=hex) |
+| 2      | `SYS_PRINT_UINT`  | Print unsigned integer                                |
+| 3      | `SYS_PRINT_CHAR`  | Print character                                       |
+| 4      | `SYS_PRINT_FLOAT` | Print float (a1=decimal precision)                    |
+| 5      | `SYS_PRINT_STR`   | Print null-terminated string                          |
+| 11–15  | `SYS_READ_*`      | Read int/uint/char/float/string from stdin            |
+| 21–24  | `SYS_RAND_*`      | Seed, rand int, ranged int, rand float                |
+| 31–34  | `SYS_FILE_*`      | Open/read/write/close files                           |
+| 41–42  | `SYS_TIME_*`      | Get time (ms), sleep                                  |
 
 Full details in [SPEC.md](SPEC.md).
 

@@ -98,7 +98,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				// get any value;
 				// - list of numbers (array: decimal, octal, binary, hex)
 				// - any char value
-				// - a string which is to be stored like an array; each char has to have it's own uint64_t since we only work in words
+				// - a string which is to be stored like an array; each char has to have its own uint64_t since we only work in words
 				getData(list);
 			}
 		}
@@ -180,7 +180,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				}
 				default:{
 					goto OP_FAILURE;
-					break;
 				}
 			}
 			break;
@@ -188,7 +187,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 		case 'O':
 		case 'o':{
 			head++;
-			// should be or or ori
+			// should be or | ori
 			if(cmpChars(head, "ri", 2)){
 				head += 2;
 				// is ori
@@ -332,7 +331,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 						}
 						default:{
 							goto OP_FAILURE;
-							break;
 						}
 					}
 					break;
@@ -374,7 +372,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				}
 				default:{
 					goto OP_FAILURE;
-					break;
 				}
 			}
 			break;
@@ -506,7 +503,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 				}
 				default:{
 					goto OP_FAILURE;
-					break;
 				}
 			}
 			break;
@@ -663,7 +659,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 		case 'f':{
 			head++;
 			*extensions |= EXT_FLOAT;
-			// might be a f extension opcode
+			// might be an f extension opcode
 			switch(*head){
 				case 'A':
 				case 'a':{
@@ -692,7 +688,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					}
 					else
 						goto OP_FAILURE;
-					break;
 				}
 				case 'S':
 				case 's':{
@@ -715,13 +710,12 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					else if(cmpChars(head, "qrt", 3)){
 						head += 3;
 						// dealing with fsqrt
-						*opcode = OP_FI;	// NOTE: for all 1 reg arg values we are going to reuse I types but in Core just not decode the imm
+						*opcode = OP_FI;	// NOTE: for all 1 reg arg values we are going to reuse an I type but in Core just not decode the imm
 						*funct = FN_FSQRT;
 						break;
 					}
 					else
 						goto OP_FAILURE;
-					break;
 				}
 				case 'N':
 				case 'n':{
@@ -737,7 +731,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					}
 					else
 						goto OP_FAILURE;
-					break;
 				}
 				case 'M':
 				case 'm':{
@@ -759,7 +752,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					}
 					else
 						goto OP_FAILURE;
-					break;
 				}
 				case 'D':
 				case 'd':{
@@ -781,7 +773,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					}
 					else
 						goto OP_FAILURE;
-					break;
 				}
 				case 'T':
 				case 't':{
@@ -803,7 +794,6 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					}
 					else
 						goto OP_FAILURE;
-					break;
 				}
 				case 'B':
 				case 'b':{
@@ -842,6 +832,9 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 					else
 						goto OP_FAILURE;
 				}
+				default: {
+					goto OP_FAILURE;
+				}
 			}
 			break;
 		}
@@ -849,7 +842,7 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 		case 'i':{
 			head++;
 			*extensions |= EXT_FLOAT;
-			// could be a itof
+			// could be an itof
 			if(cmpChars(head, "tof", 3)){
 				head += 3;
 				// dealing with itof
@@ -859,13 +852,12 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 			}
 			else
 				goto OP_FAILURE;
-			break;
 		}
 		case 'U':
 		case 'u':{
 			head++;
 			*extensions |= EXT_FLOAT;
-			// could be a uitof
+			// could be an uitof
 			if(cmpChars(head, "itof", 4)){
 				head += 4;
 				// is uitof
@@ -875,13 +867,11 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 			}
 			else
 				goto OP_FAILURE;
-			break;
 		}
 		default:{
 			OP_FAILURE:
 			fprintf(stderr, "[FATAL 0x%04X]: Non-existent opcode on line %zu.\n", 0x0301, line);
 			exit(EXIT_FAILURE);
-			break;
 		}
 	}
 }
@@ -899,7 +889,7 @@ void getReg(uint8_t *r){
 		case 'R':
 		case 'r':{
 			head++;
-			// should be a litteral reg number or ra
+			// should be a literal reg number or ra
 			if(cmpChars(head, "a", 1)){
 				head++;
 				// is ra
@@ -907,7 +897,7 @@ void getReg(uint8_t *r){
 				break;
 			}
 			uint8_t reg = parseRegNum();
-			if(!(reg < 64))
+			if(reg >= 64)
 				goto REG_FAILURE;
 			
 			*r = reg;
@@ -924,7 +914,7 @@ void getReg(uint8_t *r){
 				break;
 			}
 			uint8_t reg = parseRegNum();
-			if(!(reg < 14))
+			if(reg >= 14)
 				goto REG_FAILURE;
 			
 			*r = reg + S0;
@@ -935,7 +925,7 @@ void getReg(uint8_t *r){
 			head++;
 			// should be an arg reg number
 			uint8_t reg = parseRegNum();
-			if(!(reg < 14))
+			if(reg >= 14)
 				goto REG_FAILURE;
 			
 			*r = reg + A0;
@@ -946,7 +936,7 @@ void getReg(uint8_t *r){
 			head++;
 			// should be a temp reg number
 			uint8_t reg = parseRegNum();
-			if(!(reg < 32))
+			if(reg >= 32)
 				goto REG_FAILURE;
 			
 			*r = reg + T0;
@@ -964,7 +954,6 @@ void getReg(uint8_t *r){
 			}
 			else
 				goto REG_FAILURE;
-			break;
 		}
 		case 'P':
 		case 'p':{
@@ -978,13 +967,11 @@ void getReg(uint8_t *r){
 			}
 			else
 				goto REG_FAILURE;
-			break;
 		}
 		default:{
 			REG_FAILURE:
 			fprintf(stderr, "[FATAL 0x%04X]: Non-existent register on line %zu.\n", 0x0303, line);
 			exit(EXIT_FAILURE);
-			break;
 		}
 	}
 }
@@ -1089,7 +1076,6 @@ void getImm(int64_t *val, uint64_t pc){
 			default:{
 				fprintf(stderr, "[FATAL 0x%04X]: Not recognized number format on line %zu.\n", 0x0304, line);
 				exit(EXIT_FAILURE);
-				break;
 			}
 		}
 	}
@@ -1131,7 +1117,7 @@ void getImm(int64_t *val, uint64_t pc){
 		}
 	}
 
-	*val = neg ? -temp : temp;
+	*val = neg ? -(int64_t)temp : (int64_t)temp;
 }
 void getData(List *list){
 	// we are parsing a string
@@ -1210,7 +1196,7 @@ void getData(List *list){
 uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	// implement assembler
 	// - must check for opcode then parse based off of the char value of that opcode.
-	// - use macros for destination indeces and addresses so easy to change in the future
+	// - use macros for destination indexes and addresses so easy to change in the future
 	// - return an array of words representing the code
 
 	// reset line counter for accurate error messages on each call
@@ -1359,7 +1345,6 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 			}
 			case OP_LABEL:{
 				continue;
-				break;
 			}
 			case OP_DATA:{
 				// dataOffset was already captured inside getOpcodeFunct before data words were appended
@@ -1368,7 +1353,6 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 			default:{
 				fprintf(stderr, "[FATAL 0x%04X]: This should not be possible. If you are seeing this please contact a developer.\n[DEBUG]: Illegal opcode: 0x%02X\n[DEBUG]: Illegal funct: 0x%02X\n[DEBUG]: Illegal flags: 0x%01X\n", 0x0302, opcode, funct, flags);
 				exit(EXIT_FAILURE);
-				break;
 			}
 		}
 
@@ -1381,7 +1365,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	}
 	// patch in label values
 	for(size_t i = 0; i < labelsPatches->len; i++){
-		// walk the list of patches; find the approprate label address to replace with; update the instruction
+		// walk the list of patches; find the appropriate label address to replace with; update the instruction
 		LabelNode *p = labelListGet(labelsPatches, i);
 		LabelNode *r = labelListFind(labelsRegistry, p->start, p->end);
 		if(r == NULL){
@@ -1439,7 +1423,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 		listSet(list, 2, HEADER_LEN);	// if not set the first instruction as entry point
 
 	listSet(list, 3, extensions);	// set extension flags, default is 0 so should be all fine if none exist
-	listSet(list, 4, dataOffset);	// set the data offset decault is 0
+	listSet(list, 4, dataOffset);	// set the data offset default is 0
 
 	// return the raw array of the word list
 	uint64_t *words = listToArray(list);
@@ -1449,7 +1433,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 	labelListDestroy(labelsRegistry);
 	labelListDestroy(labelsPatches);
 
-	// check if we want to dissable output
+	// check if we want to disable output
 	if(!noOutput){
 		// output the assembled binary at a given path or a.cxv
 		const char *outPath = outputPath ? outputPath : "a.out";

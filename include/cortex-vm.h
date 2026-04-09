@@ -2,7 +2,7 @@
 #define CORTEX_VM_H
 
 #include <stdint.h>
-#include <stddef.h>
+#include <stdlib.h>
 
 // assemble source text and write binary to outputPath (defaults to "a.out" if NULL)
 // returns heap-allocated word buffer; caller must free(); binary[1] == word count

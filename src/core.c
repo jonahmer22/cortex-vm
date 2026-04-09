@@ -7,18 +7,12 @@
 #include <time.h>
 #include <math.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
+#include "../include/core.h"
+#include "../include/defs.h"
 
 // file descriptor table
 #define MAX_FDS 64
 static FILE *fdTable[MAX_FDS] = {NULL};
-
-#include "../include/core.h"
-#include "../include/defs.h"
 
 #define OPCODE(w)		(((w) >> 56) & 0xff)
 #define FUNCT(w)		(((w) >> 48) & 0xff)
@@ -42,7 +36,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 	(void)codeBase;	// just to shut up the compiler
 
 	if(addr < HEAP_ADDR){
-		// just error out, idk why this would be useful
+		// just error out, I don't know why this would be useful
 		fprintf(stderr, "[FATAL 0x%04X]: Illegal write to code region at 0x%016llX.\n", 0x0210, addr);
 		exit(EXIT_FAILURE);
 	}
@@ -61,7 +55,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	(void)codeBase;	// just to shut up the compiler
 
 	if(addr < HEAP_ADDR){
-		// allow reading of values from code section (usefull for .data)
+		// allow reading of values from code section (useful for .data)
 		return codeBase[addr];
 	}
 	else if(addr < STACK_ADDR){
@@ -93,7 +87,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:{
 					printf("0b");
-					int64_t u = regs[A0];
+					int64_t u = (int64_t)regs[A0];
 					for(int i = 63; i >= 0; --i)
 						putchar((u >> i) & 1 ? '1' : '0');
 					break;
@@ -121,7 +115,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:{
 					printf("0b");
-					int64_t u = regs[A0];
+					int64_t u = (int64_t)regs[A0];
 					for(int i = 63; i >= 0; --i)
 						putchar((u >> i) & 1 ? '1' : '0');
 					break;
@@ -146,7 +140,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		case SYS_PRINT_STR:{
-			// print a string who's address is at A0
+			// print a string whose address is at A0
 			for(size_t i = 0; ; i++){
 				char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase);
 				if(chars == '\0'){
@@ -164,10 +158,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					scanf("%lld", (int64_t *)&v);
 					break;
 				}
-				case 1:{	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
-					scanf("%llo", &v);
-					break;
-				}
+				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
 					scanf("%llo", &v);
 					break;
@@ -183,7 +174,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			regs[A0] = (uint64_t)v;
 			// flush remaining input including newline
 			int ch;
-			while((ch = getchar()) != '\n' && ch != EOF);
+			while((ch = getchar()) != '\n' && ch != EOF) continue;
 			break;
 		}
 		case SYS_READ_UINT:{
@@ -193,10 +184,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					scanf("%llu", &v);
 					break;
 				}
-				case 1:{
-					scanf("%llo", &v);
-					break;
-				}
+				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
 					scanf("%llo", &v);
 					break;
@@ -212,14 +200,14 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			regs[A0] = v;
 			// flush remaining input including newline
 			int ch;
-			while((ch = getchar()) != '\n' && ch != EOF);
+			while((ch = getchar()) != '\n' && ch != EOF) continue;
 			break;
 		}
 		case SYS_READ_CHAR:{
 			regs[A0] = (uint64_t)getchar();
 			// flush remaining input including newline
 			int ch;
-			while((ch = getchar()) != '\n' && ch != EOF);
+			while((ch = getchar()) != '\n' && ch != EOF) continue;
 			break;
 		}
 		case SYS_READ_STR:{
@@ -366,7 +354,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			scanf("%lf", &v);
 			memcpy(&regs[A0], &v, sizeof(v));
 			int ch;
-			while((ch = getchar()) != '\n' && ch != EOF);
+			while((ch = getchar()) != '\n' && ch != EOF) continue;
 			break;
 		}
 		case SYS_RAND_FLOAT:{
@@ -427,7 +415,6 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 					default:
 						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 						exit(EXIT_FAILURE);
-						break;
 				}
 				handled = true;
 				break;
@@ -439,7 +426,7 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 				uint8_t rd = I_RD(instr);
 				uint8_t flags = FLAGS(instr);
 				
-				// propperly extract the data from the instruction
+				// properly extract the data from the instruction
 				uint32_t immBits = (uint32_t)I_IMM(instr);
 				float immF = 0;
 				memcpy(&immF, &immBits, sizeof(immF));
@@ -510,7 +497,6 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 					default:
 						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 						exit(EXIT_FAILURE);
-						break;
 				}
 				handled = true;
 				break;
@@ -557,9 +543,12 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 					default:
 						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 						exit(EXIT_FAILURE);
-						break;
 				}
 				handled = true;
+				break;
+			}
+			default:{
+				handled = false;
 				break;
 			}
 		}
@@ -608,7 +597,6 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 					default:
 						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 						exit(EXIT_FAILURE);
-						break;
 				}
 				handled = true;
 				break;
@@ -619,7 +607,7 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 				uint8_t ra = I_RA(instr);
 				uint8_t rd = I_RD(instr);
 				uint64_t imm = SIGN_EXT32(I_IMM(instr));
-				// dont think this is actually needed
+				// don't think this is actually needed
 				// uint8_t flags = FLAGS(instr);
 				switch(funct){
 					case FN_MUL:{
@@ -646,9 +634,12 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 					default:
 						fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 						exit(EXIT_FAILURE);
-						break;
 				}
 				handled = true;
+				break;
+			}
+			default:{
+				handled = false;
 				break;
 			}
 		}
@@ -699,7 +690,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 						default:
 							fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, flags);
 							exit(EXIT_FAILURE);
-							break;
 					}
 					break;
 				}
@@ -732,7 +722,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 						default:
 							fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0209, flags);
 							exit(EXIT_FAILURE);
-							break;
 					}
 					break;
 				}
@@ -751,7 +740,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0202, funct);
 					exit(EXIT_FAILURE);
-					break;
 			}
 			break;
 		}
@@ -777,7 +765,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 						default:
 							fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x020A, flags);
 							exit(EXIT_FAILURE);
-							break;
 					}
 					break;
 				}
@@ -810,7 +797,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 						default:
 							fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x020B, flags);
 							exit(EXIT_FAILURE);
-							break;
 					}
 					break;
 				}
@@ -823,7 +809,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0203, funct);
 					exit(EXIT_FAILURE);
-					break;
 			}
 			break;
 		}
@@ -841,7 +826,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0204, funct);
 					exit(EXIT_FAILURE);
-					break;
 			}
 			break;
 		}
@@ -859,7 +843,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0205, funct);
 					exit(EXIT_FAILURE);
-					break;
 			}
 			break;
 		}
@@ -921,7 +904,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0206, funct);
 					exit(EXIT_FAILURE);
-					break;
 			}
 			break;
 		}
@@ -956,7 +938,6 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0207, funct);
 					exit(EXIT_FAILURE);
-					break;
 			}
 			break;
 		}

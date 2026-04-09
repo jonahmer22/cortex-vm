@@ -2,7 +2,6 @@
 #define HEADER_H
 
 #include <stdint.h>
-#include <stdlib.h>
 
 // parses a header into multiple variables
 void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint64_t *offset, uint64_t *extensions, uint64_t *dataOffset, const uint64_t *buff);

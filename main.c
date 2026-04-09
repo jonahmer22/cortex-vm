@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "deps/arena/arena.h"
 #include "deps/cliargs/cliargs.h"
@@ -31,7 +32,7 @@ int main(int argc, char **argv){
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
 
-	// need to parse arguements to check for flags like -a to assemble or others
+	// need to parse arguments to check for flags like -a to assemble or others
 	cliargsParse(argc, argv);
 	if(!cliargsValid()){
 		fprintf(stderr, "[FATAL 0x%04X]: Invalid arguments: %s.\n", 0x0001, cliargsError());
@@ -61,7 +62,7 @@ int main(int argc, char **argv){
 	// check for the --no-output flag
 	int noOutput = cliargsFlag("no-output", 'n');
 
-	// check for flags to either assemble, dissassemble, open visual mode
+	// check for flags to either assemble, disassemble, open visual mode
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
 		if(path == NULL)
 			path = cliargsArg("assemble", 'a');
