@@ -56,8 +56,13 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 		stackBase[addr - STACK_ADDR] = val;
 	}
 }
-uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
+uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase, uint64_t codeBaseSize){
 	if(addr < HEAP_ADDR){
+		if (addr >= codeBaseSize) {
+			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x%016llX is out of bounds (arena size %llu words).\n", 0xD042, addr, codeBaseSize);
+			// return early with an empty (0) value
+			return 0;
+		}
 		// allow reading of values from code section (useful for .data)
 		return codeBase[addr];
 	}
@@ -79,7 +84,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 }
 
 // returns false if the VM should stop running (SYS_EXIT)
-static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code){
+static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code, uint64_t fileLength){
 	switch(regs[A13]){
 		// exit syscall
 		case SYS_EXIT:{
@@ -150,7 +155,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_STR:{
 			// print a string whose address is at A0
 			for(size_t i = 0; ; i++){
-				char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase);
+				char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase, fileLength);
 				if(chars == '\0'){
 					break;
 				}
@@ -275,7 +280,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			size_t pi = 0;
 			uint64_t addr = regs[A0];
 			char c;
-			while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, stackBase)) != '\0')
+			while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, stackBase, fileLength)) != '\0')
 				path[pi++] = c;
 			path[pi] = '\0';
 
@@ -327,11 +332,18 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			int c;
 			uint64_t wi = 0;
 			while((c = fgetc(fdTable[fd])) != EOF){
+				if (bufAddr + wi >= STACKSIZE) {
+					fprintf(stderr, "[FATAL 0x%04X]: File descriptor table overflow.\n", 0xD212);
+					stackBase[STACK_ADDR + STACKSIZE - 1] = 0;
+					continue;
+				}
 				stackBase[bufAddr - STACK_ADDR + wi] = (uint64_t)(unsigned char)c;
 				wi++;
 			}
 			// null terminate
-			stackBase[bufAddr - STACK_ADDR + wi] = 0;
+			if (!bufAddr + wi >= STACKSIZE) {
+				stackBase[bufAddr - STACK_ADDR + wi] = 0;
+			}
 			regs[A0] = bufAddr;
 			break;
 		}
@@ -351,7 +363,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			}
 			uint64_t addr = regs[A1];
 			char c;
-			while((c = (char)loadWord(addr++, codeBase, stackBase)) != '\0')
+			while((c = (char)loadWord(addr++, codeBase, stackBase, fileLength)) != '\0')
 				fputc(c, fdTable[fd]);
 			break;
 		}
@@ -866,7 +878,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 
 			switch(funct){
 				case FN_LW:{
-					regs[rd] = loadWord((uint64_t)(regs[ra] + imm), codeBase, stackBase);
+					regs[rd] = loadWord((uint64_t)(regs[ra] + imm), codeBase, stackBase, fileLength);
 					break;
 				}
 				default:
@@ -945,7 +957,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;
 				}
 				case FN_SYSCALL:{
-					if(!handleSyscall(regs, codeBase, stackBase, exit_code))
+					if(!handleSyscall(regs, codeBase, stackBase, exit_code, fileLength))
 						running = false;
 					break;
 				}
