@@ -246,6 +246,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t maxLen = regs[A1];
 			size_t i = 0;
 			int c;
+			if (maxLen == 0) {
+				fprintf(stderr, "[ERROR 0x%04X]: Underflow prevented on readstring syscall with maxlen 0.\n", 0xE026);
+				break;
+			}
 			while(i < maxLen - 1 && (c = getchar()) != EOF && c != '\n'){
 				setWord(addr + i, (uint64_t)(unsigned char)c, codeBase, stackBase);
 				i++;
