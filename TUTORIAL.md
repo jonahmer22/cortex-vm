@@ -664,12 +664,13 @@ Set `a13` to the call number, fill argument registers, then execute `syscall`. R
 | 23 | RAND_R_INT | `a0`=min, `a1`=max | `a0` |
 | 24 | RAND_FLOAT | — | `a0` |
 | 31 | FILE_OPEN | `a0`=path, `a1`=mode | `a0`=fd |
-| 32 | FILE_READ | `a0`=fd | `a0`=buf |
+| 32 | FILE_READ | `a0`=fd, `a1`=buf addr | `a0`=words written |
 | 33 | FILE_CLOSE | `a0`=fd | — |
 | 34 | FILE_WRITE | `a0`=fd, `a1`=buf | — |
 | 41 | TIME_GET | — | `a0`=ms |
 | 42 | TIME_SLEEP | `a0`=ms | — |
 | 51 | HEAP_GROW | `a0`=N words | `a0`=base addr |
+| 52 | HEAP_TOP  | — | `a0`=top addr |
 
 **Print format values (a1):** `0`=decimal, `1`=binary, `2`=octal, `3`=hex.
 

@@ -194,8 +194,9 @@
 
 // args:
 // A0 = file descriptor
+// A1 = address of destination buffer (heap or stack)
 // rets:
-// A0 = address of buffer containing file contents (null-terminated)
+// A0 = number of words written (not counting null terminator)
 #define SYS_FILE_READ   32
 
 // args:
@@ -220,6 +221,10 @@
 // rets:
 // A0 = address of allocated region, or 0 on failure
 #define SYS_HEAP_GROW   51
+
+// rets:
+// A0 = address of next word that would be allocated (equals HEAP_ADDR when heap is empty)
+#define SYS_HEAP_TOP    52
 
 // ================
 // registers

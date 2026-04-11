@@ -1,7 +1,8 @@
-"""Tests for heap memory via SYS_HEAP_GROW (syscall 51)."""
+"""Tests for heap memory via SYS_HEAP_GROW (51) and SYS_HEAP_TOP (52)."""
 from conftest import asm_out, prog, print_int, print_uint
 
 SYS_HEAP_GROW = 51
+SYS_HEAP_TOP  = 52
 
 
 def heap_alloc(nwords: int, dest: str = "a0") -> str:
@@ -163,6 +164,46 @@ def test_heap_alloc_zero_words_returns_zero():
         "    addi t2, a0, 0\n"
     )
     assert asm_out(prog(f"{src}{print_uint()}")) == "0"
+
+
+# ---------------------------------------------------------------------------
+# SYS_HEAP_TOP (syscall 52)
+# ---------------------------------------------------------------------------
+
+def test_heap_top_before_any_allocation():
+    # Before any SYS_HEAP_GROW call, heap top offset from HEAP_ADDR should be 0.
+    # Build HEAP_ADDR = 1 << 48 in registers, subtract from SYS_HEAP_TOP result.
+    src = (
+        f"    addi a13, zero, {SYS_HEAP_TOP}\n"
+        "    syscall\n"                          # a0 = HEAP_ADDR + heapUsed
+        "    addi t0, zero, 1\n"
+        "    slli t0, t0, 48\n"                  # t0 = HEAP_ADDR
+        "    sub t2, a0, t0\n"                   # t2 = heapUsed (should be 0)
+    )
+    assert asm_out(prog(f"{src}{print_uint()}")) == "0"
+
+
+def test_heap_top_after_single_alloc():
+    # After allocating N words, (SYS_HEAP_TOP - alloc_base) should equal N.
+    src = (
+        heap_alloc(5, dest="s0")                 # s0 = base of first alloc
+        + f"    addi a13, zero, {SYS_HEAP_TOP}\n"
+        + "    syscall\n"                         # a0 = HEAP_ADDR + 5
+        + "    sub t2, a0, s0\n"                  # t2 = (HEAP_ADDR+5) - (HEAP_ADDR+0) = 5
+    )
+    assert asm_out(prog(f"{src}{print_uint()}")) == "5"
+
+
+def test_heap_top_tracks_multiple_allocs():
+    # Two allocations of 3 and 4 words: top offset from first base should be 7.
+    src = (
+        heap_alloc(3, dest="s0")                 # s0 = HEAP_ADDR + 0
+        + heap_alloc(4, dest="s1")               # s1 = HEAP_ADDR + 3
+        + f"    addi a13, zero, {SYS_HEAP_TOP}\n"
+        + "    syscall\n"                         # a0 = HEAP_ADDR + 7
+        + "    sub t2, a0, s0\n"                  # t2 = 7
+    )
+    assert asm_out(prog(f"{src}{print_uint()}")) == "7"
 
 
 # ---------------------------------------------------------------------------

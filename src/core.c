@@ -338,23 +338,17 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				fprintf(stderr, "[FATAL 0x%04X]: Invalid file descriptor %d.\n", 0x0211, fd);
 				exit(EXIT_FAILURE);
 			}
-			// read into stack at current sp
-			uint64_t bufAddr = regs[SP];
+			// read into caller-supplied buffer (a1 = destination address)
+			uint64_t bufAddr = regs[A1];
 			int c;
 			uint64_t wi = 0;
 			while((c = fgetc(fdTable[fd])) != EOF){
-				if ((bufAddr - STACK_ADDR + wi) >= (STACKSIZE / sizeof(uint64_t))) {
-					fprintf(stderr, "[FATAL 0x%04X]: File descriptor table overflow.\n", 0xD212);
-					break;
-				}
-				stackBase[bufAddr - STACK_ADDR + wi] = (uint64_t)(unsigned char)c;
+				setWord(bufAddr + wi, (uint64_t)(unsigned char)c, codeBase, stackBase);
 				wi++;
 			}
 			// null terminate
-			if ((bufAddr - STACK_ADDR + wi) < (STACKSIZE / sizeof(uint64_t))) {
-				stackBase[bufAddr - STACK_ADDR + wi] = 0;
-			}
-			regs[A0] = bufAddr;
+			setWord(bufAddr + wi, 0, codeBase, stackBase);
+			regs[A0] = wi;	// return number of words written (not counting null terminator)
 			break;
 		}
 		case SYS_FILE_CLOSE:{
@@ -411,6 +405,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_RAND_FLOAT:{
 			double v = ((double)rand() / (double)RAND_MAX);
 			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
+		case SYS_HEAP_TOP: {
+			regs[A0] = HEAP_ADDR + heapUsed;
 			break;
 		}
 		case SYS_HEAP_GROW: {

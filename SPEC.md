@@ -235,12 +235,13 @@ System calls are invoked with `syscall`. Call number in `a13`, arguments in `a0`
 | `23` | `SYS_RAND_R_INT` | `a0`=min, `a1`=max | `a0`=value | Random integer in `[min, max]`. |
 | `24` | `SYS_RAND_FLOAT` | — | `a0`=value | Random float in `[0.0, 1.0]`. Requires F. |
 | `31` | `SYS_FILE_OPEN` | `a0`=path, `a1`=mode | `a0`=fd | Open file. mode: 0=read, 1=write, 2=append. |
-| `32` | `SYS_FILE_READ` | `a0`=fd | `a0`=buffer addr | Read entire file into buffer. |
+| `32` | `SYS_FILE_READ` | `a0`=fd, `a1`=buffer addr | `a0`=words written | Read entire file into caller-supplied buffer (heap or stack address). Returns word count, not counting the null terminator. |
 | `33` | `SYS_FILE_CLOSE` | `a0`=fd | — | Close file descriptor. |
 | `34` | `SYS_FILE_WRITE` | `a0`=fd, `a1`=buffer addr | — | Write null-terminated buffer to file. |
 | `41` | `SYS_TIME_GET` | — | `a0`=ms | Milliseconds since Unix epoch. |
 | `42` | `SYS_TIME_SLEEP` | `a0`=ms | — | Sleep for N milliseconds. |
 | `51` | `SYS_HEAP_GROW` | `a0`=N words | `a0`=base address | Allocate N words on the heap; returns the base word address of the new region (`0x0001…`). Returns 0 on failure or if N=0. The heap grows monotonically — the guest is responsible for any free/GC layer on top. |
+| `52` | `SYS_HEAP_TOP` | — | `a0`=top address | Returns the address of the next word that would be allocated (equals `HEAP_ADDR` when no heap has been allocated yet). Useful for implementing a guest-side allocator. |
 
 **Format values (a1 for print/read int/uint):** `0`=decimal, `1`=binary, `2`=octal, `3`=hex.
 

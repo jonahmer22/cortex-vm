@@ -182,7 +182,7 @@ Float values live in the same register file — float instructions reinterpret t
 | 21–24  | `SYS_RAND_*`      | Seed, rand int, ranged int, rand float                |
 | 31–34  | `SYS_FILE_*`      | Open/read/write/close files                           |
 | 41–42  | `SYS_TIME_*`      | Get time (ms), sleep                                  |
-| 51     | `SYS_HEAP_GROW`   | Allocate N words on heap; returns base address        |
+| 51–52  | `SYS_HEAP_*`      | Grow heap (alloc N words), query heap top address     |
 
 Full details in [SPEC.md](SPEC.md).
 
