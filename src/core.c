@@ -10,6 +10,11 @@
 #include "../include/core.h"
 #include "../include/defs.h"
 
+// heap
+static uint64_t *heapBase = NULL;
+static uint64_t heapUsed = 0;
+static uint64_t heapCap = 0;
+
 // file descriptor table
 #define MAX_FDS 64
 static FILE *fdTable[MAX_FDS] = {NULL};
@@ -89,6 +94,9 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		// exit syscall
 		case SYS_EXIT:{
 			*exit_code = regs[A0];
+			if (heapBase) {
+				free(heapBase);
+			}
 			return false;
 		}
 		// printing syscalls
@@ -404,6 +412,33 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_RAND_FLOAT:{
 			double v = ((double)rand() / (double)RAND_MAX);
 			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
+		case SYS_HEAP_GROW: {
+			uint64_t nwords = regs[A0];
+			if (nwords == 0) {
+				regs[A0] = 0;
+				break;
+			}
+
+			if (heapUsed + nwords > heapCap) {
+				uint64_t newCap = heapUsed + nwords;
+				uint64_t *newBase = realloc(heapBase, newCap * sizeof(uint64_t));
+				if (newBase == NULL) {
+					regs[A0] = 0;
+					break;
+				}
+				heapBase = newBase;
+				heapCap = newCap;
+			}
+
+			regs[A0] = heapUsed + HEAP_ADDR;
+			heapUsed += nwords;
+
+			#ifdef DEBUG
+			printf("[DEBUG]: Heap expanded to %lu, %lu words allocated.\n", newCap, nwords);
+			#endif
+
 			break;
 		}
 		default:{
