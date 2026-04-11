@@ -153,12 +153,10 @@ int main(int argc, char **argv){
 	// ===========
 	
 	// initialize the memory arenas
-	Arena *code = arenaLocalInit();
-	// Arena *heap = arenaLocalInit();
+	Arena *code  = arenaLocalInit();
 	Arena *stack = arenaLocalInit();
 
-	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
-	// TODO: when the heap is implemented initialize it here, for now do nothing
+	uint64_t *codeBase  = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
 	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
 
 	// move code into the code section
@@ -176,11 +174,11 @@ int main(int argc, char **argv){
 	uint64_t exit_code = 0;
 
 	// fetch, decode, and execute code
-	run(regs, codeBase,/* heapBase,*/ stackBase, fileLength, extensions, &exit_code);
+	run(regs, codeBase, stackBase, fileLength, extensions, &exit_code);
 
 	// free all the memory for the vm and exit with no errors
+	heapDestroy();
 	arenaLocalDestroy(code);
-	// arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
 
 	// free the buffers that hold code and source

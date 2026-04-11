@@ -96,9 +96,6 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		// exit syscall
 		case SYS_EXIT:{
 			*exit_code = regs[A0];
-			if (heapBase) {
-				free(heapBase);
-			}
 			return false;
 		}
 		// printing syscalls
@@ -1050,6 +1047,15 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 
 void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 	while(step(regs, codeBase, stackBase, fileLength, extensions, exit_code));
+}
+
+void heapDestroy(void){
+	if(heapBase){
+		free(heapBase);
+		heapBase = NULL;
+		heapUsed = 0;
+		heapCap  = 0;
+	}
 }
 
 // 	.:
