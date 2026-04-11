@@ -15,7 +15,7 @@ Thank you for your interest in contributing! Please read and follow our [Code of
 This project uses git submodules for its dependencies:
 
 ```sh
-git clone --recurse-submodules https://github.com/jonahmer22/language-cortex-vm.git
+git clone --recurse-submodules https://github.com/jonahmer22/cortex-vm.git
 ```
 
 If you already cloned without submodules:

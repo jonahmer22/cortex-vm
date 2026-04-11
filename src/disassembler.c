@@ -223,6 +223,14 @@ void disOpB(char *line, uint64_t w){
 			mn = "bge";
 			break;
 		}
+		case FN_BLEU:{
+			mn = "bleu";
+			break;
+		}
+		case FN_BGEU:{
+			mn = "bgeu";
+			break;
+		}
 		default:{
 			fprintf(stderr, "[FATAL 0x%04X]: Unknown B-type funct 0x%02X.\n", 0x0603, funct);
 			exit(EXIT_FAILURE);

@@ -182,7 +182,7 @@ Float values live in the same register file — float instructions reinterpret t
 | 21–24  | `SYS_RAND_*`      | Seed, rand int, ranged int, rand float                |
 | 31–34  | `SYS_FILE_*`      | Open/read/write/close files                           |
 | 41–42  | `SYS_TIME_*`      | Get time (ms), sleep                                  |
-| 51     | `SYS_HEAP_GROW`   | Allocate N words on heap; returns base address        |
+| 51–52  | `SYS_HEAP_*`      | Grow heap (alloc N words), query heap top address     |
 
 Full details in [SPEC.md](SPEC.md).
 
@@ -202,7 +202,7 @@ The test suite uses pytest and runs the assembler/VM as a subprocess, verifying 
 pytest
 ```
 
-212 tests — base ISA, M extension, F extension, syscalls, heap memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
+261 tests — base ISA, M extension, F extension, syscalls, file I/O, heap memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
 
 ## Benchmarking
 

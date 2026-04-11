@@ -46,6 +46,8 @@
 #define FN_BGT      0x06    // branch if ra > rb
 #define FN_BGTU     0x07    // branch if ra > rb (unsigned)
 #define FN_BLE      0x08    // branch if ra <= rb
+#define FN_BLEU     0x09    // branch if ra <= rb (unsigned)
+#define FN_BGEU     0x0A    // branch if ra >= rb (unsigned)
 
 // SYS-type function codes
 #define FN_HALT     0x01    // stop execution
@@ -194,8 +196,9 @@
 
 // args:
 // A0 = file descriptor
+// A1 = address of destination buffer (heap or stack)
 // rets:
-// A0 = address of buffer containing file contents (null-terminated)
+// A0 = number of words written (not counting null terminator)
 #define SYS_FILE_READ   32
 
 // args:
@@ -220,6 +223,10 @@
 // rets:
 // A0 = address of allocated region, or 0 on failure
 #define SYS_HEAP_GROW   51
+
+// rets:
+// A0 = address of next word that would be allocated (equals HEAP_ADDR when heap is empty)
+#define SYS_HEAP_TOP    52
 
 // ================
 // registers
