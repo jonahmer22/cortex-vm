@@ -10,6 +10,11 @@
 #include "../include/core.h"
 #include "../include/defs.h"
 
+// heap
+static uint64_t *heapBase = NULL;
+static uint64_t heapUsed = 0;
+static uint64_t heapCap = 0;
+
 // file descriptor table
 #define MAX_FDS 64
 static FILE *fdTable[MAX_FDS] = {NULL};
@@ -41,10 +46,11 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 		exit(EXIT_FAILURE);
 	}
 	else if(addr < STACK_ADDR){
-		// do nothing for right now
-		// TODO: implement the heap
-		fprintf(stderr, "[FATAL 0x%04X]: Heap not implemented.\n", 0x0211);
-		exit(EXIT_FAILURE);
+		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
+			fprintf(stderr, "[FATAL 0x%04X]: Heap write to unallocated address 0x%016lX.\n", 0x0211, addr);
+			exit(EXIT_FAILURE);
+		}
+		heapBase[addr - HEAP_ADDR] = val;
 	}
 	else{
 		// memory must be on the stack
@@ -67,10 +73,11 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 		return codeBase[addr];
 	}
 	else if(addr < STACK_ADDR){
-		// do nothing for right now
-		// TODO: implement the heap
-		fprintf(stderr, "[FATAL 0x%04X]: Heap not implemented.\n", 0x0213);
-		exit(EXIT_FAILURE);
+		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
+			fprintf(stderr, "[ERROR 0x%04X]: Heap read from unallocated address 0x%016lX.\n", 0x0212, addr);
+			return 0;
+		}
+		return heapBase[addr - HEAP_ADDR];
 	}
 	else{
 		// memory must be on the stack
@@ -404,6 +411,33 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_RAND_FLOAT:{
 			double v = ((double)rand() / (double)RAND_MAX);
 			memcpy(&regs[A0], &v, sizeof(v));
+			break;
+		}
+		case SYS_HEAP_GROW: {
+			uint64_t nwords = regs[A0];
+			if (nwords == 0) {
+				regs[A0] = 0;
+				break;
+			}
+
+			if (heapUsed + nwords > heapCap) {
+				uint64_t newCap = heapUsed + nwords;
+				uint64_t *newBase = realloc(heapBase, newCap * sizeof(uint64_t));
+				if (newBase == NULL) {
+					regs[A0] = 0;
+					break;
+				}
+				heapBase = newBase;
+				heapCap = newCap;
+			}
+
+			regs[A0] = heapUsed + HEAP_ADDR;
+			heapUsed += nwords;
+
+			#ifdef DEBUG
+			printf("[DEBUG]: Heap expanded to %lu, %lu words allocated.\n", heapCap, nwords);
+			#endif
+
 			break;
 		}
 		default:{
@@ -996,7 +1030,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 	}
 	// if SP is past the max size of the stack then error
-	if(regs[SP] >= ((1024*1024)+0x0008000000000000)){
+	if(regs[SP] >= ((STACKSIZE)+STACK_ADDR)){
 		fprintf(stderr, "[FATAL 0x%04X]: Stack overflow.\n", 0x020F);
 		exit(EXIT_FAILURE);
 	}
@@ -1013,6 +1047,15 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 
 void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 	while(step(regs, codeBase, stackBase, fileLength, extensions, exit_code));
+}
+
+void heapDestroy(void){
+	if(heapBase){
+		free(heapBase);
+		heapBase = NULL;
+		heapUsed = 0;
+		heapCap  = 0;
+	}
 }
 
 // 	.:

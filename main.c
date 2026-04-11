@@ -19,7 +19,7 @@ int main(int argc, char **argv){
 	// set up cliargs parameters before parse
 	cliargsStrict();
 	cliargsSetVersion("Cortex-VM v0.0.1");
-	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble binaries designed for the Cortex-ISA.");
+	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble Cortex-ISA binaries.");
 	
 	// add all different args
 	cliargsRegister("output", 'o', "Designates a path for the output file");
@@ -27,7 +27,6 @@ int main(int argc, char **argv){
 	cliargsRegister("disassemble", 'd', "Disassembles a program at the given path");
 	cliargsRegister("run", 'r', "Executes a compiled binary immediately after execution (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("no-output", 'n', "Prevents the assembler or disassembler from creating an output file (may only be used in conjunction with -d and -a flags)");
-	cliargsRegister("visual", 'v', "Starts the UI");
 
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
@@ -62,7 +61,7 @@ int main(int argc, char **argv){
 	// check for the --no-output flag
 	int noOutput = cliargsFlag("no-output", 'n');
 
-	// check for flags to either assemble, disassemble, open visual mode
+	// check for flags to either assemble or disassemble
 	if(cliargsFlag("assemble", 'a') || cliargsArg("assemble", 'a') != NULL){
 		if(path == NULL)
 			path = cliargsArg("assemble", 'a');
@@ -100,14 +99,6 @@ int main(int argc, char **argv){
 			return EXIT_SUCCESS;
 		}
 	}
-	if(cliargsFlag("visual", 'v') || cliargsArg("visual", 'v') != NULL){
-		if(path == NULL)
-			path = cliargsArg("visual", 'v');
-		#ifdef DEBUG
-		printf("[DEBUG]: visual flag enabled\n");
-		#endif
-	}
-
 	// ===================================
 	// default execution of binary at path
 	// ===================================
@@ -153,12 +144,10 @@ int main(int argc, char **argv){
 	// ===========
 	
 	// initialize the memory arenas
-	Arena *code = arenaLocalInit();
-	// Arena *heap = arenaLocalInit();
+	Arena *code  = arenaLocalInit();
 	Arena *stack = arenaLocalInit();
 
-	uint64_t *codeBase = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
-	// TODO: when the heap is implemented initialize it here, for now do nothing
+	uint64_t *codeBase  = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
 	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
 
 	// move code into the code section
@@ -176,15 +165,14 @@ int main(int argc, char **argv){
 	uint64_t exit_code = 0;
 
 	// fetch, decode, and execute code
-	run(regs, codeBase,/* heapBase,*/ stackBase, fileLength, extensions, &exit_code);
+	run(regs, codeBase, stackBase, fileLength, extensions, &exit_code);
 
 	// free all the memory for the vm and exit with no errors
+	heapDestroy();
 	arenaLocalDestroy(code);
-	// arenaLocalDestroy(heap);
 	arenaLocalDestroy(stack);
 
 	// free the buffers that hold code and source
-	// wait until here so that the UI can use both and build later
 	free(buff);
 	free(sbuff);
 

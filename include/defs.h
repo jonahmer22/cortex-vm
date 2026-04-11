@@ -215,6 +215,12 @@
 // A0 = time to sleep in milliseconds
 #define SYS_TIME_SLEEP  42
 
+// args:
+// A0 = words to allocate
+// rets:
+// A0 = address of allocated region, or 0 on failure
+#define SYS_HEAP_GROW   51
+
 // ================
 // registers
 // ================

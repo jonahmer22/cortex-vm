@@ -17,7 +17,8 @@ This tutorial walks you from zero to writing real programs for Cortex-VM. No pri
 9. [The M Extension — Multiply and Divide](#9-the-m-extension--multiply-and-divide)
 10. [The F Extension — Floating Point](#10-the-f-extension--floating-point)
 11. [The Disassembler](#11-the-disassembler)
-12. [Syscall Reference Quick Card](#12-syscall-reference-quick-card)
+12. [Heap Memory](#12-heap-memory)
+13. [Syscall Reference Quick Card](#13-syscall-reference-quick-card)
 
 ---
 
@@ -155,8 +156,12 @@ Branches compare two registers and jump to a label if the condition holds. The j
 ```asm
 beq  ra, rb, label   ; jump if ra == rb
 bne  ra, rb, label   ; jump if ra != rb
-blt  ra, rb, label   ; jump if ra < rb  (signed)
-bltu ra, rb, label   ; jump if ra < rb  (unsigned)
+blt  ra, rb, label   ; jump if ra < rb   (signed)
+bltu ra, rb, label   ; jump if ra < rb   (unsigned)
+bgt  ra, rb, label   ; jump if ra > rb   (signed)
+bgtu ra, rb, label   ; jump if ra > rb   (unsigned)
+bge  ra, rb, label   ; jump if ra >= rb  (signed)
+ble  ra, rb, label   ; jump if ra <= rb  (signed)
 ```
 
 **Example — print a message only if two values are equal:**
@@ -568,7 +573,76 @@ A few things to note:
 
 ---
 
-## 12. Syscall Reference Quick Card
+## 12. Heap Memory
+
+The heap region starts at `0x0001000000000000` and grows upward. Memory is allocated with the `SYS_HEAP_GROW` syscall (number `51`), which works like a primitive `sbrk`: it extends the heap by N words and returns the base address of the newly allocated region. The guest program is responsible for any free/GC layer on top.
+
+### Allocating heap memory
+
+```asm
+addi a0, zero, 16       ; request 16 words
+addi a13, zero, 51      ; SYS_HEAP_GROW
+syscall                 ; a0 = base address of the 16-word region, or 0 on failure
+```
+
+After a successful call, `a0` holds a word address in the heap region. Passing `0` for N always returns `0` without allocating.
+
+### Storing and loading through a heap pointer
+
+Heap addresses work exactly like stack or code addresses — use `sw` and `lw`:
+
+```asm
+; assume a0 = base address from SYS_HEAP_GROW
+addi t0, zero, 42
+sw   a0, t0, 0      ; heap[base + 0] = 42
+lw   t1, a0, 0      ; t1 = heap[base + 0]   (t1 = 42)
+```
+
+Use immediate offsets to access subsequent words:
+```asm
+sw   a0, t0, 0      ; heap[base + 0]
+sw   a0, t1, 1      ; heap[base + 1]
+sw   a0, t2, 2      ; heap[base + 2]
+```
+
+### Full example — allocate a 4-word buffer and fill it
+
+```asm
+main:
+    addi a0, zero, 4        ; allocate 4 words
+    addi a13, zero, 51
+    syscall                 ; a0 = heap base
+
+    addi s0, a0, 0          ; save base in s0
+
+    addi t0, zero, 10
+    addi t1, zero, 20
+    addi t2, zero, 30
+    addi t3, zero, 40
+    sw   s0, t0, 0
+    sw   s0, t1, 1
+    sw   s0, t2, 2
+    sw   s0, t3, 3
+
+    lw   a0, s0, 2          ; load index 2 (= 30)
+    addi a1, zero, 0
+    addi a13, zero, 1
+    syscall                 ; prints "30"
+
+    addi a0, zero, 0
+    addi a13, zero, 0
+    syscall
+```
+
+### Notes
+
+- Heap allocations persist for the lifetime of a single `run()` call. The heap is automatically freed when execution ends — no manual cleanup is required from guest code.
+- Accessing an address outside the allocated region (i.e., past the last `SYS_HEAP_GROW` boundary) is a fatal error on writes and returns `0` on reads with an error message.
+- The heap and stack are fully independent memory regions; writes to one cannot affect the other.
+
+---
+
+## 13. Syscall Reference Quick Card
 
 Set `a13` to the call number, fill argument registers, then execute `syscall`. Return values appear in `a0`.
 
@@ -595,6 +669,7 @@ Set `a13` to the call number, fill argument registers, then execute `syscall`. R
 | 34 | FILE_WRITE | `a0`=fd, `a1`=buf | — |
 | 41 | TIME_GET | — | `a0`=ms |
 | 42 | TIME_SLEEP | `a0`=ms | — |
+| 51 | HEAP_GROW | `a0`=N words | `a0`=base addr |
 
 **Print format values (a1):** `0`=decimal, `1`=binary, `2`=octal, `3`=hex.
 
@@ -602,4 +677,4 @@ Set `a13` to the call number, fill argument registers, then execute `syscall`. R
 
 ---
 
-*For the full ISA specification including binary format, encoding tables, and extension internals, see [SPEC.md](SPEC.md). For disassembler round-trip test examples, see [tests/test_disassembler.py](tests/test_disassembler.py).*
+*For the full ISA specification including binary format, encoding tables, and extension internals, see [SPEC.md](SPEC.md). For disassembler round-trip test examples, see [tests/test_disassembler.py](tests/test_disassembler.py). For heap test examples, see [tests/test_heap.py](tests/test_heap.py).*
