@@ -37,7 +37,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 
 	if(addr < HEAP_ADDR){
 		// just error out, I don't know why this would be useful
-		fprintf(stderr, "[FATAL 0x%04X]: Illegal write to code region at 0x%016llX.\n", 0x0210, addr);
+		fprintf(stderr, "[FATAL 0x%04X]: Illegal write to code region at 0x%016lX.\n", 0x0210, addr);
 		exit(EXIT_FAILURE);
 	}
 	else if(addr < STACK_ADDR){
@@ -59,7 +59,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase, uint64_t codeBaseSize){
 	if(addr < HEAP_ADDR){
 		if (addr >= codeBaseSize) {
-			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x%016llX is out of bounds (arena size %llu words).\n", 0xD042, addr, codeBaseSize);
+			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x%016lX is out of bounds (arena size %lu words).\n", 0xD042, addr, codeBaseSize);
 			// return early with an empty (0) value
 			return 0;
 		}
@@ -95,7 +95,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_INT:{
 			switch(regs[A1]){
 				case 0:{
-					printf("%lld", (int64_t)regs[A0]);
+					printf("%ld", (int64_t)regs[A0]);
 					break;
 				}
 				case 1:{
@@ -106,15 +106,15 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					break;
 				}
 				case 2:{
-					printf("0o%022llo", (uint64_t)regs[A0]);
+					printf("0o%022lo", (uint64_t)regs[A0]);
 					break;
 				}
 				case 3:{
-					printf("0x%016llX", (uint64_t)regs[A0]);
+					printf("0x%016lX", (uint64_t)regs[A0]);
 					break;
 				}
 				default:{
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -123,7 +123,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_UINT:{
 			switch(regs[A1]){
 				case 0:{
-					printf("%llu", (uint64_t)regs[A0]);
+					printf("%lu", (uint64_t)regs[A0]);
 					break;
 				}
 				case 1:{
@@ -134,15 +134,15 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					break;
 				}
 				case 2:{
-					printf("0o%022llo", (uint64_t)regs[A0]);
+					printf("0o%022lo", (uint64_t)regs[A0]);
 					break;
 				}
 				case 3:{
-					printf("0x%016llX", (uint64_t)regs[A0]);
+					printf("0x%016lX", (uint64_t)regs[A0]);
 					break;
 				}
 				default:{
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -168,7 +168,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					if(scanf("%lld", (int64_t *)&v) != 1){
+					if(scanf("%ld", (int64_t *)&v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8011);
 						v = 0;
 					}
@@ -176,21 +176,21 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
-					if (scanf("%llo", &v) != 1) {
+					if (scanf("%lo", &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8012);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
-					if (scanf("%llx", &v) != 1) {
+					if (scanf("%lx", &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8013);
 						v = 0;
 					}
 					break;
 				}
 				default:
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 			}
 			regs[A0] = (uint64_t)v;
@@ -203,7 +203,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					if (scanf("%llu", &v) != 1) {
+					if (scanf("%lu", &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8014);
 						v = 0;
 					}
@@ -211,21 +211,21 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
-					if (scanf("%llo", &v) != 1) {
+					if (scanf("%lo", &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8015);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
-					if (scanf("%llx", &v) != 1) {
+					if (scanf("%lx", &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8016);
 						v = 0;
 					}
 					break;
 				}
 				default:
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 			}
 			regs[A0] = v;
@@ -270,7 +270,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			int64_t mn = (int64_t)regs[A0];
 			int64_t mx = (int64_t)regs[A1];
 			if(mx < mn){
-				fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (%lld) is less than min (%lld).\n", 0x0213, mx, mn);
+				fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (%ld) is less than min (%ld).\n", 0x0213, mx, mn);
 				exit(EXIT_FAILURE);
 			}
 			uint64_t range = (uint64_t)mx - (uint64_t)mn + 1;
@@ -303,7 +303,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					break;
 				}
 				default:
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 			}
 
@@ -407,7 +407,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		default:{
-			fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %llu.\n", 0x020C, regs[A13]);
+			fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -968,11 +968,11 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;	// funnily enough this is good enough already
 				}
 				case FN_BREAK:{
-					fprintf(stderr, "[BREAK]: Breakpoint hit at PC %llu\n", regs[PC] - 1);
+					fprintf(stderr, "[BREAK]: Breakpoint hit at PC %lu\n", regs[PC] - 1);
 					fprintf(stderr, "Registers:\n");
 
 					for(int i = 0; i < 64; i++){
-						fprintf(stderr, "  r%-2d: 0x%016llX\n", i, regs[i]);
+						fprintf(stderr, "  r%-2d: 0x%016lX\n", i, regs[i]);
 					}
 
 					fprintf(stderr, "Press enter to continue...\n");

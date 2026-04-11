@@ -57,12 +57,12 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 	}
 	// make sure that the fileSize and fileLength match
 	if(*fileSize != *fileLength){
-		fprintf(stderr, "[FILE LENGTH]: A file size of %zu was loaded, while the encoded binary specifies a size of %llu.\n", *fileSize, *fileLength);
+		fprintf(stderr, "[FILE LENGTH]: A file size of %zu was loaded, while the encoded binary specifies a size of %lu.\n", *fileSize, *fileLength);
 		exit(EXIT_FAILURE);
 	}
 	// make sure that the offset is at least HEADER_LEN (entry point must be past the header)
 	if(*offset < HEADER_LEN){
-		fprintf(stderr, "[ENTRY POINT]: The specified entry point of %llu is within the header, minimum entry point is %d.\n", *offset, HEADER_LEN);
+		fprintf(stderr, "[ENTRY POINT]: The specified entry point of %lu is within the header, minimum entry point is %d.\n", *offset, HEADER_LEN);
 		exit(EXIT_FAILURE);
 	}
 	// check the extension flags, for version 1 they should all be 0
