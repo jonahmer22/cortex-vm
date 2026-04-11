@@ -438,7 +438,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			heapUsed += nwords;
 
 			#ifdef DEBUG
-			printf("[DEBUG]: Heap expanded to %lu, %lu words allocated.\n", newCap, nwords);
+			printf("[DEBUG]: Heap expanded to %lu, %lu words allocated.\n", heapCap, nwords);
 			#endif
 
 			break;
