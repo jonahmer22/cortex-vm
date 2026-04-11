@@ -1030,7 +1030,7 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 		}
 	}
 	// if SP is past the max size of the stack then error
-	if(regs[SP] >= ((1024*1024)+0x0008000000000000)){
+	if(regs[SP] >= ((STACKSIZE)+STACK_ADDR)){
 		fprintf(stderr, "[FATAL 0x%04X]: Stack overflow.\n", 0x020F);
 		exit(EXIT_FAILURE);
 	}
