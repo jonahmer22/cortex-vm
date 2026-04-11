@@ -12,7 +12,8 @@ A fast, extensible 64-bit virtual machine and assembler designed as the primary 
 - **F extension** — full 64-bit IEEE 754 double-precision floating point (`fadd`, `fsub`, `fmul`, `fdiv`, `fsqrt`, `fabs`, `fneg`, `ftoi`, `ftoui`, `itof`, `uitof`, float branches)
 - **Built-in assembler** — single-pass with two-pass label resolution; supports labels, `.data` section, hex/binary/octal/char literals, and comments
 - **Full disassembler** — converts any binary back to assembly source; reconstructs `.data` strings; round-trips through re-assembly with functional equivalence
-- **Rich syscall set** — print/read int/uint/char/float/string, random numbers, file I/O, and time
+- **Rich syscall set** — print/read int/uint/char/float/string, random numbers, file I/O, time, and heap memory allocation
+- **Heap memory** — sbrk-style `SYS_HEAP_GROW` syscall allocates words from a realloc-backed contiguous array at `0x0001000000000000`; O(1) access, automatic cleanup after each `run()` call
 - **Automatic extension detection** — the assembler inspects opcodes and sets extension flags in the binary header; no manual flags needed
 - **Embeddable** — builds as a static library (`libcortex-vm.a`) for use as a runtime inside another project; three-function API: `cortexAssemble`, `cortexExecSource`, `cortexExecBinary`
 - **Fast** — ~400M instructions/sec at `-O3 -march=native` on modern hardware (GCC-15)
@@ -181,6 +182,7 @@ Float values live in the same register file — float instructions reinterpret t
 | 21–24  | `SYS_RAND_*`      | Seed, rand int, ranged int, rand float                |
 | 31–34  | `SYS_FILE_*`      | Open/read/write/close files                           |
 | 41–42  | `SYS_TIME_*`      | Get time (ms), sleep                                  |
+| 51     | `SYS_HEAP_GROW`   | Allocate N words on heap; returns base address        |
 
 Full details in [SPEC.md](SPEC.md).
 
@@ -200,7 +202,7 @@ The test suite uses pytest and runs the assembler/VM as a subprocess, verifying 
 pytest
 ```
 
-201 tests — base ISA, M extension, F extension, syscalls, memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
+212 tests — base ISA, M extension, F extension, syscalls, heap memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
 
 ## Benchmarking
 

@@ -193,6 +193,10 @@ All addresses and offsets are word-indexed.
 | `0x02` | `bne` | `ra != rb` |
 | `0x03` | `blt` | `ra < rb` (signed) |
 | `0x04` | `bltu` | `ra < rb` (unsigned) |
+| `0x05` | `bge` | `ra >= rb` (signed) |
+| `0x06` | `bgt` | `ra > rb` (signed) |
+| `0x07` | `bgtu` | `ra > rb` (unsigned) |
+| `0x08` | `ble` | `ra <= rb` (signed) |
 
 Branch target is `pc + imm`.
 
@@ -236,6 +240,7 @@ System calls are invoked with `syscall`. Call number in `a13`, arguments in `a0`
 | `34` | `SYS_FILE_WRITE` | `a0`=fd, `a1`=buffer addr | — | Write null-terminated buffer to file. |
 | `41` | `SYS_TIME_GET` | — | `a0`=ms | Milliseconds since Unix epoch. |
 | `42` | `SYS_TIME_SLEEP` | `a0`=ms | — | Sleep for N milliseconds. |
+| `51` | `SYS_HEAP_GROW` | `a0`=N words | `a0`=base address | Allocate N words on the heap; returns the base word address of the new region (`0x0001…`). Returns 0 on failure or if N=0. The heap grows monotonically — the guest is responsible for any free/GC layer on top. |
 
 **Format values (a1 for print/read int/uint):** `0`=decimal, `1`=binary, `2`=octal, `3`=hex.
 
@@ -243,7 +248,7 @@ System calls are invoked with `syscall`. Call number in `a13`, arguments in `a0`
 
 ## Binary Format
 
-Cortex-VM executables are a flat sequence of 64-bit big-endian words. A fixed 4-word header precedes the instruction stream; the optional `.data` section is appended after the last instruction.
+Cortex-VM executables are a flat sequence of 64-bit big-endian words. A fixed 5-word header precedes the instruction stream; the optional `.data` section is appended after the last instruction.
 
 ### Magic Number
 
@@ -260,8 +265,9 @@ Cortex-VM executables are a flat sequence of 64-bit big-endian words. A fixed 4-
 |------|-------|-------------|
 | 0 | Magic + Version | `0x2E3A434F52540001` |
 | 1 | File length | Total size in words (header + code + data). |
-| 2 | Entry point | Word index of first instruction (minimum 4). Set from `main:` label. |
+| 2 | Entry point | Word index of first instruction (minimum `HEADER_LEN`). Set from `main:` label. |
 | 3 | Extension flags | Bitfield of required extensions. Auto-set by assembler. |
+| 4 | Data offset | Absolute word index of the first data word; `0` if no `.data` section. |
 
 ### Extension Flags
 
@@ -280,7 +286,7 @@ The address space is flat and word-indexed, partitioned into three arenas.
 | Region | Base Address | Direction | Notes |
 |--------|-------------|-----------|-------|
 | Code | `0x0000000000000000` | Fixed | Loaded from binary. Readable as data via `lw`. |
-| Heap | `0x0001000000000000` | Grows up | Not yet implemented. |
+| Heap | `0x0001000000000000` | Grows up | Allocated on demand via `SYS_HEAP_GROW`. Backed by a `realloc`-grown contiguous `uint64_t` array; `setWord`/`loadWord` access is O(1). |
 | Stack | `0x0008000000000000` | Grows up | `sp` initialized to base at startup. |
 
 Data section words are placed in the code arena immediately after the last instruction.
@@ -290,12 +296,13 @@ Data section words are placed in the code arena immediately after the last instr
 ## VM Initialization Sequence
 
 1. Read binary into word buffer.
-2. Parse and validate header — check magic, version, file length, entry point, and extension flags.
-3. Allocate code arena (`file_length - 4` words). Copy words from index 4 onward (skip header).
+2. Parse and validate header — check magic, version, file length, entry point, extension flags, and data offset.
+3. Allocate code arena (`file_length - HEADER_LEN` words). Copy words from index `HEADER_LEN` onward (skip header).
 4. Allocate stack arena. Set `sp` to `0x0008000000000000`.
-5. Zero all 64 registers. Set `pc` to `entry_point - 4` (file-relative → code-relative).
+5. Zero all 64 registers. Set `pc` to `entry_point - HEADER_LEN` (file-relative → code-relative).
 6. Enable extensions from the extension flags word.
 7. Begin fetch-decode-execute loop.
+8. After `run()` returns (or on `SYS_EXIT`), call `heapDestroy()` to free heap state.
 
 ---
 

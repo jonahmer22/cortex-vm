@@ -9,6 +9,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Heap memory** — the heap address region (`0x0001000000000000`) is now fully implemented
+  - `SYS_HEAP_GROW` (syscall `51`) — allocates N words on the heap and returns the base address; returns 0 on failure or if N=0. The heap is backed by a `realloc`-grown contiguous `uint64_t` array, making `setWord`/`loadWord` heap access O(1)
+  - `heapDestroy()` — frees and resets heap state after each `run()` call; fixes a memory leak and a state-persistence bug when `cortexExecBinary` is called multiple times in the same process
+  - `setWord` and `loadWord` now handle heap addresses with proper bounds checking
+  - 11 pytest tests in `tests/test_heap.py` covering allocation, store/load, multi-word regions, overlap isolation, heap/stack independence, zero-word allocation, and large allocations
+- **`CONTRIBUTING.md`** — developer guide covering environment setup, build targets, running tests and benchmarks, code style, and PR workflow
+- **`SECURITY.md`** — security policy with private disclosure contact and scope description
+- **`.github/ISSUE_TEMPLATE/bug_report.md`** — structured bug report template
+- **`.github/ISSUE_TEMPLATE/feature_request.md`** — feature request template
+- **`.github/PULL_REQUEST_TEMPLATE.md`** — PR description template
+- **`.github/workflows/ci.yml`** — GitHub Actions CI workflow: checks out with submodules, installs dependencies, runs `make`, `make lib`, and `pytest` on every push and PR to `main`
+
+### Fixed
+- **`SYS_FILE_READ` stack overflow** — bounds check used `bufAddr + wi >= STACKSIZE` which was always true (virtual address >> stack size), preventing any bytes from being written; corrected to `(bufAddr - STACK_ADDR + wi) >= (STACKSIZE / sizeof(uint64_t))`
+- **`loadWord` out-of-bounds read in code region** — no upper bound was checked against `codeBaseSize`; reads past the end of the code arena now return 0 with an error message
+- **`setWord`/`loadWord` out-of-bounds stack access** — no check against `STACKSIZE`; out-of-bounds stack reads return 0, writes are rejected with an error message
+- **`SYS_READ_STR` integer underflow** — `maxLen - 1` with `maxLen = 0` wrapped to `UINT64_MAX`, causing unbounded writes; guarded with an early `break` when `maxLen == 0`
+- **`SYS_RAND_R_INT` signed overflow UB** — `mx - mn` was evaluated as `int64_t` and could overflow for wide ranges; subtraction now performed in `uint64_t`
+- **Disassembler `.data` string buffer overflow** — `sline[4096]` had no bounds check; the write guard is now `pos >= sizeof(sline) - 4` (leaving headroom for 2-char escape + closing `"\"\n"`)
+
+### Python benchmarking suite
 - **Python benchmarking suite** (`benchmarks/`) — measures VM throughput across 7 categories: integer ALU (MIPS), M extension (MIPS), float ALU (MFLOPS), memory (MIPS), branches (BOPS), real-world programs (wall-clock ms), and assembler throughput (MB/s)
   - `benchmarks/run.py` — CLI entry point; `--category`, `--repeats`, `--no-graphs` flags
   - `benchmarks/bench_core.py` — `BenchmarkResult` dataclass and `BenchmarkRunner` (Python-side `perf_counter` timing; assembles once, runs N times, takes median)
