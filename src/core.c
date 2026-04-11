@@ -977,6 +977,18 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					}
 					break;
 				}
+				case FN_BGEU: {
+					if((uint64_t)regs[ra] >= (uint64_t)regs[rb]) {
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+					}
+					break;
+				}
+				case FN_BLEU: {
+					if((uint64_t)regs[ra] <= (uint64_t)regs[rb]) {
+						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
+					}
+					break;
+				}
 				default:
 					fprintf(stderr, "[FATAL 0x%04X]: Illegal function 0x%02X.\n", 0x0206, funct);
 					exit(EXIT_FAILURE);

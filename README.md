@@ -202,7 +202,7 @@ The test suite uses pytest and runs the assembler/VM as a subprocess, verifying 
 pytest
 ```
 
-212 tests — base ISA, M extension, F extension, syscalls, heap memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
+261 tests — base ISA, M extension, F extension, syscalls, file I/O, heap memory, library embedding, and 42 disassembler round-trip tests (including `.data` section reconstruction).
 
 ## Benchmarking
 

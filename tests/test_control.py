@@ -402,6 +402,168 @@ def test_ble_signed_negative():
 
 
 # ---------------------------------------------------------------------------
+# BGEU (branch if >=, unsigned)
+# ---------------------------------------------------------------------------
+
+def test_bgeu_taken_greater():
+    src = (
+        "    addi t0, zero, 10\n"
+        "    addi t1, zero, 3\n"
+        "    bgeu t0, t1, geu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "geu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bgeu_taken_equal():
+    src = (
+        "    addi t0, zero, 5\n"
+        "    addi t1, zero, 5\n"
+        "    bgeu t0, t1, geu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "geu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bgeu_not_taken():
+    src = (
+        "    addi t0, zero, 3\n"
+        "    addi t1, zero, 7\n"
+        "    bgeu t0, t1, geu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "geu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bgeu_negative_as_large_unsigned():
+    # -1 as uint64 = 0xFFFF... >= 1 → taken
+    src = (
+        "    subi t0, zero, 1\n"
+        "    addi t1, zero, 1\n"
+        "    bgeu t0, t1, geu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "geu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bgeu_not_taken_signed_positive_vs_large():
+    # 1 (unsigned) is NOT >= 0xFFFF... → not taken
+    src = (
+        "    addi t0, zero, 1\n"
+        "    subi t1, zero, 1\n"     # t1 = 0xFFFFFFFFFFFFFFFF
+        "    bgeu t0, t1, geu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "geu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+# ---------------------------------------------------------------------------
+# BLEU (branch if <=, unsigned)
+# ---------------------------------------------------------------------------
+
+def test_bleu_taken_less():
+    src = (
+        "    addi t0, zero, 3\n"
+        "    addi t1, zero, 7\n"
+        "    bleu t0, t1, leu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "leu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bleu_taken_equal():
+    src = (
+        "    addi t0, zero, 5\n"
+        "    addi t1, zero, 5\n"
+        "    bleu t0, t1, leu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "leu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+def test_bleu_not_taken():
+    src = (
+        "    addi t0, zero, 7\n"
+        "    addi t1, zero, 3\n"
+        "    bleu t0, t1, leu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "leu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bleu_negative_as_large_unsigned_not_taken():
+    # -1 as uint64 = 0xFFFF..., NOT <= 1 → not taken
+    src = (
+        "    subi t0, zero, 1\n"
+        "    addi t1, zero, 1\n"
+        "    bleu t0, t1, leu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "leu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "0"
+
+
+def test_bleu_small_value_le_large_unsigned():
+    # 1 <= 0xFFFF... → taken
+    src = (
+        "    addi t0, zero, 1\n"
+        "    subi t1, zero, 1\n"     # t1 = 0xFFFFFFFFFFFFFFFF
+        "    bleu t0, t1, leu_label\n"
+        "    addi t2, zero, 0\n"
+        "    jmp t9, zero, done\n"
+        "leu_label:\n"
+        "    addi t2, zero, 1\n"
+        "done:\n"
+        f"{print_int()}"
+    )
+    assert asm_out(prog(src)) == "1"
+
+
+# ---------------------------------------------------------------------------
 # JMP (unconditional jump / call-return)
 # ---------------------------------------------------------------------------
 

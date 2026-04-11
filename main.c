@@ -18,7 +18,7 @@
 int main(int argc, char **argv){
 	// set up cliargs parameters before parse
 	cliargsStrict();
-	cliargsSetVersion("Cortex-VM v0.5.0");
+	cliargsSetVersion("Cortex-VM v1.0.0");
 	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble Cortex-ISA binaries.");
 	
 	// add all different args

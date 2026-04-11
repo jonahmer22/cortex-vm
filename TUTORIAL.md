@@ -133,6 +133,15 @@ sra  t2, t0, t1     ; t2 = t0 >> t1  (arithmetic right, preserves sign)
 
 Each has an immediate variant by appending `i` (`andi`, `ori`, `xori`, `slli`, `srli`, `srai`).
 
+**Comparison instructions (set-on-condition):**
+```asm
+slt  t2, t0, t1     ; t2 = (t0 < t1) ? 1 : 0  (signed)
+sltu t2, t0, t1     ; t2 = (t0 < t1) ? 1 : 0  (unsigned)
+seq  t2, t0, t1     ; t2 = (t0 == t1) ? 1 : 0
+```
+
+These also have immediate variants (`slti`, `sltui`, `seqi`). They write `1` or `0` into the destination register, useful for materializing boolean values without branching.
+
 **`not` pseudo-instruction:**
 ```asm
 xori t2, t0, -1    ; t2 = ~t0
@@ -161,7 +170,9 @@ bltu ra, rb, label   ; jump if ra < rb   (unsigned)
 bgt  ra, rb, label   ; jump if ra > rb   (signed)
 bgtu ra, rb, label   ; jump if ra > rb   (unsigned)
 bge  ra, rb, label   ; jump if ra >= rb  (signed)
+bgeu ra, rb, label   ; jump if ra >= rb  (unsigned)
 ble  ra, rb, label   ; jump if ra <= rb  (signed)
+bleu ra, rb, label   ; jump if ra <= rb  (unsigned)
 ```
 
 **Example — print a message only if two values are equal:**

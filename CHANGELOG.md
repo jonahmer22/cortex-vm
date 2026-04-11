@@ -6,9 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [1.0.0] — 2026-04-11
 
 ### Added
+- **`bgeu` and `bleu` branch instructions** — unsigned greater-or-equal and unsigned less-or-equal, completing the full set of 10 branch comparisons (signed and unsigned variants of `<`, `<=`, `>`, `>=`, plus `==` and `!=`)
+- **`SYS_HEAP_TOP`** (syscall `52`) — returns the address of the next word that would be allocated (`HEAP_ADDR + heapUsed`); equals `HEAP_ADDR` when the heap is empty. Allows guest-side allocators to inspect the current heap boundary. 3 new tests in `tests/test_heap.py`
+- **File I/O tests** (`tests/test_file_io.py`) — 5 new pytest tests covering `SYS_FILE_READ` into heap and stack buffers, return value (word count), empty file, and a full write/read-back round-trip
 - **Heap memory** — the heap address region (`0x0001000000000000`) is now fully implemented
   - `SYS_HEAP_GROW` (syscall `51`) — allocates N words on the heap and returns the base address; returns 0 on failure or if N=0. The heap is backed by a `realloc`-grown contiguous `uint64_t` array, making `setWord`/`loadWord` heap access O(1)
   - `heapDestroy()` — frees and resets heap state after each `run()` call; fixes a memory leak and a state-persistence bug when `cortexExecBinary` is called multiple times in the same process
@@ -21,6 +24,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`.github/PULL_REQUEST_TEMPLATE.md`** — PR description template
 - **`.github/workflows/ci.yml`** — GitHub Actions CI workflow: checks out with submodules, installs dependencies, runs `make`, `make lib`, and `pytest` on every push and PR to `main`
 
+### Changed
+- **`SYS_FILE_READ` API** *(breaking)* — now takes `a1` as the destination buffer address (heap or stack) instead of silently writing to the stack at `sp`. Returns the number of words written (not counting the null terminator) in `a0` instead of echoing the buffer address back. Callers must allocate a buffer (e.g. via `SYS_HEAP_GROW`) and pass its address in `a1`
+- **Version string** updated to `v1.0.0`
+
 ### Fixed
 - **`SYS_FILE_READ` stack overflow** — bounds check used `bufAddr + wi >= STACKSIZE` which was always true (virtual address >> stack size), preventing any bytes from being written; corrected to `(bufAddr - STACK_ADDR + wi) >= (STACKSIZE / sizeof(uint64_t))`
 - **`loadWord` out-of-bounds read in code region** — no upper bound was checked against `codeBaseSize`; reads past the end of the code arena now return 0 with an error message
@@ -29,7 +36,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`SYS_RAND_R_INT` signed overflow UB** — `mx - mn` was evaluated as `int64_t` and could overflow for wide ranges; subtraction now performed in `uint64_t`
 - **Disassembler `.data` string buffer overflow** — `sline[4096]` had no bounds check; the write guard is now `pos >= sizeof(sline) - 4` (leaving headroom for 2-char escape + closing `"\"\n"`)
 
-### Python benchmarking suite
+### Added (continued)
 - **Python benchmarking suite** (`benchmarks/`) — measures VM throughput across 7 categories: integer ALU (MIPS), M extension (MIPS), float ALU (MFLOPS), memory (MIPS), branches (BOPS), real-world programs (wall-clock ms), and assembler throughput (MB/s)
   - `benchmarks/run.py` — CLI entry point; `--category`, `--repeats`, `--no-graphs` flags
   - `benchmarks/bench_core.py` — `BenchmarkResult` dataclass and `BenchmarkRunner` (Python-side `perf_counter` timing; assembles once, runs N times, takes median)
@@ -154,4 +161,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-[Unreleased]: https://github.com/jonahmer22/cortex-vm/compare/HEAD...HEAD
+[1.0.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.0.0

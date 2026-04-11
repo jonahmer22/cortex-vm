@@ -173,6 +173,9 @@ R and I types share function codes and flag semantics. R operates on two registe
 | `0x05` | `sll` / `slli` | `rd = ra << rb/imm` | — |
 | `0x06` | `srl`/`sra` / `srli`/`srai` | `rd = ra >> rb/imm` | 0 = logical, 1 = arithmetic |
 | `0x07` | `jmp` | `rd = pc; pc = ra + imm` | — (I type only) |
+| `0x08` | `slt` / `slti` | `rd = (ra < rb/imm) ? 1 : 0` | Signed comparison |
+| `0x09` | `sltu` / `sltui` | `rd = (ra < rb/imm) ? 1 : 0` | Unsigned comparison |
+| `0x0A` | `seq` / `seqi` | `rd = (ra == rb/imm) ? 1 : 0` | Bitwise equality |
 
 > **`not`** is not a dedicated instruction — use `xori rd, ra, -1`.
 
@@ -197,6 +200,8 @@ All addresses and offsets are word-indexed.
 | `0x06` | `bgt` | `ra > rb` (signed) |
 | `0x07` | `bgtu` | `ra > rb` (unsigned) |
 | `0x08` | `ble` | `ra <= rb` (signed) |
+| `0x09` | `bleu` | `ra <= rb` (unsigned) |
+| `0x0A` | `bgeu` | `ra >= rb` (unsigned) |
 
 Branch target is `pc + imm`.
 

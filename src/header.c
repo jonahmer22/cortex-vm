@@ -68,7 +68,7 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 	// check the extension flags, for version 1 they should all be 0
 	uint64_t validExts = EXT_FLOAT | EXT_M;
 	if(*extensions != (*extensions & validExts)){
-		fprintf(stderr, "[NONEXISTENT EXTENSIONS]: Non-existent extensions were specified in the binary header, please ensure extensions are installed and you are using the propper version.\n");
+		fprintf(stderr, "[NONEXISTENT EXTENSIONS]: Non-existent extensions were specified in the binary header, please ensure extensions are installed and you are using the proper version.\n");
 		exit(EXIT_FAILURE);
 	}
 }

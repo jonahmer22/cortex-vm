@@ -46,6 +46,8 @@
 #define FN_BGT      0x06    // branch if ra > rb
 #define FN_BGTU     0x07    // branch if ra > rb (unsigned)
 #define FN_BLE      0x08    // branch if ra <= rb
+#define FN_BLEU     0x09    // branch if ra <= rb (unsigned)
+#define FN_BGEU     0x0A    // branch if ra >= rb (unsigned)
 
 // SYS-type function codes
 #define FN_HALT     0x01    // stop execution

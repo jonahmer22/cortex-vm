@@ -466,6 +466,12 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 						*opcode = OP_B;
 						*funct = FN_BLT;
 					}
+					else if(cmpChars(head, "eu", 2)){
+						head += 2;
+						// is bleu
+						*opcode = OP_B;
+						*funct = FN_BLEU;
+					}
 					else if(cmpChars(head, "e", 1)){
 						head++;
 						// is ble
@@ -491,6 +497,12 @@ void getOpcodeFunct(uint8_t *opcode, uint8_t *funct, uint8_t *flags, uint64_t pc
 						// is bgt
 						*opcode = OP_B;
 						*funct = FN_BGT;
+					}
+					else if(cmpChars(head, "eu", 2)){
+						head += 2;
+						// is bgeu
+						*opcode = OP_B;
+						*funct = FN_BGEU;
 					}
 					else if(cmpChars(head, "e", 1)){
 						head++;
@@ -1236,7 +1248,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 		// the current word we are assembling
 		uint64_t word = 0;
 		
-		// use functions to make the propper word
+		// use functions to make the proper word
 		uint8_t opcode, funct, flags;
 		opcode = funct = flags = 0;
 		getOpcodeFunct(&opcode, &funct, &flags, list->len, list, &extensions, &dataOffset);
