@@ -47,7 +47,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 	}
 	else if(addr < STACK_ADDR){
 		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
-			fprintf(stderr, "[FATAL 0x%04X]: Heap write to unallocated address 0x%016llX.\n", 0x0211, addr);
+			fprintf(stderr, "[FATAL 0x%04X]: Heap write to unallocated address 0x%016lX.\n", 0x0211, addr);
 			exit(EXIT_FAILURE);
 		}
 		heapBase[addr - HEAP_ADDR] = val;
@@ -74,7 +74,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 	else if(addr < STACK_ADDR){
 		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
-			fprintf(stderr, "[ERROR 0x%04X]: Heap read from unallocated address 0x%016llX.\n", 0x0212, addr);
+			fprintf(stderr, "[ERROR 0x%04X]: Heap read from unallocated address 0x%016lX.\n", 0x0212, addr);
 			return 0;
 		}
 		return heapBase[addr - HEAP_ADDR];
