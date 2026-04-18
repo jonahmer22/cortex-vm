@@ -1,4 +1,4 @@
-# Cortex-VM
+![Cortex-VM](cortex-logos/banner_blk.png)
 
 A fast, extensible 64-bit virtual machine and assembler designed as the primary backend target for a custom compiled language.
 
