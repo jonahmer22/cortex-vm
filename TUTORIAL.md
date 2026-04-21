@@ -140,8 +140,6 @@ sltu t2, t0, t1     ; t2 = (t0 < t1) ? 1 : 0  (unsigned)
 seq  t2, t0, t1     ; t2 = (t0 == t1) ? 1 : 0
 ```
 
-These also have immediate variants (`slti`, `sltui`, `seqi`). They write `1` or `0` into the destination register, useful for materializing boolean values without branching.
-
 **`not` pseudo-instruction:**
 ```asm
 xori t2, t0, -1    ; t2 = ~t0
