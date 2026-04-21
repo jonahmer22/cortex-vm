@@ -238,4 +238,4 @@ Cortex-VM is intentionally simple and compiler-friendly:
 
 ## License
 
-GPL V3
+[GPL v3](LICENSE)
