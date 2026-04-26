@@ -4,6 +4,28 @@
 #define VERSION     0x0000000000000001
 #define HEADER_LEN  5   // number of 64-bit words in the binary header
 
+// platform format specifiers
+// int64_t / uint64_t are "long" on Linux (LP64) and "long long" on macOS (LLP64)
+#ifdef __APPLE__
+#  define FMT_I64  "%lld"
+#  define FMT_U64  "%llu"
+#  define FMT_X64  "%016llX"
+#  define FMT_O64  "%022llo"
+#  define SCN_I64  "%lld"
+#  define SCN_U64  "%llu"
+#  define SCN_O64  "%llo"
+#  define SCN_x64  "%llx"
+#else
+#  define FMT_I64  "%ld"
+#  define FMT_U64  "%lu"
+#  define FMT_X64  "%016lX"
+#  define FMT_O64  "%022lo"
+#  define SCN_I64  "%ld"
+#  define SCN_U64  "%lu"
+#  define SCN_O64  "%lo"
+#  define SCN_x64  "%lx"
+#endif
+
 // =============
 // base opcodes
 // =============
