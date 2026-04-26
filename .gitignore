@@ -4,6 +4,17 @@
 # Cortex Binary
 cortex-vm
 
+# compiled objects in headers
+# codemirror stuff
+cm_*
+# favicon
+favicon_*
+# ui html
+ui_*
+
+# benchmarking results
+results/
+
 # build directories
 lib/
 build/
