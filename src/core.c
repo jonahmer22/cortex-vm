@@ -42,12 +42,12 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 
 	if(addr < HEAP_ADDR){
 		// just error out, I don't know why this would be useful
-		fprintf(stderr, "[FATAL 0x%04X]: Illegal write to code region at 0x%016lX.\n", 0x0210, addr);
+		fprintf(stderr, "[FATAL 0x%04X]: Illegal write to code region at 0x" FMT_X64 ".\n", 0x0210, addr);
 		exit(EXIT_FAILURE);
 	}
 	else if(addr < STACK_ADDR){
 		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
-			fprintf(stderr, "[FATAL 0x%04X]: Heap write to unallocated address 0x%016lX.\n", 0x0211, addr);
+			fprintf(stderr, "[FATAL 0x%04X]: Heap write to unallocated address 0x" FMT_X64 ".\n", 0x0211, addr);
 			exit(EXIT_FAILURE);
 		}
 		heapBase[addr - HEAP_ADDR] = val;
@@ -65,7 +65,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase, uint64_t codeBaseSize){
 	if(addr < HEAP_ADDR){
 		if (addr >= codeBaseSize) {
-			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x%016lX is out of bounds (arena size %lu words).\n", 0xD042, addr, codeBaseSize);
+			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x" FMT_X64 " is out of bounds (arena size " FMT_U64 " words).\n", 0xD042, addr, codeBaseSize);
 			// return early with an empty (0) value
 			return 0;
 		}
@@ -74,7 +74,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 	else if(addr < STACK_ADDR){
 		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
-			fprintf(stderr, "[ERROR 0x%04X]: Heap read from unallocated address 0x%016lX.\n", 0x0212, addr);
+			fprintf(stderr, "[ERROR 0x%04X]: Heap read from unallocated address 0x" FMT_X64 ".\n", 0x0212, addr);
 			return 0;
 		}
 		return heapBase[addr - HEAP_ADDR];
@@ -90,6 +90,12 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 }
 
+// returns a pointer to the heap data and the number of words currently allocated
+uint64_t *heapSnapshot(uint64_t *out_used){
+	*out_used = heapUsed;
+	return heapBase;
+}
+
 // returns false if the VM should stop running (SYS_EXIT)
 static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code, uint64_t fileLength){
 	switch(regs[A13]){
@@ -102,7 +108,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_INT:{
 			switch(regs[A1]){
 				case 0:{
-					printf("%ld", (int64_t)regs[A0]);
+					printf(FMT_I64, (int64_t)regs[A0]);
 					break;
 				}
 				case 1:{
@@ -113,15 +119,15 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					break;
 				}
 				case 2:{
-					printf("0o%022lo", (uint64_t)regs[A0]);
+					printf("0o" FMT_O64, (uint64_t)regs[A0]);
 					break;
 				}
 				case 3:{
-					printf("0x%016lX", (uint64_t)regs[A0]);
+					printf("0x" FMT_X64, (uint64_t)regs[A0]);
 					break;
 				}
 				default:{
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall " FMT_U64 ".\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -130,7 +136,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_UINT:{
 			switch(regs[A1]){
 				case 0:{
-					printf("%lu", (uint64_t)regs[A0]);
+					printf(FMT_U64, (uint64_t)regs[A0]);
 					break;
 				}
 				case 1:{
@@ -141,15 +147,15 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					break;
 				}
 				case 2:{
-					printf("0o%022lo", (uint64_t)regs[A0]);
+					printf("0o" FMT_O64, (uint64_t)regs[A0]);
 					break;
 				}
 				case 3:{
-					printf("0x%016lX", (uint64_t)regs[A0]);
+					printf("0x" FMT_X64, (uint64_t)regs[A0]);
 					break;
 				}
 				default:{
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall " FMT_U64 ".\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -172,10 +178,11 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		}
 		// reading syscalls
 		case SYS_READ_INT:{
+			fflush(stdout);
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					if(scanf("%ld", (int64_t *)&v) != 1){
+					if(scanf(SCN_I64, (int64_t *)&v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8011);
 						v = 0;
 					}
@@ -183,21 +190,21 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
-					if (scanf("%lo", &v) != 1) {
+					if (scanf(SCN_O64, &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8012);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
-					if (scanf("%lx", &v) != 1) {
+					if (scanf(SCN_x64, &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8013);
 						v = 0;
 					}
 					break;
 				}
 				default:
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall " FMT_U64 ".\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 			}
 			regs[A0] = (uint64_t)v;
@@ -207,10 +214,11 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		case SYS_READ_UINT:{
+			fflush(stdout);
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					if (scanf("%lu", &v) != 1) {
+					if (scanf(SCN_U64, &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8014);
 						v = 0;
 					}
@@ -218,21 +226,21 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
-					if (scanf("%lo", &v) != 1) {
+					if (scanf(SCN_O64, &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8015);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
-					if (scanf("%lx", &v) != 1) {
+					if (scanf(SCN_x64, &v) != 1) {
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8016);
 						v = 0;
 					}
 					break;
 				}
 				default:
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall " FMT_U64 ".\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 			}
 			regs[A0] = v;
@@ -242,6 +250,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		case SYS_READ_CHAR:{
+			fflush(stdout);
 			regs[A0] = (uint64_t)getchar();
 			// flush remaining input including newline
 			int ch;
@@ -249,6 +258,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		case SYS_READ_STR:{
+			fflush(stdout);
 			uint64_t addr = regs[A0];
 			uint64_t maxLen = regs[A1];
 			size_t i = 0;
@@ -277,7 +287,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			int64_t mn = (int64_t)regs[A0];
 			int64_t mx = (int64_t)regs[A1];
 			if(mx < mn){
-				fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (%ld) is less than min (%ld).\n", 0x0213, mx, mn);
+				fprintf(stderr, "[FATAL 0x%04X]: SYS_RAND_R_INT: max (" FMT_I64 ") is less than min (" FMT_I64 ").\n", 0x0213, mx, mn);
 				exit(EXIT_FAILURE);
 			}
 			uint64_t range = (uint64_t)mx - (uint64_t)mn + 1;
@@ -310,7 +320,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 					break;
 				}
 				default:
-					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
+					fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall " FMT_U64 ".\n", 0x020C, regs[A13]);
 					exit(EXIT_FAILURE);
 			}
 
@@ -392,6 +402,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		case SYS_READ_FLOAT:{
+			fflush(stdout);
 			double v = 0;
 			if (scanf("%lf", &v) != 1) {
 				fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8017);
@@ -433,13 +444,13 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			heapUsed += nwords;
 
 			#ifdef DEBUG
-			printf("[DEBUG]: Heap expanded to %lu, %lu words allocated.\n", heapCap, nwords);
+			printf("[DEBUG]: Heap expanded to " FMT_U64 ", " FMT_U64 " words allocated.\n", heapCap, nwords);
 			#endif
 
 			break;
 		}
 		default:{
-			fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall %lu.\n", 0x020C, regs[A13]);
+			fprintf(stderr, "[FATAL 0x%04X]: Non-existent syscall " FMT_U64 ".\n", 0x020C, regs[A13]);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -730,13 +741,13 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	uint64_t instr = codeBase[regs[PC]++];
 
 	#ifdef DEBUG
-	printf("[DEBUG]: PC %llu:\t\t0x%016llX\n", regs[PC] - 1, instr);
+	printf("[DEBUG]: PC " FMT_U64 ":\t\t0x" FMT_X64 "\n", regs[PC] - 1, instr);
 
 	for(int i = 0; i < 64; i += 4){
-		printf("reg[%d]\t= 0x%016llX\t", i, regs[i]);
-		printf("reg[%d]\t= 0x%016llX\t", i + 1, regs[i + 1]);
-		printf("reg[%d]\t= 0x%016llX\t", i + 2, regs[i + 2]);
-		printf("reg[%d]\t= 0x%016llX", i + 3, regs[i + 3]);
+		printf("reg[%d]\t= 0x" FMT_X64 "\t", i, regs[i]);
+		printf("reg[%d]\t= 0x" FMT_X64 "\t", i + 1, regs[i + 1]);
+		printf("reg[%d]\t= 0x" FMT_X64 "\t", i + 2, regs[i + 2]);
+		printf("reg[%d]\t= 0x" FMT_X64, i + 3, regs[i + 3]);
 		printf("\n");
 	}
 	#endif
@@ -1012,11 +1023,11 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					break;	// funnily enough this is good enough already
 				}
 				case FN_BREAK:{
-					fprintf(stderr, "[BREAK]: Breakpoint hit at PC %lu\n", regs[PC] - 1);
+					fprintf(stderr, "[BREAK]: Breakpoint hit at PC " FMT_U64 "\n", regs[PC] - 1);
 					fprintf(stderr, "Registers:\n");
 
 					for(int i = 0; i < 64; i++){
-						fprintf(stderr, "  r%-2d: 0x%016lX\n", i, regs[i]);
+						fprintf(stderr, "  r%-2d: 0x" FMT_X64 "\n", i, regs[i]);
 					}
 
 					fprintf(stderr, "Press enter to continue...\n");
