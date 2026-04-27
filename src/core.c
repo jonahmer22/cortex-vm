@@ -734,7 +734,8 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 	return handled;
 }
 
-bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+// im dumb asf this made such a massive difference I should've been doing inline for this from the start
+inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 	bool running = true;
 
 	// FETCH

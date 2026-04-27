@@ -33,7 +33,7 @@ echo "==> Creating Python virtual environment ($VENV_DIR)..."
 python3 -m venv "$VENV_DIR"
 
 echo "==> Installing Python dependencies..."
-"$VENV_DIR/bin/pip" install --quiet -r requirements.txt
+"$VENV_DIR/bin/pip" install -r requirements.txt # I like seeing what it's doing
 
 # build
 echo "==> Building $BINARY..."
