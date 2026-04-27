@@ -744,8 +744,8 @@ static void handle_source(int fd){
 
 	fseek(f, 0, SEEK_END); long flen = ftell(f); fseek(f, 0, SEEK_SET);
 	char *content = malloc((size_t)flen + 1);
-	(void)fread(content, 1, (size_t)flen, f);
-	content[flen] = '\0';
+	size_t nread = fread(content, 1, (size_t)flen, f);
+	content[nread] = '\0';	// null-terminate at actual bytes read
 	fclose(f);
 
 	char *esc = json_escape(content);
@@ -1527,7 +1527,7 @@ void serverStart(int port, char *argv0, const char *sourcePath){
 #else
 	snprintf(cmd, sizeof(cmd), "xdg-open http://127.0.0.1:%d >/dev/null 2>&1 &", port);
 #endif
-	(void)system(cmd);
+	if(system(cmd) != 0){}	// best-effort browser open; failure is non-fatal
 
 	for(;;){
 		// reap any finished worker children non-blockingly so they
