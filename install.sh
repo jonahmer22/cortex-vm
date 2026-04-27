@@ -18,6 +18,10 @@ if [ ! -f Makefile ]; then
     exit 1
 fi
 
+# submodules
+echo "==> Initialising submodules..."
+git submodule update --init --recursive
+
 # build
 echo "==> Building $BINARY..."
 make
