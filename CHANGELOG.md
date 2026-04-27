@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.1] - 2026-04-27
+
+### Fixed
+- **Linux build warnings** — resolved all `-Wunused-result` warnings in `src/server.c`:
+  - `pipe()` calls in `run_vm_argv`, `handle_debug_start`, and `handle_irun_start` now check the return value and return an error on failure
+  - `fread()` in `handle_source` and `system()` in `serverStart` cast to `(void)` to signal intentional discard
+
+---
+
 ## [1.1.0] - 2026-04-27
 
 ### Added
@@ -199,5 +208,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.1.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.1
 [1.1.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.0
 [1.0.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.0.0

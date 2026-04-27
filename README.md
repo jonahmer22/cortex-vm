@@ -4,7 +4,7 @@ A fast, extensible 64-bit virtual machine and assembler designed as the primary 
 
 [![CI](https://github.com/jonahmer22/cortex-vm/actions/workflows/ci.yml/badge.svg)](https://github.com/jonahmer22/cortex-vm/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.1.0-blue)](#)
+[![Version](https://img.shields.io/badge/version-v1.1.1-blue)](#)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)](#)
 [![Language](https://img.shields.io/badge/language-C17-00599C?logo=c&logoColor=white)](#)
 
