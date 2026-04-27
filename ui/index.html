@@ -324,7 +324,7 @@
   <div class="sep"></div>
   <button class="btn" id="btn-clear" title="Clear console output">Clear</button>
   <div class="spacer"></div>
-  <span class="version">Cortex-VM v1.0.0</span>
+  <span class="version">Cortex-VM v1.1.0</span>
   <div class="sep"></div>
   <button class="btn save-btn" id="btn-save" title="Save source file (Ctrl+S)">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h9l3 3v9H2V2zm5 9a2 2 0 104 0 2 2 0 00-4 0zM4 3v4h6V3H4z"/></svg>Save
@@ -370,13 +370,13 @@
         <table class="doc-table">
           <thead><tr><th>Name</th><th>Index</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td class="mn">zero</td><td class="sig">r0</td><td class="desc">Hard-wired zero — always reads 0, writes ignored</td></tr>
-            <tr><td class="mn">pc</td><td class="sig">r1</td><td class="desc">Program counter — address of next instruction to execute</td></tr>
-            <tr><td class="mn">sp</td><td class="sig">r2</td><td class="desc">Stack pointer — points to top of stack (base <code style="color:var(--accent2)">0x0008000000000000</code>)</td></tr>
-            <tr><td class="mn">ra</td><td class="sig">r3</td><td class="desc">Return address — conventionally saved by <code style="color:var(--accent2)">jmp</code></td></tr>
-            <tr><td class="mn">s0–s13</td><td class="sig">r4–r17</td><td class="desc">Saved registers — callee-preserved by convention</td></tr>
-            <tr><td class="mn">a0–a13</td><td class="sig">r18–r31</td><td class="desc">Argument / return registers — a13 holds syscall number</td></tr>
-            <tr><td class="mn">t0–t31</td><td class="sig">r32–r63</td><td class="desc">Temporaries — caller-saved, no ABI guarantee</td></tr>
+            <tr><td class="mn">zero</td><td class="sig">r0</td><td class="desc">Hard-wired zero - always reads 0, writes ignored</td></tr>
+            <tr><td class="mn">pc</td><td class="sig">r1</td><td class="desc">Program counter - address of next instruction to execute</td></tr>
+            <tr><td class="mn">sp</td><td class="sig">r2</td><td class="desc">Stack pointer - points to top of stack (base <code style="color:var(--accent2)">0x0008000000000000</code>)</td></tr>
+            <tr><td class="mn">ra</td><td class="sig">r3</td><td class="desc">Return address - conventionally saved by <code style="color:var(--accent2)">jmp</code></td></tr>
+            <tr><td class="mn">s0-s13</td><td class="sig">r4-r17</td><td class="desc">Saved registers - callee-preserved by convention</td></tr>
+            <tr><td class="mn">a0-a13</td><td class="sig">r18-r31</td><td class="desc">Argument / return registers - a13 holds syscall number</td></tr>
+            <tr><td class="mn">t0-t31</td><td class="sig">r32-r63</td><td class="desc">Temporaries - caller-saved, no ABI guarantee</td></tr>
           </tbody>
         </table>
       </div>
@@ -401,7 +401,7 @@
         <table class="doc-table">
           <thead><tr><th>Directive</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td class="mn">.data</td><td class="desc">Begin data section — must appear after all code, at end of file</td></tr>
+            <tr><td class="mn">.data</td><td class="desc">Begin data section - must appear after all code, at end of file</td></tr>
           </tbody>
         </table>
         <p class="doc-note">Inside <code>.data</code>: integers, floats, char literals, and quoted strings are accepted. Each value occupies one 64-bit word; strings are null-terminated word arrays. Execution begins at the first instruction in the file.</p>
@@ -411,7 +411,7 @@
       <div class="doc-section">
         <h2>Base Instructions</h2>
 
-        <h3>ALU — register &amp; immediate</h3>
+        <h3>ALU - register &amp; immediate</h3>
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
           <tbody>
@@ -431,8 +431,8 @@
             <tr><td class="mn">srli</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra &gt;&gt; imm (logical)</td></tr>
             <tr><td class="mn">sra</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra &gt;&gt; rb  (arithmetic, sign-fill)</td></tr>
             <tr><td class="mn">srai</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra &gt;&gt; imm (arithmetic)</td></tr>
-            <tr><td class="mn">slt</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra &lt; rb) ? 1 : 0  — signed</td></tr>
-            <tr><td class="mn">sltu</td><td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra &lt; rb) ? 1 : 0  — unsigned</td></tr>
+            <tr><td class="mn">slt</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra &lt; rb) ? 1 : 0  - signed</td></tr>
+            <tr><td class="mn">sltu</td><td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra &lt; rb) ? 1 : 0  - unsigned</td></tr>
             <tr><td class="mn">seq</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra == rb) ? 1 : 0</td></tr>
           </tbody>
         </table>
@@ -454,7 +454,7 @@
           </tbody>
         </table>
 
-        <h3>Branches — <span style="font-weight:400;color:var(--text-dim)">if (ra op rb) pc += imm</span></h3>
+        <h3>Branches - <span style="font-weight:400;color:var(--text-dim)">if (ra op rb) pc += imm</span></h3>
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Condition</th></tr></thead>
           <tbody>
@@ -475,7 +475,7 @@
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td class="mn">syscall</td><td class="desc">Invoke syscall — number in a13, args in a0–a12</td></tr>
+            <tr><td class="mn">syscall</td><td class="desc">Invoke syscall - number in a13, args in a0-a12</td></tr>
             <tr><td class="mn">halt</td>   <td class="desc">Stop execution</td></tr>
             <tr><td class="mn">nop</td>    <td class="desc">No operation</td></tr>
             <tr><td class="mn">break</td>  <td class="desc">Debugger breakpoint (pause in debug mode)</td></tr>
@@ -485,7 +485,7 @@
 
       <!-- M extension -->
       <div class="doc-section">
-        <h2>M Extension — Integer Multiply / Divide</h2>
+        <h2>M Extension - Integer Multiply / Divide</h2>
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
           <tbody>
@@ -507,8 +507,8 @@
 
       <!-- F extension -->
       <div class="doc-section">
-        <h2>F Extension — 64-bit IEEE 754 Floats</h2>
-        <p class="doc-note" style="margin-bottom:8px">Floats share the same register file (r0–r63). Float immediates are 64-bit IEEE 754 bit patterns. Requires EXT_FLOAT flag set in binary header.</p>
+        <h2>F Extension - 64-bit IEEE 754 Floats</h2>
+        <p class="doc-note" style="margin-bottom:8px">Floats share the same register file (r0-r63). Float immediates are 64-bit IEEE 754 bit patterns. Requires EXT_FLOAT flag set in binary header.</p>
         <h3>Arithmetic</h3>
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
@@ -530,13 +530,13 @@
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
           <tbody>
-            <tr><td class="mn">ftoi</td> <td class="sig">rd, ra</td><td class="desc">rd = (int64_t)ra   — truncating float→int</td></tr>
-            <tr><td class="mn">ftoui</td><td class="sig">rd, ra</td><td class="desc">rd = (uint64_t)ra  — truncating float→uint</td></tr>
-            <tr><td class="mn">itof</td> <td class="sig">rd, ra</td><td class="desc">rd = (double)ra    — signed int→float</td></tr>
-            <tr><td class="mn">uitof</td><td class="sig">rd, ra</td><td class="desc">rd = (double)(uint64_t)ra — unsigned int→float</td></tr>
+            <tr><td class="mn">ftoi</td> <td class="sig">rd, ra</td><td class="desc">rd = (int64_t)ra   - truncating float->int</td></tr>
+            <tr><td class="mn">ftoui</td><td class="sig">rd, ra</td><td class="desc">rd = (uint64_t)ra  - truncating float->uint</td></tr>
+            <tr><td class="mn">itof</td> <td class="sig">rd, ra</td><td class="desc">rd = (double)ra    - signed int->float</td></tr>
+            <tr><td class="mn">uitof</td><td class="sig">rd, ra</td><td class="desc">rd = (double)(uint64_t)ra - unsigned int->float</td></tr>
           </tbody>
         </table>
-        <h3>Float branches — <span style="font-weight:400;color:var(--text-dim)">if (ra op rb) pc += imm</span></h3>
+        <h3>Float branches - <span style="font-weight:400;color:var(--text-dim)">if (ra op rb) pc += imm</span></h3>
         <table class="doc-table">
           <thead><tr><th>Mnemonic</th><th>Condition</th></tr></thead>
           <tbody>
@@ -552,23 +552,23 @@
       <!-- Syscalls -->
       <div class="doc-section">
         <h2>Syscall Quick Reference</h2>
-        <p class="doc-note" style="margin-bottom:8px">Set <code>a13</code> to the syscall number, populate args in <code>a0</code>–<code>a12</code>, then execute <code>syscall</code>. Return values appear in <code>a0</code>.</p>
+        <p class="doc-note" style="margin-bottom:8px">Set <code>a13</code> to the syscall number, populate args in <code>a0</code>-<code>a12</code>, then execute <code>syscall</code>. Return values appear in <code>a0</code>.</p>
 
         <h3>I/O</h3>
         <table class="doc-table">
           <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
           <tbody>
-            <tr><td class="num">0</td> <td class="mn">exit</td>        <td class="sig">a0 = exit code</td><td class="desc">—</td></tr>
-            <tr><td class="num">1</td> <td class="mn">print_int</td>   <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc">—</td></tr>
-            <tr><td class="num">2</td> <td class="mn">print_uint</td>  <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc">—</td></tr>
-            <tr><td class="num">3</td> <td class="mn">print_char</td>  <td class="sig">a0 = char</td><td class="desc">—</td></tr>
-            <tr><td class="num">4</td> <td class="mn">print_float</td> <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc ext">— [F]</td></tr>
-            <tr><td class="num">5</td> <td class="mn">print_str</td>   <td class="sig">a0 = addr of null-terminated string</td><td class="desc">—</td></tr>
+            <tr><td class="num">0</td> <td class="mn">exit</td>        <td class="sig">a0 = exit code</td><td class="desc">-</td></tr>
+            <tr><td class="num">1</td> <td class="mn">print_int</td>   <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc">-</td></tr>
+            <tr><td class="num">2</td> <td class="mn">print_uint</td>  <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc">-</td></tr>
+            <tr><td class="num">3</td> <td class="mn">print_char</td>  <td class="sig">a0 = char</td><td class="desc">-</td></tr>
+            <tr><td class="num">4</td> <td class="mn">print_float</td> <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc ext">- [F]</td></tr>
+            <tr><td class="num">5</td> <td class="mn">print_str</td>   <td class="sig">a0 = addr of null-terminated string</td><td class="desc">-</td></tr>
             <tr><td class="num">11</td><td class="mn">read_int</td>    <td class="sig">a1 = fmt¹</td><td class="desc">a0 = integer</td></tr>
             <tr><td class="num">12</td><td class="mn">read_uint</td>   <td class="sig">a1 = fmt¹</td><td class="desc">a0 = unsigned integer</td></tr>
-            <tr><td class="num">13</td><td class="mn">read_char</td>   <td class="sig">—</td><td class="desc">a0 = char</td></tr>
-            <tr><td class="num">14</td><td class="mn">read_float</td>  <td class="sig">—</td><td class="desc ext">a0 = float [F]</td></tr>
-            <tr><td class="num">15</td><td class="mn">read_str</td>    <td class="sig">a0 = dest buffer  a1 = max length</td><td class="desc">—</td></tr>
+            <tr><td class="num">13</td><td class="mn">read_char</td>   <td class="sig">-</td><td class="desc">a0 = char</td></tr>
+            <tr><td class="num">14</td><td class="mn">read_float</td>  <td class="sig">-</td><td class="desc ext">a0 = float [F]</td></tr>
+            <tr><td class="num">15</td><td class="mn">read_str</td>    <td class="sig">a0 = dest buffer  a1 = max length</td><td class="desc">-</td></tr>
           </tbody>
         </table>
         <p class="doc-note">¹ fmt: 0 = decimal, 1 = binary, 2 = octal, 3 = hex</p>
@@ -577,10 +577,10 @@
         <table class="doc-table">
           <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
           <tbody>
-            <tr><td class="num">21</td><td class="mn">rand_seed</td>  <td class="sig">a0 = seed</td><td class="desc">—</td></tr>
-            <tr><td class="num">22</td><td class="mn">rand_int</td>   <td class="sig">—</td><td class="desc">a0 = random integer</td></tr>
+            <tr><td class="num">21</td><td class="mn">rand_seed</td>  <td class="sig">a0 = seed</td><td class="desc">-</td></tr>
+            <tr><td class="num">22</td><td class="mn">rand_int</td>   <td class="sig">-</td><td class="desc">a0 = random integer</td></tr>
             <tr><td class="num">23</td><td class="mn">rand_r_int</td> <td class="sig">a0 = min  a1 = max</td><td class="desc">a0 = random integer in [min, max]</td></tr>
-            <tr><td class="num">24</td><td class="mn">rand_float</td> <td class="sig">—</td><td class="desc ext">a0 = random float in [0.0, 1.0] [F]</td></tr>
+            <tr><td class="num">24</td><td class="mn">rand_float</td> <td class="sig">-</td><td class="desc ext">a0 = random float in [0.0, 1.0] [F]</td></tr>
           </tbody>
         </table>
 
@@ -590,8 +590,8 @@
           <tbody>
             <tr><td class="num">31</td><td class="mn">file_open</td> <td class="sig">a0 = path addr  a1 = mode²</td><td class="desc">a0 = file descriptor</td></tr>
             <tr><td class="num">32</td><td class="mn">file_read</td> <td class="sig">a0 = fd  a1 = dest buffer addr</td><td class="desc">a0 = words written (excl. null terminator)</td></tr>
-            <tr><td class="num">33</td><td class="mn">file_close</td><td class="sig">a0 = fd</td><td class="desc">—</td></tr>
-            <tr><td class="num">34</td><td class="mn">file_write</td><td class="sig">a0 = fd  a1 = null-terminated buffer addr</td><td class="desc">—</td></tr>
+            <tr><td class="num">33</td><td class="mn">file_close</td><td class="sig">a0 = fd</td><td class="desc">-</td></tr>
+            <tr><td class="num">34</td><td class="mn">file_write</td><td class="sig">a0 = fd  a1 = null-terminated buffer addr</td><td class="desc">-</td></tr>
           </tbody>
         </table>
         <p class="doc-note">² mode: 0 = read, 1 = write, 2 = append</p>
@@ -600,8 +600,8 @@
         <table class="doc-table">
           <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
           <tbody>
-            <tr><td class="num">41</td><td class="mn">time_get</td>  <td class="sig">—</td><td class="desc">a0 = milliseconds since Unix epoch</td></tr>
-            <tr><td class="num">42</td><td class="mn">time_sleep</td><td class="sig">a0 = milliseconds</td><td class="desc">—</td></tr>
+            <tr><td class="num">41</td><td class="mn">time_get</td>  <td class="sig">-</td><td class="desc">a0 = milliseconds since Unix epoch</td></tr>
+            <tr><td class="num">42</td><td class="mn">time_sleep</td><td class="sig">a0 = milliseconds</td><td class="desc">-</td></tr>
           </tbody>
         </table>
 
@@ -610,7 +610,7 @@
           <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
           <tbody>
             <tr><td class="num">51</td><td class="mn">heap_grow</td><td class="sig">a0 = words to allocate</td><td class="desc">a0 = base address of allocated region, or 0 on failure</td></tr>
-            <tr><td class="num">52</td><td class="mn">heap_top</td> <td class="sig">—</td><td class="desc">a0 = address of next word to be allocated</td></tr>
+            <tr><td class="num">52</td><td class="mn">heap_top</td> <td class="sig">-</td><td class="desc">a0 = address of next word to be allocated</td></tr>
           </tbody>
         </table>
       </div>
@@ -658,38 +658,6 @@ const REG_NAMES = [
   "t26","t27","t28","t29","t30","t31"
 ];
 
-// ── Sample program ────────────────────────────────────────────────────────────
-const SAMPLE = `; Fibonacci sequence — prints F(0) through F(10)
-; t0 = a (prev), t1 = b (curr), t2 = counter, t3 = limit, t4 = temp
-
-main:
-    addi t0, zero, 0        ; a = F(0)
-    addi t1, zero, 1        ; b = F(1)
-    addi t2, zero, 0        ; counter = 0
-    addi t3, zero, 10       ; limit = 10
-
-loop:
-    addi a0, t0, 0          ; a0 = current value
-    addi a1, zero, 0
-    addi a13, zero, 1       ; SYS_PRINT_INT
-    syscall
-
-    addi a0, zero, 10       ; newline
-    addi a13, zero, 3       ; SYS_PRINT_CHAR
-    syscall
-
-    add  t4, t0, t1         ; t4 = a + b
-    addi t0, t1, 0          ; a = b
-    addi t1, t4, 0          ; b = next
-
-    addi t2, t2, 1          ; counter++
-    ble  t2, t3, loop       ; if counter <= 10, repeat
-
-    addi a0, zero, 0        ; exit code 0
-    addi a13, zero, 0       ; SYS_EXIT
-    syscall
-`;
-
 // ── CodeMirror editor ─────────────────────────────────────────────────────────
 // ── Dirty-tracking helpers ────────────────────────────────────────────────────
 let editorDirty = false;
@@ -697,7 +665,7 @@ function markDirty() {
   if (editorDirty) return;
   editorDirty = true;
   btnSave.classList.add("dirty");
-  btnSave.title = "Unsaved changes — Save (Ctrl+S)";
+  btnSave.title = "Unsaved changes - Save (Ctrl+S)";
 }
 function markClean() {
   editorDirty = false;
@@ -716,11 +684,10 @@ const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
     "Cmd-S":      () => doSave(),
   },
 });
-editor.setValue(SAMPLE);
 editor.setSize("100%", "100%");
 editor.on("change", (cm, change) => { if (change.origin !== "setValue") markDirty(); });
 
-// Pre-load source file if server was given one
+// Pre-load source file if server was given one; otherwise open blank
 fetch("/source").then(r => r.json()).then(d => {
   if (d.source != null) { editor.setValue(d.source); markClean(); }
 }).catch(() => {});
@@ -957,7 +924,7 @@ function escHtml(s) {
 // ── Halted helper (shared by step/continue) ───────────────────────────────────
 function onHalted(data) {
   appendConsole(`<div class="ok-line">── Halted after ${stepCount} step${stepCount===1?'':'s'} · exit ${data.exit_code} ──</div>`);
-  setStatus(`Halted — exit code ${data.exit_code}`, data.exit_code === 0 ? "ok" : "error");
+  setStatus(`Halted - exit code ${data.exit_code}`, data.exit_code === 0 ? "ok" : "error");
   statusExit.textContent = `exit: ${data.exit_code}`;
   setDebugMode(false);
   fetch("/debug/stop", { method: "POST" }).catch(() => {});
@@ -1059,7 +1026,7 @@ async function pollIRun() {
     if (data.stderr) appendError(data.stderr);
     if (!data.running) {
       irunActive = false;
-      setStatus(`Completed — exit code ${data.exit_code}`,
+      setStatus(`Completed - exit code ${data.exit_code}`,
                 data.exit_code === 0 ? "ok" : "error");
       statusExit.textContent = `exit: ${data.exit_code}`;
       setBusy(false);
@@ -1086,7 +1053,7 @@ async function doSave() {
       return;
     }
     if (data.no_path) {
-      // no file path on server side — offer a browser download instead
+      // no file path on server side - offer a browser download instead
       const blob = new Blob([source], { type: "text/plain" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -1112,10 +1079,10 @@ async function doAssemble() {
     });
     const data = await res.json();
     if (data.ok) {
-      setStatus("Assembled successfully — no errors.", "ok");
+      setStatus("Assembled successfully - no errors.", "ok");
       fetchBytecode(source);
     } else {
-      setStatus("Assembly error — see console.", "error");
+      setStatus("Assembly error - see console.", "error");
       appendConsole(`<div class="run-header">── Assemble error ──</div><div class="err-line">${escHtml(data.error)}</div>`);
     }
   } catch (e) { setStatus("Server error: " + e.message, "error"); }
@@ -1135,7 +1102,7 @@ async function doRun() {
     const data = await res.json();
     if (!data.ok) {
       appendConsole(`<div class="run-header">── Run #${runCount} · ERROR ──</div><div class="err-line">${escHtml(data.error)}</div>`);
-      setStatus("Assembly error — see console.", "error");
+      setStatus("Assembly error - see console.", "error");
       return;
     }
     irunActive = true;
@@ -1165,7 +1132,7 @@ async function doDebug() {
     const data = await res.json();
     if (!data.ok) {
       appendConsole(`<div class="run-header">── Debug error ──</div><div class="err-line">${escHtml(data.error)}</div>`);
-      setStatus("Debug error — see console.", "error");
+      setStatus("Debug error - see console.", "error");
       setBusy(false);
       return;
     }
@@ -1177,7 +1144,7 @@ async function doDebug() {
     await fetchBytecode(source);
     highlightPC(data.regs[1]);
     fetchMemory();
-    setStatus(`Debug ready — PC = ${fmtPC(data.regs[1])}`, "debug");
+    setStatus(`Debug ready - PC = ${fmtPC(data.regs[1])}`, "debug");
     statusExit.textContent = "";
     // switch to bytecode tab automatically
     showTab("bytecode");
@@ -1200,7 +1167,7 @@ async function doStep() {
       fetchMemory();
       debugWaiting = true;
       pendingDebugAction = "step";
-      setStatus("Waiting for input — type in the terminal below", "debug");
+      setStatus("Waiting for input - type in the terminal below", "debug");
       return;
     }
 
@@ -1212,7 +1179,7 @@ async function doStep() {
     if (!data.running) {
       onHalted(data);
     } else {
-      setStatus(`Step ${stepCount} — PC = ${fmtPC(data.regs[1])}`, "debug");
+      setStatus(`Step ${stepCount} - PC = ${fmtPC(data.regs[1])}`, "debug");
       highlightPC(data.regs[1]);
     }
   } catch (e) { setStatus("Server error: " + e.message, "error"); }
@@ -1240,7 +1207,7 @@ async function doContinue() {
       fetchMemory();
       debugWaiting = true;
       pendingDebugAction = "continue";
-      setStatus("Waiting for input — type in the terminal below", "debug");
+      setStatus("Waiting for input - type in the terminal below", "debug");
       return;
     }
 
@@ -1251,7 +1218,7 @@ async function doContinue() {
     if (!data.running) {
       onHalted(data);
     } else {
-      setStatus(`Breakpoint — PC = ${fmtPC(data.regs[1])}`, "debug");
+      setStatus(`Breakpoint - PC = ${fmtPC(data.regs[1])}`, "debug");
       highlightPC(data.regs[1]);
     }
   } catch (e) { setStatus("Server error: " + e.message, "error"); }

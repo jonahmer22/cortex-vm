@@ -44,8 +44,14 @@ int main(int argc, char **argv){
 	// -V: launch the visual browser-based IDE
 	if(cliargsFlag("visual", 'V') || cliargsArg("visual", 'V') != NULL){
 		const char *srcPath = cliargsArg("visual", 'V');
-		if(!srcPath) srcPath = cliargsSubcommand();
-		serverStart(7777, argv[0], srcPath);
+		if(!srcPath)
+			srcPath = cliargsSubcommand();
+		int port = serverFindPort(7777);
+		if(port < 0){
+			fprintf(stderr, "[FATAL 0x%04X]: No free port found in range 7777-65535.\n", 0x0003);
+			return EXIT_FAILURE;
+		}
+		serverStart(port, argv[0], srcPath);
 		return EXIT_SUCCESS;
 	}
 

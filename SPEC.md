@@ -1,4 +1,4 @@
-# Cortex-VM — Implementation Specification
+# Cortex-VM - Implementation Specification
 
 This document is the authoritative technical reference for the Cortex ISA, binary format, assembler, and VM implementation. It covers every detail needed to write a conforming assembler, emulator, or compiler backend targeting Cortex.
 
@@ -16,15 +16,15 @@ This document is the authoritative technical reference for the Cortex ISA, binar
 8. [Memory Layout](#memory-layout)
 9. [VM Initialization Sequence](#vm-initialization-sequence)
 10. [Extensions](#extensions)
-    - [F Extension — 64-bit Floats](#f-extension--64-bit-floats-ext_float-bit-0)
-    - [M Extension — Integer Multiply/Divide](#m-extension--integer-multiplydivide-ext_m-bit-1)
+    - [F Extension - 64-bit Floats](#f-extension--64-bit-floats-ext_float-bit-0)
+    - [M Extension - Integer Multiply/Divide](#m-extension--integer-multiplydivide-ext_m-bit-1)
 11. [Notes](#notes)
 
 ---
 
 ## Design Rules
 
-- 64-bit words throughout — all values, addresses, and offsets are full words.
+- 64-bit words throughout - all values, addresses, and offsets are full words.
 - 2's complement signed integers.
 - Word-addressed: all offsets and addresses are **word** offsets, not byte offsets.
 - All free (unused) bits in an instruction must be zero.
@@ -46,7 +46,7 @@ This document is the authoritative technical reference for the Cortex ISA, binar
 | r18–r31 | 14 | `a0`–`a13` | Caller-saved. Used for arguments, return values, and syscall number (`a13`). |
 | r32–r63 | 32 | `t0`–`t31` | Caller-saved temporaries. No preservation guarantee. |
 
-Register aliases are case-insensitive in the assembler and interchangeable with raw `r<N>` notation. When the F extension is active, the same register file is reused for 64-bit IEEE 754 doubles — float instructions simply reinterpret the stored bits.
+Register aliases are case-insensitive in the assembler and interchangeable with raw `r<N>` notation. When the F extension is active, the same register file is reused for 64-bit IEEE 754 doubles - float instructions simply reinterpret the stored bits.
 
 ---
 
@@ -97,7 +97,7 @@ lw   reg, sp, 0
 
 All instructions are 64 bits wide.
 
-### R Type — Register-to-Register ALU
+### R Type - Register-to-Register ALU
 
 ```
 [63:56] opcode (8) | [55:48] funct (8) | [47:42] ra (6) | [41:36] rd (6) | [35:30] rb (6) | [29:26] flags (4) | [25:0] reserved
@@ -105,7 +105,7 @@ All instructions are 64 bits wide.
 
 Computes `ra op rb`, result written to `rd`.
 
-### I Type — Immediate ALU / Jump
+### I Type - Immediate ALU / Jump
 
 ```
 [63:56] opcode (8) | [55:48] funct (8) | [47:42] ra (6) | [41:36] rd (6) | [35:30] imm[31:26] (6) | [29:26] flags (4) | [25:0] imm[25:0]
@@ -113,7 +113,7 @@ Computes `ra op rb`, result written to `rd`.
 
 32-bit sign-extended immediate. Computes `ra op imm`, result written to `rd`.
 
-### S Type — Store
+### S Type - Store
 
 ```
 [63:56] opcode (8) | [55:48] funct (8) | [47:42] ra (6) | [41:36] imm[35:30] (6) | [35:30] rb (6) | [29:0] imm[29:0]
@@ -121,7 +121,7 @@ Computes `ra op rb`, result written to `rd`.
 
 36-bit sign-extended immediate. Stores `rb` to word address `ra + imm`.
 
-### L Type — Load
+### L Type - Load
 
 ```
 [63:56] opcode (8) | [55:48] funct (8) | [47:42] ra (6) | [41:36] rd (6) | [35:0] imm[35:0]
@@ -129,7 +129,7 @@ Computes `ra op rb`, result written to `rd`.
 
 36-bit unsigned immediate. Loads from word address `ra + imm` into `rd`.
 
-### B Type — Branch
+### B Type - Branch
 
 ```
 [63:56] opcode (8) | [55:48] funct (8) | [47:42] ra (6) | [41:36] imm[35:30] (6) | [35:30] rb (6) | [29:0] imm[29:0]
@@ -160,24 +160,24 @@ Instructions are identified by a two-level scheme: opcode selects the format and
 | `0x85` | B | Branch |
 | `0x86` | System | System instructions |
 
-### ALU — R Type (`0x81`) and I Type (`0x82`)
+### ALU - R Type (`0x81`) and I Type (`0x82`)
 
 R and I types share function codes and flag semantics. R operates on two registers; I operates on a register and a 32-bit sign-extended immediate.
 
 | Function | Mnemonic (R / I) | Operation | Flag bit 0 |
 |----------|-----------------|-----------|------------|
 | `0x01` | `add` / `addi` | `rd = ra + rb/imm` | 0 = add, 1 = sub (`sub`/`subi`) |
-| `0x02` | `or` / `ori` | `rd = ra \| rb/imm` | — |
-| `0x03` | `xor` / `xori` | `rd = ra ^ rb/imm` | — |
-| `0x04` | `and` / `andi` | `rd = ra & rb/imm` | — |
-| `0x05` | `sll` / `slli` | `rd = ra << rb/imm` | — |
+| `0x02` | `or` / `ori` | `rd = ra \| rb/imm` | - |
+| `0x03` | `xor` / `xori` | `rd = ra ^ rb/imm` | - |
+| `0x04` | `and` / `andi` | `rd = ra & rb/imm` | - |
+| `0x05` | `sll` / `slli` | `rd = ra << rb/imm` | - |
 | `0x06` | `srl`/`sra` / `srli`/`srai` | `rd = ra >> rb/imm` | 0 = logical, 1 = arithmetic |
-| `0x07` | `jmp` | `rd = pc; pc = ra + imm` | — (I type only) |
+| `0x07` | `jmp` | `rd = pc; pc = ra + imm` | - (I type only) |
 | `0x08` | `slt` / `slti` | `rd = (ra < rb/imm) ? 1 : 0` | Signed comparison |
 | `0x09` | `sltu` / `sltui` | `rd = (ra < rb/imm) ? 1 : 0` | Unsigned comparison |
 | `0x0A` | `seq` / `seqi` | `rd = (ra == rb/imm) ? 1 : 0` | Bitwise equality |
 
-> **`not`** is not a dedicated instruction — use `xori rd, ra, -1`.
+> **`not`** is not a dedicated instruction - use `xori rd, ra, -1`.
 
 ### Memory
 
@@ -188,7 +188,7 @@ R and I types share function codes and flag semantics. R operates on two registe
 
 All addresses and offsets are word-indexed.
 
-### Branches — B Type (`0x85`)
+### Branches - B Type (`0x85`)
 
 | Function | Mnemonic | Condition |
 |----------|----------|-----------|
@@ -224,29 +224,29 @@ System calls are invoked with `syscall`. Call number in `a13`, arguments in `a0`
 
 | Number | Name | Args | Returns | Description |
 |--------|------|------|---------|-------------|
-| `0` | `SYS_EXIT` | `a0`=exit code | — | Terminate. |
-| `1` | `SYS_PRINT_INT` | `a0`=value, `a1`=format | — | Print signed integer. |
-| `2` | `SYS_PRINT_UINT` | `a0`=value, `a1`=format | — | Print unsigned integer. |
-| `3` | `SYS_PRINT_CHAR` | `a0`=char | — | Print a single character. |
-| `4` | `SYS_PRINT_FLOAT` | `a0`=float, `a1`=precision | — | Print float with N decimal places. Requires F. |
-| `5` | `SYS_PRINT_STR` | `a0`=address | — | Print null-terminated string. |
+| `0` | `SYS_EXIT` | `a0`=exit code | - | Terminate. |
+| `1` | `SYS_PRINT_INT` | `a0`=value, `a1`=format | - | Print signed integer. |
+| `2` | `SYS_PRINT_UINT` | `a0`=value, `a1`=format | - | Print unsigned integer. |
+| `3` | `SYS_PRINT_CHAR` | `a0`=char | - | Print a single character. |
+| `4` | `SYS_PRINT_FLOAT` | `a0`=float, `a1`=precision | - | Print float with N decimal places. Requires F. |
+| `5` | `SYS_PRINT_STR` | `a0`=address | - | Print null-terminated string. |
 | `11` | `SYS_READ_INT` | `a1`=format | `a0`=value | Read signed integer from stdin. |
 | `12` | `SYS_READ_UINT` | `a1`=format | `a0`=value | Read unsigned integer from stdin. |
-| `13` | `SYS_READ_CHAR` | — | `a0`=char | Read one character from stdin. |
-| `14` | `SYS_READ_FLOAT` | — | `a0`=float | Read float from stdin. Requires F. |
-| `15` | `SYS_READ_STR` | `a0`=dest, `a1`=max len | — | Read string from stdin into buffer. |
-| `21` | `SYS_RAND_SEED` | `a0`=seed | — | Seed the PRNG. |
-| `22` | `SYS_RAND_INT` | — | `a0`=value | Pseudo-random integer. |
+| `13` | `SYS_READ_CHAR` | - | `a0`=char | Read one character from stdin. |
+| `14` | `SYS_READ_FLOAT` | - | `a0`=float | Read float from stdin. Requires F. |
+| `15` | `SYS_READ_STR` | `a0`=dest, `a1`=max len | - | Read string from stdin into buffer. |
+| `21` | `SYS_RAND_SEED` | `a0`=seed | - | Seed the PRNG. |
+| `22` | `SYS_RAND_INT` | - | `a0`=value | Pseudo-random integer. |
 | `23` | `SYS_RAND_R_INT` | `a0`=min, `a1`=max | `a0`=value | Random integer in `[min, max]`. |
-| `24` | `SYS_RAND_FLOAT` | — | `a0`=value | Random float in `[0.0, 1.0]`. Requires F. |
+| `24` | `SYS_RAND_FLOAT` | - | `a0`=value | Random float in `[0.0, 1.0]`. Requires F. |
 | `31` | `SYS_FILE_OPEN` | `a0`=path, `a1`=mode | `a0`=fd | Open file. mode: 0=read, 1=write, 2=append. |
 | `32` | `SYS_FILE_READ` | `a0`=fd, `a1`=buffer addr | `a0`=words written | Read entire file into caller-supplied buffer (heap or stack address). Returns word count, not counting the null terminator. |
-| `33` | `SYS_FILE_CLOSE` | `a0`=fd | — | Close file descriptor. |
-| `34` | `SYS_FILE_WRITE` | `a0`=fd, `a1`=buffer addr | — | Write null-terminated buffer to file. |
-| `41` | `SYS_TIME_GET` | — | `a0`=ms | Milliseconds since Unix epoch. |
-| `42` | `SYS_TIME_SLEEP` | `a0`=ms | — | Sleep for N milliseconds. |
-| `51` | `SYS_HEAP_GROW` | `a0`=N words | `a0`=base address | Allocate N words on the heap; returns the base word address of the new region (`0x0001…`). Returns 0 on failure or if N=0. The heap grows monotonically — the guest is responsible for any free/GC layer on top. |
-| `52` | `SYS_HEAP_TOP` | — | `a0`=top address | Returns the address of the next word that would be allocated (equals `HEAP_ADDR` when no heap has been allocated yet). Useful for implementing a guest-side allocator. |
+| `33` | `SYS_FILE_CLOSE` | `a0`=fd | - | Close file descriptor. |
+| `34` | `SYS_FILE_WRITE` | `a0`=fd, `a1`=buffer addr | - | Write null-terminated buffer to file. |
+| `41` | `SYS_TIME_GET` | - | `a0`=ms | Milliseconds since Unix epoch. |
+| `42` | `SYS_TIME_SLEEP` | `a0`=ms | - | Sleep for N milliseconds. |
+| `51` | `SYS_HEAP_GROW` | `a0`=N words | `a0`=base address | Allocate N words on the heap; returns the base word address of the new region (`0x0001…`). Returns 0 on failure or if N=0. The heap grows monotonically - the guest is responsible for any free/GC layer on top. |
+| `52` | `SYS_HEAP_TOP` | - | `a0`=top address | Returns the address of the next word that would be allocated (equals `HEAP_ADDR` when no heap has been allocated yet). Useful for implementing a guest-side allocator. |
 
 **Format values (a1 for print/read int/uint):** `0`=decimal, `1`=binary, `2`=octal, `3`=hex.
 
@@ -279,9 +279,9 @@ Cortex-VM executables are a flat sequence of 64-bit big-endian words. A fixed 5-
 
 | Bit | Constant | Extension |
 |-----|----------|-----------|
-| 0 | `EXT_FLOAT` | F — 64-bit IEEE 754 float operations |
-| 1 | `EXT_M` | M — integer multiply and divide |
-| 2–63 | — | Reserved. Must be 0. |
+| 0 | `EXT_FLOAT` | F - 64-bit IEEE 754 float operations |
+| 1 | `EXT_M` | M - integer multiply and divide |
+| 2–63 | - | Reserved. Must be 0. |
 
 ---
 
@@ -302,7 +302,7 @@ Data section words are placed in the code arena immediately after the last instr
 ## VM Initialization Sequence
 
 1. Read binary into word buffer.
-2. Parse and validate header — check magic, version, file length, entry point, extension flags, and data offset.
+2. Parse and validate header - check magic, version, file length, entry point, extension flags, and data offset.
 3. Allocate code arena (`file_length - HEADER_LEN` words). Copy words from index `HEADER_LEN` onward (skip header).
 4. Allocate stack arena. Set `sp` to `0x0008000000000000`.
 5. Zero all 64 registers. Set `pc` to `entry_point - HEADER_LEN` (file-relative → code-relative).
@@ -314,7 +314,7 @@ Data section words are placed in the code arena immediately after the last instr
 
 ## Extensions
 
-### F Extension — 64-bit Floats (`EXT_FLOAT`, bit 0)
+### F Extension - 64-bit Floats (`EXT_FLOAT`, bit 0)
 
 Reuses the existing r0–r63 register file. Float instructions interpret register contents as IEEE 754 double-precision values. No separate register file is required.
 
@@ -352,11 +352,11 @@ Float immediates in FI-type instructions are encoded as 32-bit IEEE 754 single-p
 | `0x03` | `fbgt` | `ra > rb` |
 | `0x04` | `fbge` | `ra >= rb` |
 
-`beq`/`bne` work on float registers since they compare bits (NaN edge cases aside). Do not use `blt`/`bltu` on floats — use `fblt` instead.
+`beq`/`bne` work on float registers since they compare bits (NaN edge cases aside). Do not use `blt`/`bltu` on floats - use `fblt` instead.
 
 ---
 
-### M Extension — Integer Multiply/Divide (`EXT_M`, bit 1)
+### M Extension - Integer Multiply/Divide (`EXT_M`, bit 1)
 
 #### Opcodes
 

@@ -14,13 +14,26 @@ HEADER=cortex-vm.h
 cd "$(dirname "$0")"
 
 if [ ! -f Makefile ]; then
-    echo "error: cannot find Makefile — run this script from the cortex-vm source directory" >&2
+    echo "error: cannot find Makefile - run this script from the cortex-vm source directory" >&2
     exit 1
 fi
 
 # submodules
 echo "==> Initialising submodules..."
 git submodule update --init --recursive
+
+# python environment
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "error: python3 not found - required for the test suite." >&2
+    exit 1
+fi
+
+VENV_DIR=".venv"
+echo "==> Creating Python virtual environment ($VENV_DIR)..."
+python3 -m venv "$VENV_DIR"
+
+echo "==> Installing Python dependencies..."
+"$VENV_DIR/bin/pip" install --quiet -r requirements.txt
 
 # build
 echo "==> Building $BINARY..."
@@ -30,15 +43,11 @@ echo "==> Building lib$BINARY..."
 make lib
 
 # test
-if command -v pytest >/dev/null 2>&1; then
-    echo "==> Running tests..."
-    if ! pytest; then
-        echo ""
-        echo "error: tests failed — aborting installation." >&2
-        exit 1
-    fi
-else
-    echo "==> pytest not found — skipping tests (install pytest to enable pre-install checks)."
+echo "==> Running tests..."
+if ! "$VENV_DIR/bin/pytest"; then
+    echo ""
+    echo "error: tests failed - aborting installation." >&2
+    exit 1
 fi
 
 # privilege helper
