@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -264,8 +265,20 @@ static int parse_breakpoints(const char *body, uint64_t *bps, int max_bps){
 // http i/o
 
 static char *read_request(int fd, size_t *out_len){
+	// poll briefly for the first byte. Browsers open speculative
+	// connections that never send anything; without this we'd block here
+	// for the full SO_RCVTIMEO on every one of them, serializing real
+	// requests behind dead ones. 500ms is generous for localhost.
+	struct pollfd pfd = { .fd = fd, .events = POLLIN };
+	int pr = poll(&pfd, 1, 500);
+	if(pr <= 0)
+		return NULL;	// idle speculative connection or error: drop it
+	if(!(pfd.revents & POLLIN))
+		return NULL;
+
+	// once data is arriving, give the rest of the request a real timeout
 	struct timeval tv = {
-		.tv_sec = 5,
+		.tv_sec = 2,
 		.tv_usec = 0
 	};
 	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
@@ -1431,6 +1444,42 @@ static void handle_irun_stop(int fd){
 	send_response(fd, "200 OK", "application/json", "{\"ok\":true}", 11);
 }
 
+// probe whether a port is available (returns 1 if free, 0 if taken)
+static int port_free(int port){
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(fd < 0)
+		return 0;
+
+	int opt = 1;
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+	struct sockaddr_in addr = {0};
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr.sin_port = htons((uint16_t)port);
+
+	int ok = (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0);
+	
+	close(fd);
+	return ok;
+}
+
+// scan upward from `start` for the first free TCP port; returns -1 if none found
+int serverFindPort(int start){
+	for(int p = start; p <= 65535; p++){
+		if(port_free(p)) return p;
+	}
+	return -1;
+}
+
+// Routes that read or write process-global state (g_irun, g_debug). These
+// must run in the parent process — forking would put any state mutations
+// into a child that the parent never sees, breaking subsequent polls.
+static int path_is_stateful(const char *path){
+	return strncmp(path, "/irun",  5) == 0
+	    || strncmp(path, "/debug", 6) == 0;
+}
+
 // server loop
 
 void serverStart(int port, char *argv0, const char *sourcePath){
@@ -1470,6 +1519,12 @@ void serverStart(int port, char *argv0, const char *sourcePath){
 	system(cmd);
 
 	for(;;){
+		// reap any finished worker children non-blockingly so they
+		// don't pile up as zombies. The handful of waitpid()s in irun/debug
+		// teardown only cover those specific PIDs; we need a sweep here.
+		while(waitpid(-1, NULL, WNOHANG) > 0)
+			;
+
 		int cfd = accept(sock, NULL, NULL);
 		if(cfd < 0){
 			if(errno == EINTR)
@@ -1491,6 +1546,29 @@ void serverStart(int port, char *argv0, const char *sourcePath){
 			body += 4;
 		else
 			body = req + req_len;
+
+		// For stateless routes (page assets, /source, /assemble,
+		// /run, /save, /bytecode), fork a worker so the accept loop can
+		// keep up with browser-parallel asset requests. Stateful routes
+		// (g_irun, g_debug) must run in the parent so their state changes
+		// persist across requests.
+		int in_child = 0;
+		if(!path_is_stateful(path)){
+			pid_t pid = fork();
+			if(pid == 0){
+				// child: drop the listening socket, handle, exit
+				close(sock);
+				signal(SIGPIPE, SIG_IGN);
+				in_child = 1;
+			}
+			else if(pid > 0){
+				// parent: close the client fd and move on
+				free(req);
+				close(cfd);
+				continue;
+			}
+			// fork() < 0: fall through and handle in parent (degraded but correct)
+		}
 
 		if(strcmp(method,"GET")  == 0 && strcmp(path,"/") == 0){
 			handle_index(cfd);
@@ -1561,6 +1639,11 @@ void serverStart(int port, char *argv0, const char *sourcePath){
 
 		free(req);
 		close(cfd);
+
+		// if we're a forked worker, exit now — don't loop back
+		// to accept(). The parent (in_child == 0) keeps running.
+		if(in_child)
+			_exit(0);
 	}
 	close(sock);
 }
