@@ -27,15 +27,15 @@ void headerParse(uint64_t *magic, uint16_t *version, uint64_t *fileLength, uint6
 	#ifdef DEBUG
 	// for testing purposes print the values parsed from the header
 	printf("[DEBUG]: Header Contents:\n");
-	printf("[DEBUG]: magic:\t\t0x%016llX\n", *magic);
+	printf("[DEBUG]: magic:\t\t0x" FMT_X64 "\n", *magic);
 	printf("[DEBUG]: version:\t0x%016X\n", *version);
-	printf("[DEBUG]: fileLength:\t0x%016llX\n", *fileLength);
-	printf("[DEBUG]: offset:\t0x%016llX\n", *offset);
+	printf("[DEBUG]: fileLength:\t0x" FMT_X64 "\n", *fileLength);
+	printf("[DEBUG]: offset:\t0x" FMT_X64 "\n", *offset);
 	printf("[DEBUG]: extensions:\t0b");
 	for(int i = 63; i >= 0; --i)
 		putchar((*extensions >> i) & 1 ? '1' : '0');
 	printf(" (FLOAT:%d M:%d)\n", (int)((*extensions & EXT_FLOAT) != 0), (int)((*extensions & EXT_M) != 0));
-	printf("[DEBUG]: dataOffset:\t0x%016llX\n", *dataOffset);
+	printf("[DEBUG]: dataOffset:\t0x" FMT_X64 "\n", *dataOffset);
 	#endif
 }
 
@@ -57,12 +57,12 @@ void headerValidate(uint64_t *magic, uint16_t *version, size_t *fileSize, uint64
 	}
 	// make sure that the fileSize and fileLength match
 	if(*fileSize != *fileLength){
-		fprintf(stderr, "[FILE LENGTH]: A file size of %zu was loaded, while the encoded binary specifies a size of %lu.\n", *fileSize, *fileLength);
+		fprintf(stderr, "[FILE LENGTH]: A file size of %zu was loaded, while the encoded binary specifies a size of " FMT_U64 ".\n", *fileSize, *fileLength);
 		exit(EXIT_FAILURE);
 	}
 	// make sure that the offset is at least HEADER_LEN (entry point must be past the header)
 	if(*offset < HEADER_LEN){
-		fprintf(stderr, "[ENTRY POINT]: The specified entry point of %lu is within the header, minimum entry point is %d.\n", *offset, HEADER_LEN);
+		fprintf(stderr, "[ENTRY POINT]: The specified entry point of " FMT_U64 " is within the header, minimum entry point is %d.\n", *offset, HEADER_LEN);
 		exit(EXIT_FAILURE);
 	}
 	// check the extension flags, for version 1 they should all be 0

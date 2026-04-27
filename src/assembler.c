@@ -1369,7 +1369,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 		}
 
 		#ifdef DEBUG
-		printf("[DEBUG]: Instruction encoded:\t0x%016llX\n", word);
+		printf("[DEBUG]: Instruction encoded:\t0x" FMT_X64 "\n", word);
 		#endif
 
 		// add the word to the words list
@@ -1421,7 +1421,7 @@ uint64_t *assemble(const char *sbuff, const char *outputPath, int noOutput){
 		listSet(list, p->pc, word);
 
 		#ifdef DEBUG
-		printf("[DEBUG]: Patched instruction at pc=%zu from 0x%016llX to 0x%016llX\n", (p->pc)-HEADER_LEN, temp_word, word);
+		printf("[DEBUG]: Patched instruction at pc=%zu from 0x" FMT_X64 " to 0x" FMT_X64 "\n", (p->pc)-HEADER_LEN, temp_word, word);
 		#endif
 	}
 

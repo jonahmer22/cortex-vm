@@ -14,40 +14,36 @@ This tutorial walks you from zero to writing real programs for Cortex-VM. No pri
 6. [The Data Section](#6-the-data-section)
 7. [Memory: Store and Load](#7-memory-store-and-load)
 8. [Functions and the Stack](#8-functions-and-the-stack)
-9. [The M Extension — Multiply and Divide](#9-the-m-extension--multiply-and-divide)
-10. [The F Extension — Floating Point](#10-the-f-extension--floating-point)
+9. [The M Extension - Multiply and Divide](#9-the-m-extension--multiply-and-divide)
+10. [The F Extension - Floating Point](#10-the-f-extension--floating-point)
 11. [The Disassembler](#11-the-disassembler)
 12. [Heap Memory](#12-heap-memory)
-13. [Syscall Reference Quick Card](#13-syscall-reference-quick-card)
+13. [The Visual IDE](#13-the-visual-ide)
+14. [Syscall Reference Quick Card](#14-syscall-reference-quick-card)
 
 ---
 
 ## 1. Building Cortex-VM
 
-**Requirements:** GCC (GCC 15 recommended for best performance), Make, Python 3 + pytest (for tests).
+**Requirements:** GCC (GCC 15 recommended for best performance), Make, Python 3.
 
 ```bash
 git clone https://github.com/jonahmer22/cortex-vm
 cd cortex-vm
-git submodule init
-git submodule update
-make
+./install.sh
 ```
 
-This produces the `cortex-vm` binary in the project root.
+`install.sh` takes care of everything in one step: initialising submodules, creating a Python virtual environment and installing dependencies, building the binary and static library, running the full test suite, and installing `cortex-vm` to `/usr/local/bin`. After it completes, `cortex-vm` is available system-wide.
+
+> **Developing or building manually?** Run `make` directly from the project root to build without installing. The test suite can then be run with `.venv/bin/pytest` (after the venv has been created at least once by `install.sh` or `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`).
 
 **Assembling and running a program:**
 ```bash
-./cortex-vm -a program.s           # assemble to a.out
-./cortex-vm -a program.s -o out    # assemble to 'out'
-./cortex-vm -ar program.s          # assemble to a.out and run immediately
-./cortex-vm -ar program.s -o out   # assemble to 'out' and run immediately
-./cortex-vm program.out            # run a pre-assembled binary
-```
-
-**Running the test suite:**
-```bash
-pytest tests/
+cortex-vm -a program.s           # assemble to a.out
+cortex-vm -a program.s -o out    # assemble to 'out'
+cortex-vm -ar program.s          # assemble to a.out and run immediately
+cortex-vm -ar program.s -o out   # assemble to 'out' and run immediately
+cortex-vm program.out            # run a pre-assembled binary
 ```
 
 ---
@@ -93,9 +89,9 @@ Cortex-VM has 64 registers, all 64-bit. The most important ones:
 | `zero` | Always reads 0. Writes are ignored. |
 | `sp` | Stack pointer. |
 | `ra` | Return address (for function calls). |
-| `a0`–`a13` | Argument / return value registers. `a13` = syscall number. |
-| `t0`–`t31` | Temporary registers. Use freely. |
-| `s0`–`s13` | Saved registers. Preserve these across function calls. |
+| `a0`-`a13` | Argument / return value registers. `a13` = syscall number. |
+| `t0`-`t31` | Temporary registers. Use freely. |
+| `s0`-`s13` | Saved registers. Preserve these across function calls. |
 
 **Basic arithmetic:**
 
@@ -173,7 +169,7 @@ ble  ra, rb, label   ; jump if ra <= rb  (signed)
 bleu ra, rb, label   ; jump if ra <= rb  (unsigned)
 ```
 
-**Example — print a message only if two values are equal:**
+**Example - print a message only if two values are equal:**
 
 ```asm
 main:
@@ -330,7 +326,7 @@ my_func:
 
 **Callee-saved register spill/restore:**
 
-If a function uses `s0`–`s13`, it must save and restore them. The convention is to push them onto the stack in the prologue and pop in the epilogue.
+If a function uses `s0`-`s13`, it must save and restore them. The convention is to push them onto the stack in the prologue and pop in the epilogue.
 
 ```asm
 my_func:
@@ -352,7 +348,7 @@ my_func:
     jmp  zero, ra, 0        ; return
 ```
 
-**Full example — add_and_print(60, 9):**
+**Full example - add_and_print(60, 9):**
 
 ```asm
 main:
@@ -393,9 +389,9 @@ add_and_print:
 
 ---
 
-## 9. The M Extension — Multiply and Divide
+## 9. The M Extension - Multiply and Divide
 
-Multiply and divide instructions are available when the binary is assembled with M extension opcodes — the assembler sets the `EXT_M` flag automatically.
+Multiply and divide instructions are available when the binary is assembled with M extension opcodes - the assembler sets the `EXT_M` flag automatically.
 
 ```asm
 ; multiply
@@ -418,7 +414,7 @@ remu t2, t0, t1     ; t2 = t0 % t1   (unsigned)
 remui t2, t0, 9     ; t2 = t0 % 9    (unsigned immediate)
 ```
 
-**Example — compute 6 × 7 and print it:**
+**Example - compute 6 × 7 and print it:**
 
 ```asm
 main:
@@ -438,7 +434,7 @@ main:
 
 ---
 
-## 10. The F Extension — Floating Point
+## 10. The F Extension - Floating Point
 
 Float operations use the same 64 registers, reinterpreting their bits as IEEE 754 doubles. The assembler sets the `EXT_FLOAT` flag automatically when float instructions are used.
 
@@ -504,7 +500,7 @@ syscall
 
 > **Note:** `SYS_PRINT_INT` and `SYS_PRINT_UINT` use `a1` as a **base/format** selector, not precision. Always set `a1 = 0` (decimal) before printing integers if you have previously printed a float.
 
-**Full float example — sqrt(2):**
+**Full float example - sqrt(2):**
 
 ```asm
 main:
@@ -569,10 +565,10 @@ main:
 
 A few things to note:
 
-- **Register aliases become raw numbers** — `a0` → `r18`, `zero` → `r0`, etc. The rebuilt source uses the `r0`–`r63` names directly.
-- **Label references become raw addresses** — `msg` is replaced with its word address (relative to the code base). The address is correct because the re-assembled binary has the same instruction count.
-- **`.data` strings are reconstructed** — the disassembler detects null-terminated printable-ASCII sequences and emits them as quoted string literals, including escape sequences like `\n` and `\t`.
-- **Round-trip fidelity** — `assemble → disassemble → re-assemble` produces a binary that behaves identically to the original.
+- **Register aliases become raw numbers** - `a0` -> `r18`, `zero` -> `r0`, etc. The rebuilt source uses the `r0`-`r63` names directly.
+- **Label references become raw addresses** - `msg` is replaced with its word address (relative to the code base). The address is correct because the re-assembled binary has the same instruction count.
+- **`.data` strings are reconstructed** - the disassembler detects null-terminated printable-ASCII sequences and emits them as quoted string literals, including escape sequences like `\n` and `\t`.
+- **Round-trip fidelity** - `assemble -> disassemble -> re-assemble` produces a binary that behaves identically to the original.
 
 **Disassemble and run immediately:**
 
@@ -598,7 +594,7 @@ After a successful call, `a0` holds a word address in the heap region. Passing `
 
 ### Storing and loading through a heap pointer
 
-Heap addresses work exactly like stack or code addresses — use `sw` and `lw`:
+Heap addresses work exactly like stack or code addresses - use `sw` and `lw`:
 
 ```asm
 ; assume a0 = base address from SYS_HEAP_GROW
@@ -614,7 +610,7 @@ sw   a0, t1, 1      ; heap[base + 1]
 sw   a0, t2, 2      ; heap[base + 2]
 ```
 
-### Full example — allocate a 4-word buffer and fill it
+### Full example - allocate a 4-word buffer and fill it
 
 ```asm
 main:
@@ -645,41 +641,86 @@ main:
 
 ### Notes
 
-- Heap allocations persist for the lifetime of a single `run()` call. The heap is automatically freed when execution ends — no manual cleanup is required from guest code.
+- Heap allocations persist for the lifetime of a single `run()` call. The heap is automatically freed when execution ends - no manual cleanup is required from guest code.
 - Accessing an address outside the allocated region (i.e., past the last `SYS_HEAP_GROW` boundary) is a fatal error on writes and returns `0` on reads with an error message.
 - The heap and stack are fully independent memory regions; writes to one cannot affect the other.
 
 ---
 
-## 13. Syscall Reference Quick Card
+## 13. The Visual IDE
+
+Cortex-VM includes a browser-based IDE that you can launch with the `-V` flag. No internet connection is required - all assets are embedded in the binary.
+
+```bash
+./cortex-vm -V              # open IDE with blank editor
+./cortex-vm -V hello.s      # open IDE with hello.s pre-loaded and saveable
+```
+
+The IDE opens in your browser automatically. The exact URL (starting from `http://127.0.0.1:7777`, scanning upward for the first free port) is printed to stdout when the server starts. It has four tabs across the top of the main panel:
+
+**Source** - A full code editor with GAS syntax highlighting. The toolbar gives you:
+- **Assemble** - syntax-checks your source and reports errors without running anything
+- **Run** - assembles and executes; stdout/stderr appear in the console below
+- **Debug** - opens the debug toolbar (step, continue, stop) and switches the main panel to bytecode view
+- **Save** - writes changes back to disk (only active when a file path was passed to `-V`)
+
+**Bytecode** - Hex view of the assembled binary, one word per row. The entry point and data section offset are highlighted. In debug mode, the current instruction is highlighted as you step.
+
+**Memory** - Word-level view of all three memory regions (code, stack, heap), populated while a debug session is active.
+
+**Docs** - Built-in opcode reference and syscall quick-reference - no need to open the spec separately.
+
+**Register panel** (right column) - Shows all 64 registers as hex and decimal. Registers that changed since the last step are highlighted in yellow.
+
+**Console** (bottom) - Combined stdin/stdout. Type directly into it when a running program is waiting for input - no pre-filling required. The interactive run mode keeps the program alive between inputs.
+
+### The `-D` Flag
+
+If you are running programs from the command line and want to inspect register state after execution, use `-D` (dump registers):
+
+```bash
+./cortex-vm -arD hello.s
+```
+
+This prints all 64 registers as a JSON array to stderr after the program exits:
+
+```
+{"regs":[0,42,549755813888,...]}
+```
+
+Values are printed as decimal integers. This is the same mechanism the IDE uses internally to populate the register panel.
+
+---
+
+## 14. Syscall Reference Quick Card
 
 Set `a13` to the call number, fill argument registers, then execute `syscall`. Return values appear in `a0`.
 
 | `a13` | Name | Key Args | Returns |
 |-------|------|----------|---------|
-| 0 | EXIT | `a0`=code | — |
-| 1 | PRINT_INT | `a0`=value, `a1`=fmt | — |
-| 2 | PRINT_UINT | `a0`=value, `a1`=fmt | — |
-| 3 | PRINT_CHAR | `a0`=char | — |
-| 4 | PRINT_FLOAT | `a0`=float, `a1`=precision | — |
-| 5 | PRINT_STR | `a0`=addr | — |
+| 0 | EXIT | `a0`=code | - |
+| 1 | PRINT_INT | `a0`=value, `a1`=fmt | - |
+| 2 | PRINT_UINT | `a0`=value, `a1`=fmt | - |
+| 3 | PRINT_CHAR | `a0`=char | - |
+| 4 | PRINT_FLOAT | `a0`=float, `a1`=precision | - |
+| 5 | PRINT_STR | `a0`=addr | - |
 | 11 | READ_INT | `a1`=fmt | `a0` |
 | 12 | READ_UINT | `a1`=fmt | `a0` |
-| 13 | READ_CHAR | — | `a0` |
-| 14 | READ_FLOAT | — | `a0` |
-| 15 | READ_STR | `a0`=dest, `a1`=max | — |
-| 21 | RAND_SEED | `a0`=seed | — |
-| 22 | RAND_INT | — | `a0` |
+| 13 | READ_CHAR | - | `a0` |
+| 14 | READ_FLOAT | - | `a0` |
+| 15 | READ_STR | `a0`=dest, `a1`=max | - |
+| 21 | RAND_SEED | `a0`=seed | - |
+| 22 | RAND_INT | - | `a0` |
 | 23 | RAND_R_INT | `a0`=min, `a1`=max | `a0` |
-| 24 | RAND_FLOAT | — | `a0` |
+| 24 | RAND_FLOAT | - | `a0` |
 | 31 | FILE_OPEN | `a0`=path, `a1`=mode | `a0`=fd |
 | 32 | FILE_READ | `a0`=fd, `a1`=buf addr | `a0`=words written |
-| 33 | FILE_CLOSE | `a0`=fd | — |
-| 34 | FILE_WRITE | `a0`=fd, `a1`=buf | — |
-| 41 | TIME_GET | — | `a0`=ms |
-| 42 | TIME_SLEEP | `a0`=ms | — |
+| 33 | FILE_CLOSE | `a0`=fd | - |
+| 34 | FILE_WRITE | `a0`=fd, `a1`=buf | - |
+| 41 | TIME_GET | - | `a0`=ms |
+| 42 | TIME_SLEEP | `a0`=ms | - |
 | 51 | HEAP_GROW | `a0`=N words | `a0`=base addr |
-| 52 | HEAP_TOP  | — | `a0`=top addr |
+| 52 | HEAP_TOP  | - | `a0`=top addr |
 
 **Print format values (a1):** `0`=decimal, `1`=binary, `2`=octal, `3`=hex.
 
