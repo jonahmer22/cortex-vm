@@ -38,7 +38,7 @@ cd cortex-vm
 
 `install.sh` handles everything: initialising submodules, creating a Python virtual environment, installing dependencies, building the binary and library, running the test suite, and installing to `/usr/local`. Requires GCC and Python 3.
 
-> **Developing?** Run `make` directly from the project root instead — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+> **Developing?** Run `make` directly from the project root instead - see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Hello, World
 
