@@ -21,9 +21,18 @@ SRCS := $(wildcard $(SRC_DIR)/*.c) main.c $(DEPS_SRCS)
 OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
+UI_HTML_H    := include/ui_html.h
+FAVICON_H    := include/favicon_png.h
+CM_CSS_H     := include/cm_css.h
+CM_THEME_H   := include/cm_theme_css.h
+CM_JS_H      := include/cm_js.h
+CM_GAS_JS_H  := include/cm_gas_js.h
+
+GENERATED_HEADERS := $(UI_HTML_H) $(FAVICON_H) $(CM_CSS_H) $(CM_THEME_H) $(CM_JS_H) $(CM_GAS_JS_H)
+
 .PHONY: all lib clean run debug
 
-all: $(TARGET)
+all: $(GENERATED_HEADERS) $(TARGET)
 
 lib: $(LIB_TARGET)
 
@@ -46,7 +55,25 @@ debug:
 	$(MAKE) clean
 	$(MAKE) CFLAGS="$(CFLAGS) -DDEBUG" all
 
+$(UI_HTML_H): ui/index.html
+	python3 -c "d=open('ui/index.html','rb').read();print('static const unsigned char UI_HTML[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t UI_HTML_LEN={len(d)};')" > $@
+
+$(FAVICON_H): cortex-logos/sq_blk.png
+	python3 -c "d=open('cortex-logos/sq_blk.png','rb').read();print('static const unsigned char FAVICON_PNG[]={'+','.join(str(b)for b in d)+'};');print(f'static const size_t FAVICON_PNG_LEN={len(d)};')" > $@
+
+$(CM_CSS_H): ui/vendor/codemirror.min.css
+	python3 -c "d=open('ui/vendor/codemirror.min.css','rb').read();print('static const unsigned char CM_CSS[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t CM_CSS_LEN={len(d)};')" > $@
+
+$(CM_THEME_H): ui/vendor/material-darker.min.css
+	python3 -c "d=open('ui/vendor/material-darker.min.css','rb').read();print('static const unsigned char CM_THEME_CSS[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t CM_THEME_CSS_LEN={len(d)};')" > $@
+
+$(CM_JS_H): ui/vendor/codemirror.min.js
+	python3 -c "d=open('ui/vendor/codemirror.min.js','rb').read();print('static const unsigned char CM_JS[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t CM_JS_LEN={len(d)};')" > $@
+
+$(CM_GAS_JS_H): ui/vendor/gas.js
+	python3 -c "d=open('ui/vendor/gas.js','rb').read();print('static const unsigned char CM_GAS_JS[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t CM_GAS_JS_LEN={len(d)};')" > $@
+
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET) $(LIB_DIR)
+	rm -rf $(BUILD_DIR) $(TARGET) $(LIB_DIR) $(GENERATED_HEADERS)
 
 -include $(DEPS)

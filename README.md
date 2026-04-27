@@ -239,3 +239,5 @@ Cortex-VM is intentionally simple and compiler-friendly:
 ## License
 
 [GPL v3](LICENSE)
+
+Third-party components bundled with this project are listed in [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).

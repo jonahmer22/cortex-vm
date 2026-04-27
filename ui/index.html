@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cortex-VM IDE</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+
+  <link rel="stylesheet" href="/vendor/codemirror.min.css">
+  <link rel="stylesheet" href="/vendor/material-darker.min.css">
+  <script src="/vendor/codemirror.min.js"></script>
+  <script src="/vendor/gas.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #212121;
+      --bg2:       #2b2b2b;
+      --bg3:       #1a1a1a;
+      --border:    #3a3a3a;
+      --accent:    #82aaff;
+      --accent2:   #c3e88d;
+      --text:      #eeffff;
+      --text-dim:  #546e7a;
+      --error:     #f07178;
+      --warn:      #ffcb6b;
+      --changed:   #ffcb6b33;
+      --bp-color:  #f07178;
+      --pc-row:    #1a3a5c55;
+      --pc-border: #82aaff;
+      --toolbar-h: 48px;
+      --status-h:  28px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg3);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      height: var(--toolbar-h);
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    #toolbar .logo { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .05em; margin-right: 12px; }
+    #toolbar .sep  { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+    #toolbar .spacer { flex: 1; }
+    #toolbar .version { font-size: 11px; color: var(--text-dim); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 4px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .btn:hover  { background: #2e2e2e; border-color: #555; }
+    .btn:active { background: #1a1a1a; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+
+    .btn.primary   { background: #1a3a5c; border-color: var(--accent);  color: var(--accent);  }
+    .btn.primary:hover  { background: #1f4570; }
+    .btn.run-btn   { background: #1a3d1a; border-color: var(--accent2); color: var(--accent2); }
+    .btn.run-btn:hover  { background: #22501a; }
+    .btn.debug-btn { background: #3a2a00; border-color: var(--warn);   color: var(--warn); }
+    .btn.debug-btn:hover { background: #4a3500; }
+    .btn.cont-btn  { background: #1a3020; border-color: #56d364; color: #56d364; }
+    .btn.cont-btn:hover  { background: #1f3d28; }
+    .btn.step-btn  { background: #1a2a3a; border-color: #7ec8e3; color: #7ec8e3; }
+    .btn.step-btn:hover  { background: #243545; }
+    .btn.stop-btn  { background: #3a1a1a; border-color: var(--error);  color: var(--error); }
+    .btn.stop-btn:hover  { background: #4a2020; }
+    .btn.save-btn  { background: #1a2a1a; border-color: #56d364; color: #56d364; }
+    .btn.save-btn:hover  { background: #223525; }
+    .btn.save-btn.dirty  { border-color: var(--warn); color: var(--warn); background: #2a2200; }
+    .btn.save-btn.dirty:hover { background: #362d00; }
+
+    /* ── Main grid ── */
+    #main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      grid-template-rows: 1fr 220px;
+      overflow: hidden;
+    }
+
+    /* ── Editor pane ── */
+    #editor-pane {
+      grid-row: 1; grid-column: 1;
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 5px 16px;
+      font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+      color: var(--text-dim); background: transparent; border: none;
+      border-right: 1px solid var(--border);
+      cursor: pointer; transition: color .15s, background .15s;
+    }
+    .tab-btn:hover { color: var(--text); background: #2e2e2e; }
+    .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); margin-bottom: -1px; }
+
+    .cm-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .cm-wrap.hidden { display: none; }
+    #editor-pane .CodeMirror { flex: 1; height: 100%; font-size: 13px;
+      font-family: 'JetBrains Mono','Fira Code','Cascadia Code',monospace; line-height: 1.6; }
+
+    /* ── Memory panel ── */
+    #mem-wrap { flex: 1; display: flex; overflow: hidden; background: var(--bg3); }
+    #mem-wrap.hidden { display: none; }
+    .mem-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+    .mem-col:last-child { border-right: none; }
+    .mem-col-hdr {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 4px 8px; font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0;
+      font-family: 'JetBrains Mono','Fira Code',monospace;
+    }
+    .mem-col-body { flex: 1; overflow-y: auto; }
+    .mem-row {
+      display: flex; align-items: baseline;
+      padding: 1px 8px; border-bottom: 1px solid #1e1e1e;
+      font-family: 'JetBrains Mono','Fira Code',monospace; font-size: 11px;
+    }
+    .mem-row:hover { background: #262626; }
+    .mem-row.mem-pc { background: var(--pc-row) !important; outline: 1px solid var(--pc-border); outline-offset: -1px; }
+    .mem-row.mem-sp { background: #1a2a1a; }
+    .mem-addr { color: var(--text-dim); min-width: 52px; flex-shrink: 0; }
+    .mem-val  { color: #c3e88d; padding-left: 8px; }
+    .mem-empty { color: var(--text-dim); font-size: 11px; font-style: italic; padding: 12px 10px;
+      font-family: 'JetBrains Mono','Fira Code',monospace; }
+
+    /* ── Docs panel ── */
+    #docs-wrap {
+      flex: 1; overflow-y: auto; background: var(--bg3);
+      padding: 20px 28px 40px;
+      font-size: 13px; line-height: 1.6; color: var(--text);
+    }
+    #docs-wrap.hidden { display: none; }
+    .doc-section { margin-bottom: 28px; }
+    .doc-section h2 {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 5px;
+      margin-bottom: 12px;
+    }
+    .doc-section h3 {
+      font-size: 11px; font-weight: 600; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .07em; margin: 12px 0 6px;
+    }
+    .doc-table {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+      font-family: 'JetBrains Mono','Fira Code',monospace;
+    }
+    .doc-table th {
+      text-align: left; padding: 3px 10px 3px 0; color: var(--text-dim);
+      font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border); font-family: 'Segoe UI',system-ui,sans-serif;
+    }
+    .doc-table td { padding: 2px 10px 2px 0; vertical-align: top; }
+    .doc-table tr:hover td { background: #262626; }
+    .doc-table .mn { color: var(--accent2); white-space: nowrap; }
+    .doc-table .sig { color: var(--text-dim); white-space: nowrap; }
+    .doc-table .desc { color: var(--text); font-family: 'Segoe UI',system-ui,sans-serif; }
+    .doc-table .num { color: var(--warn); text-align: right; padding-right: 16px; }
+    .doc-table .ext { color: #c792ea; font-size: 10px; }
+    .doc-note {
+      font-size: 11px; color: var(--text-dim); margin-top: 6px;
+      font-family: 'Segoe UI',system-ui,sans-serif;
+    }
+    .doc-note code { color: var(--accent2); font-family: 'JetBrains Mono','Fira Code',monospace; }
+
+    /* ── Bytecode panel ── */
+    #bc-wrap {
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+      background: var(--bg3);
+      font-family: 'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+      font-size: 12px;
+    }
+    #bc-wrap.hidden { display: none; }
+    #bc-empty {
+      color: var(--text-dim); padding: 16px;
+      font-size: 12px; font-style: italic;
+    }
+    #bc-table { width: 100%; border-collapse: collapse; }
+    #bc-table tr { border-bottom: 1px solid #252525; }
+    #bc-table tr:hover { background: #262626; }
+    #bc-table tr.pc-row {
+      background: var(--pc-row) !important;
+      outline: 1px solid var(--pc-border);
+      outline-offset: -1px;
+    }
+    #bc-table td { padding: 2px 0; white-space: nowrap; }
+
+    .bc-gutter {
+      width: 22px; min-width: 22px;
+      text-align: center; cursor: pointer;
+      color: transparent;
+      user-select: none;
+    }
+    .bc-gutter:hover { color: #555; }
+    .bc-gutter.has-bp { color: var(--bp-color) !important; }
+
+    .bc-addr {
+      width: 80px; min-width: 80px;
+      color: var(--text-dim);
+      padding-left: 4px;
+    }
+    .bc-bytes {
+      color: #c3e88d;
+      letter-spacing: .05em;
+      padding-left: 8px;
+    }
+    .bc-entry-marker {
+      color: var(--warn);
+      padding-left: 8px;
+      font-size: 10px;
+    }
+
+    /* ── Register pane ── */
+    #reg-pane { grid-row: 1 / 3; grid-column: 2; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+    #reg-table-wrap { flex: 1; overflow-y: auto; }
+    #reg-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono','Fira Code',monospace; font-size: 11px; }
+    #reg-table thead th { background: var(--bg2); color: var(--text-dim); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+    #reg-table tbody tr { border-bottom: 1px solid #2a2a2a; transition: background .4s; }
+    #reg-table tbody tr:hover { background: #2a2a2a; }
+    #reg-table tbody tr.changed { background: var(--changed); }
+    #reg-table td { padding: 3px 8px; white-space: nowrap; }
+    .reg-name { color: var(--accent); min-width: 40px; font-weight: 600; }
+    .reg-hex  { color: #c3e88d; }
+    .reg-dec  { color: var(--text-dim); text-align: right; font-size: 10px; }
+
+    /* ── Console pane ── */
+    #console-pane { grid-row: 2; grid-column: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .pane-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 4px 10px; font-size: 11px; color: var(--text-dim); letter-spacing: .06em; text-transform: uppercase; flex-shrink: 0; }
+    #console-out { flex: 1; overflow-y: auto; padding: 8px 12px; font-family: 'JetBrains Mono','Fira Code',monospace; font-size: 12px; line-height: 1.5; background: var(--bg3); white-space: pre-wrap; word-break: break-all; }
+    #console-out .run-header { color: var(--text-dim); font-size: 11px; border-top: 1px solid var(--border); margin: 4px 0; padding-top: 4px; }
+    #console-out .run-header:first-child { border-top: none; margin-top: 0; }
+    #console-out .out-line { color: var(--text); }
+    #console-out .err-line { color: var(--error); }
+    #console-out .ok-line  { color: var(--accent2); }
+
+    /* ── Terminal input row ── */
+    #term-input-row {
+      display: flex; align-items: center;
+      background: var(--bg3);
+      border-top: 1px solid #2a2a2a;
+      padding: 3px 12px; flex-shrink: 0;
+      font-family: 'JetBrains Mono','Fira Code',monospace; font-size: 12px;
+    }
+    #term-prompt { color: var(--accent2); margin-right: 6px; user-select: none; }
+    #term-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--accent2);
+      font-family: inherit; font-size: inherit;
+      caret-color: var(--accent2);
+    }
+    #term-input::placeholder { color: var(--text-dim); font-style: italic; }
+    .stdin-line { color: var(--accent2); }
+    .stdin-line::before { content: '> '; opacity: .55; }
+
+    /* ── Status bar ── */
+    #statusbar { height: var(--status-h); background: var(--bg2); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; font-size: 11px; flex-shrink: 0; gap: 16px; }
+    #status-msg { flex: 1; }
+    #status-msg.ok    { color: var(--accent2); }
+    #status-msg.error { color: var(--error); }
+    #status-msg.info  { color: var(--text-dim); }
+    #status-msg.busy  { color: var(--warn); }
+    #status-msg.debug { color: #7ec8e3; }
+    #status-exit { color: var(--text-dim); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg3); }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="logo">&#x25B6; Cortex-VM IDE</span>
+  <div class="sep"></div>
+  <button class="btn primary"  id="btn-assemble" title="Assemble (check for errors)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v2H2zm0 5h8v2H2zm0 5h10v2H2z"/></svg>Assemble
+  </button>
+  <button class="btn run-btn"  id="btn-run" title="Assemble and run (Ctrl+Enter)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6V2z"/></svg>Run
+  </button>
+  <div class="sep"></div>
+  <button class="btn debug-btn" id="btn-debug" title="Start step-through debugger">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 100 6A3 3 0 008 1zM5 8a3 3 0 00-3 3v1h12v-1a3 3 0 00-3-3H5z"/></svg>Debug
+  </button>
+  <button class="btn step-btn"  id="btn-step" title="Execute one instruction (F8)" disabled>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l7 6-7 6V2zm8 0h2v12h-2z"/></svg>Step
+  </button>
+  <button class="btn cont-btn"  id="btn-continue" title="Run to next breakpoint (F5)" disabled>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l7 6-7 6V2zm7 0l7 6-7 6V2z"/></svg>Continue
+  </button>
+  <button class="btn stop-btn"  id="btn-stop" title="Stop debug session" disabled>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10"/></svg>Stop
+  </button>
+  <div class="sep"></div>
+  <button class="btn" id="btn-clear" title="Clear console output">Clear</button>
+  <div class="spacer"></div>
+  <span class="version">Cortex-VM v1.0.0</span>
+  <div class="sep"></div>
+  <button class="btn save-btn" id="btn-save" title="Save source file (Ctrl+S)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h9l3 3v9H2V2zm5 9a2 2 0 104 0 2 2 0 00-4 0zM4 3v4h6V3H4z"/></svg>Save
+  </button>
+</div>
+
+<div id="main">
+
+  <!-- Editor + Bytecode tabs -->
+  <div id="editor-pane">
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-source">Source</button>
+      <button class="tab-btn"        id="tab-bytecode">Bytecode</button>
+      <button class="tab-btn"        id="tab-memory">Memory</button>
+      <button class="tab-btn"        id="tab-docs">Docs</button>
+    </div>
+    <div class="cm-wrap" id="wrap-source">
+      <textarea id="editor"></textarea>
+    </div>
+    <div id="bc-wrap" class="hidden">
+      <div id="bc-empty">Assemble or Run to view bytecode.</div>
+      <table id="bc-table" style="display:none"><tbody id="bc-body"></tbody></table>
+    </div>
+    <div id="mem-wrap" class="hidden">
+      <div class="mem-col">
+        <div class="mem-col-hdr">Code</div>
+        <div class="mem-col-body" id="mem-code"></div>
+      </div>
+      <div class="mem-col">
+        <div class="mem-col-hdr">Stack</div>
+        <div class="mem-col-body" id="mem-stack"></div>
+      </div>
+      <div class="mem-col">
+        <div class="mem-col-hdr">Heap</div>
+        <div class="mem-col-body" id="mem-heap"></div>
+      </div>
+    </div>
+    <div id="docs-wrap" class="hidden">
+
+      <!-- Registers -->
+      <div class="doc-section">
+        <h2>Registers</h2>
+        <table class="doc-table">
+          <thead><tr><th>Name</th><th>Index</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">zero</td><td class="sig">r0</td><td class="desc">Hard-wired zero — always reads 0, writes ignored</td></tr>
+            <tr><td class="mn">pc</td><td class="sig">r1</td><td class="desc">Program counter — address of next instruction to execute</td></tr>
+            <tr><td class="mn">sp</td><td class="sig">r2</td><td class="desc">Stack pointer — points to top of stack (base <code style="color:var(--accent2)">0x0008000000000000</code>)</td></tr>
+            <tr><td class="mn">ra</td><td class="sig">r3</td><td class="desc">Return address — conventionally saved by <code style="color:var(--accent2)">jmp</code></td></tr>
+            <tr><td class="mn">s0–s13</td><td class="sig">r4–r17</td><td class="desc">Saved registers — callee-preserved by convention</td></tr>
+            <tr><td class="mn">a0–a13</td><td class="sig">r18–r31</td><td class="desc">Argument / return registers — a13 holds syscall number</td></tr>
+            <tr><td class="mn">t0–t31</td><td class="sig">r32–r63</td><td class="desc">Temporaries — caller-saved, no ABI guarantee</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Memory map -->
+      <div class="doc-section">
+        <h2>Memory Map</h2>
+        <table class="doc-table">
+          <thead><tr><th>Region</th><th>Base address</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">Code</td><td class="sig">0x0000000000000000</td><td class="desc">Read-only; loaded from binary at startup</td></tr>
+            <tr><td class="mn">Heap</td><td class="sig">0x0001000000000000</td><td class="desc">Dynamic; grown with <code style="color:var(--accent2)">heap_grow</code> syscall</td></tr>
+            <tr><td class="mn">Stack</td><td class="sig">0x0008000000000000</td><td class="desc">1 MB; <code style="color:var(--accent2)">sp</code> starts here, grows upward</td></tr>
+          </tbody>
+        </table>
+        <p class="doc-note">All addresses are 64-bit word addresses. Each word is 8 bytes.</p>
+      </div>
+
+      <!-- Data directives -->
+      <div class="doc-section">
+        <h2>Assembler Directives</h2>
+        <table class="doc-table">
+          <thead><tr><th>Directive</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">.data</td><td class="desc">Begin data section — must appear after all code, at end of file</td></tr>
+          </tbody>
+        </table>
+        <p class="doc-note">Inside <code>.data</code>: integers, floats, char literals, and quoted strings are accepted. Each value occupies one 64-bit word; strings are null-terminated word arrays. Execution begins at the first instruction in the file.</p>
+      </div>
+
+      <!-- Base instructions -->
+      <div class="doc-section">
+        <h2>Base Instructions</h2>
+
+        <h3>ALU — register &amp; immediate</h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">add</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra + rb</td></tr>
+            <tr><td class="mn">addi</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra + imm</td></tr>
+            <tr><td class="mn">sub</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra − rb</td></tr>
+            <tr><td class="mn">subi</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra − imm</td></tr>
+            <tr><td class="mn">or</td>  <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra | rb</td></tr>
+            <tr><td class="mn">ori</td> <td class="sig">rd, ra, imm</td><td class="desc">rd = ra | imm</td></tr>
+            <tr><td class="mn">xor</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra ^ rb</td></tr>
+            <tr><td class="mn">xori</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra ^ imm</td></tr>
+            <tr><td class="mn">and</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra &amp; rb</td></tr>
+            <tr><td class="mn">andi</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra &amp; imm</td></tr>
+            <tr><td class="mn">sll</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra &lt;&lt; rb</td></tr>
+            <tr><td class="mn">slli</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra &lt;&lt; imm</td></tr>
+            <tr><td class="mn">srl</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra &gt;&gt; rb  (logical, zero-fill)</td></tr>
+            <tr><td class="mn">srli</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra &gt;&gt; imm (logical)</td></tr>
+            <tr><td class="mn">sra</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra &gt;&gt; rb  (arithmetic, sign-fill)</td></tr>
+            <tr><td class="mn">srai</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra &gt;&gt; imm (arithmetic)</td></tr>
+            <tr><td class="mn">slt</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra &lt; rb) ? 1 : 0  — signed</td></tr>
+            <tr><td class="mn">sltu</td><td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra &lt; rb) ? 1 : 0  — unsigned</td></tr>
+            <tr><td class="mn">seq</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = (ra == rb) ? 1 : 0</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Memory</h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">lw</td><td class="sig">rd, ra, imm</td><td class="desc">rd = mem[ra + imm]</td></tr>
+            <tr><td class="mn">sw</td><td class="sig">ra, rb, imm</td><td class="desc">mem[ra + imm] = rb</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Jump &amp; call</h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">jmp</td><td class="sig">rd, ra, imm</td><td class="desc">rd = pc;  pc = ra + imm  (rd=zero discards return addr)</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Branches — <span style="font-weight:400;color:var(--text-dim)">if (ra op rb) pc += imm</span></h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Condition</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">beq  ra, rb, label</td><td class="desc">ra == rb</td></tr>
+            <tr><td class="mn">bne  ra, rb, label</td><td class="desc">ra != rb</td></tr>
+            <tr><td class="mn">blt  ra, rb, label</td><td class="desc">ra &lt; rb  (signed)</td></tr>
+            <tr><td class="mn">bltu ra, rb, label</td><td class="desc">ra &lt; rb  (unsigned)</td></tr>
+            <tr><td class="mn">ble  ra, rb, label</td><td class="desc">ra &lt;= rb (signed)</td></tr>
+            <tr><td class="mn">bleu ra, rb, label</td><td class="desc">ra &lt;= rb (unsigned)</td></tr>
+            <tr><td class="mn">bgt  ra, rb, label</td><td class="desc">ra &gt; rb  (signed)</td></tr>
+            <tr><td class="mn">bgtu ra, rb, label</td><td class="desc">ra &gt; rb  (unsigned)</td></tr>
+            <tr><td class="mn">bge  ra, rb, label</td><td class="desc">ra &gt;= rb (signed)</td></tr>
+            <tr><td class="mn">bgeu ra, rb, label</td><td class="desc">ra &gt;= rb (unsigned)</td></tr>
+          </tbody>
+        </table>
+
+        <h3>System</h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">syscall</td><td class="desc">Invoke syscall — number in a13, args in a0–a12</td></tr>
+            <tr><td class="mn">halt</td>   <td class="desc">Stop execution</td></tr>
+            <tr><td class="mn">nop</td>    <td class="desc">No operation</td></tr>
+            <tr><td class="mn">break</td>  <td class="desc">Debugger breakpoint (pause in debug mode)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- M extension -->
+      <div class="doc-section">
+        <h2>M Extension — Integer Multiply / Divide</h2>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">mul</td>  <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra × rb  (lower 64 bits)</td></tr>
+            <tr><td class="mn">muli</td> <td class="sig">rd, ra, imm</td><td class="desc">rd = ra × imm (lower 64 bits)</td></tr>
+            <tr><td class="mn">mulh</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra × rb  (upper 64 bits, signed)</td></tr>
+            <tr><td class="mn">mulhu</td><td class="sig">rd, ra, rb</td> <td class="desc">rd = ra × rb  (upper 64 bits, unsigned)</td></tr>
+            <tr><td class="mn">div</td>  <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra / rb  (signed)</td></tr>
+            <tr><td class="mn">divi</td> <td class="sig">rd, ra, imm</td><td class="desc">rd = ra / imm (signed)</td></tr>
+            <tr><td class="mn">divu</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra / rb  (unsigned)</td></tr>
+            <tr><td class="mn">divui</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra / imm (unsigned)</td></tr>
+            <tr><td class="mn">rem</td>  <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra % rb  (signed)</td></tr>
+            <tr><td class="mn">remi</td> <td class="sig">rd, ra, imm</td><td class="desc">rd = ra % imm (signed)</td></tr>
+            <tr><td class="mn">remu</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra % rb  (unsigned)</td></tr>
+            <tr><td class="mn">remui</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra % imm (unsigned)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- F extension -->
+      <div class="doc-section">
+        <h2>F Extension — 64-bit IEEE 754 Floats</h2>
+        <p class="doc-note" style="margin-bottom:8px">Floats share the same register file (r0–r63). Float immediates are 64-bit IEEE 754 bit patterns. Requires EXT_FLOAT flag set in binary header.</p>
+        <h3>Arithmetic</h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">fadd</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra + rb</td></tr>
+            <tr><td class="mn">faddi</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra + imm</td></tr>
+            <tr><td class="mn">fsub</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra − rb</td></tr>
+            <tr><td class="mn">fsubi</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra − imm</td></tr>
+            <tr><td class="mn">fneg</td> <td class="sig">rd, ra</td>     <td class="desc">rd = −ra</td></tr>
+            <tr><td class="mn">fmul</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra × rb</td></tr>
+            <tr><td class="mn">fmuli</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra × imm</td></tr>
+            <tr><td class="mn">fdiv</td> <td class="sig">rd, ra, rb</td> <td class="desc">rd = ra / rb</td></tr>
+            <tr><td class="mn">fdivi</td><td class="sig">rd, ra, imm</td><td class="desc">rd = ra / imm</td></tr>
+            <tr><td class="mn">fsqrt</td><td class="sig">rd, ra</td>     <td class="desc">rd = √ra</td></tr>
+            <tr><td class="mn">fabs</td> <td class="sig">rd, ra</td>     <td class="desc">rd = |ra|</td></tr>
+          </tbody>
+        </table>
+        <h3>Conversion</h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Signature</th><th>Operation</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">ftoi</td> <td class="sig">rd, ra</td><td class="desc">rd = (int64_t)ra   — truncating float→int</td></tr>
+            <tr><td class="mn">ftoui</td><td class="sig">rd, ra</td><td class="desc">rd = (uint64_t)ra  — truncating float→uint</td></tr>
+            <tr><td class="mn">itof</td> <td class="sig">rd, ra</td><td class="desc">rd = (double)ra    — signed int→float</td></tr>
+            <tr><td class="mn">uitof</td><td class="sig">rd, ra</td><td class="desc">rd = (double)(uint64_t)ra — unsigned int→float</td></tr>
+          </tbody>
+        </table>
+        <h3>Float branches — <span style="font-weight:400;color:var(--text-dim)">if (ra op rb) pc += imm</span></h3>
+        <table class="doc-table">
+          <thead><tr><th>Mnemonic</th><th>Condition</th></tr></thead>
+          <tbody>
+            <tr><td class="mn">fblt ra, rb, label</td><td class="desc">ra &lt; rb</td></tr>
+            <tr><td class="mn">fble ra, rb, label</td><td class="desc">ra &lt;= rb</td></tr>
+            <tr><td class="mn">fbgt ra, rb, label</td><td class="desc">ra &gt; rb</td></tr>
+            <tr><td class="mn">fbge ra, rb, label</td><td class="desc">ra &gt;= rb</td></tr>
+          </tbody>
+        </table>
+        <p class="doc-note">Integer branches <code>beq</code> / <code>bne</code> also work on float registers (bit-exact comparison).</p>
+      </div>
+
+      <!-- Syscalls -->
+      <div class="doc-section">
+        <h2>Syscall Quick Reference</h2>
+        <p class="doc-note" style="margin-bottom:8px">Set <code>a13</code> to the syscall number, populate args in <code>a0</code>–<code>a12</code>, then execute <code>syscall</code>. Return values appear in <code>a0</code>.</p>
+
+        <h3>I/O</h3>
+        <table class="doc-table">
+          <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td class="num">0</td> <td class="mn">exit</td>        <td class="sig">a0 = exit code</td><td class="desc">—</td></tr>
+            <tr><td class="num">1</td> <td class="mn">print_int</td>   <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc">—</td></tr>
+            <tr><td class="num">2</td> <td class="mn">print_uint</td>  <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc">—</td></tr>
+            <tr><td class="num">3</td> <td class="mn">print_char</td>  <td class="sig">a0 = char</td><td class="desc">—</td></tr>
+            <tr><td class="num">4</td> <td class="mn">print_float</td> <td class="sig">a0 = value  a1 = fmt¹</td><td class="desc ext">— [F]</td></tr>
+            <tr><td class="num">5</td> <td class="mn">print_str</td>   <td class="sig">a0 = addr of null-terminated string</td><td class="desc">—</td></tr>
+            <tr><td class="num">11</td><td class="mn">read_int</td>    <td class="sig">a1 = fmt¹</td><td class="desc">a0 = integer</td></tr>
+            <tr><td class="num">12</td><td class="mn">read_uint</td>   <td class="sig">a1 = fmt¹</td><td class="desc">a0 = unsigned integer</td></tr>
+            <tr><td class="num">13</td><td class="mn">read_char</td>   <td class="sig">—</td><td class="desc">a0 = char</td></tr>
+            <tr><td class="num">14</td><td class="mn">read_float</td>  <td class="sig">—</td><td class="desc ext">a0 = float [F]</td></tr>
+            <tr><td class="num">15</td><td class="mn">read_str</td>    <td class="sig">a0 = dest buffer  a1 = max length</td><td class="desc">—</td></tr>
+          </tbody>
+        </table>
+        <p class="doc-note">¹ fmt: 0 = decimal, 1 = binary, 2 = octal, 3 = hex</p>
+
+        <h3>Random</h3>
+        <table class="doc-table">
+          <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td class="num">21</td><td class="mn">rand_seed</td>  <td class="sig">a0 = seed</td><td class="desc">—</td></tr>
+            <tr><td class="num">22</td><td class="mn">rand_int</td>   <td class="sig">—</td><td class="desc">a0 = random integer</td></tr>
+            <tr><td class="num">23</td><td class="mn">rand_r_int</td> <td class="sig">a0 = min  a1 = max</td><td class="desc">a0 = random integer in [min, max]</td></tr>
+            <tr><td class="num">24</td><td class="mn">rand_float</td> <td class="sig">—</td><td class="desc ext">a0 = random float in [0.0, 1.0] [F]</td></tr>
+          </tbody>
+        </table>
+
+        <h3>File I/O</h3>
+        <table class="doc-table">
+          <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td class="num">31</td><td class="mn">file_open</td> <td class="sig">a0 = path addr  a1 = mode²</td><td class="desc">a0 = file descriptor</td></tr>
+            <tr><td class="num">32</td><td class="mn">file_read</td> <td class="sig">a0 = fd  a1 = dest buffer addr</td><td class="desc">a0 = words written (excl. null terminator)</td></tr>
+            <tr><td class="num">33</td><td class="mn">file_close</td><td class="sig">a0 = fd</td><td class="desc">—</td></tr>
+            <tr><td class="num">34</td><td class="mn">file_write</td><td class="sig">a0 = fd  a1 = null-terminated buffer addr</td><td class="desc">—</td></tr>
+          </tbody>
+        </table>
+        <p class="doc-note">² mode: 0 = read, 1 = write, 2 = append</p>
+
+        <h3>Time</h3>
+        <table class="doc-table">
+          <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td class="num">41</td><td class="mn">time_get</td>  <td class="sig">—</td><td class="desc">a0 = milliseconds since Unix epoch</td></tr>
+            <tr><td class="num">42</td><td class="mn">time_sleep</td><td class="sig">a0 = milliseconds</td><td class="desc">—</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Heap</h3>
+        <table class="doc-table">
+          <thead><tr><th style="text-align:right;padding-right:16px">#</th><th>Name</th><th>Args</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td class="num">51</td><td class="mn">heap_grow</td><td class="sig">a0 = words to allocate</td><td class="desc">a0 = base address of allocated region, or 0 on failure</td></tr>
+            <tr><td class="num">52</td><td class="mn">heap_top</td> <td class="sig">—</td><td class="desc">a0 = address of next word to be allocated</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Registers -->
+  <div id="reg-pane">
+    <div class="pane-header">Registers</div>
+    <div id="reg-table-wrap">
+      <table id="reg-table">
+        <thead><tr><th>Name</th><th>Hex</th><th style="text-align:right">Dec</th></tr></thead>
+        <tbody id="reg-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Console -->
+  <div id="console-pane">
+    <div class="pane-header">Console Output</div>
+    <div id="console-out"><span class="out-line" style="color:var(--text-dim)">Ready. Press Run to execute your program.</span></div>
+    <div id="term-input-row">
+      <span id="term-prompt">$</span>
+      <input id="term-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="type input lines here, press Enter to queue…">
+    </div>
+  </div>
+
+</div>
+
+<div id="statusbar">
+  <span id="status-msg" class="info">Ready</span>
+  <span id="status-exit"></span>
+</div>
+
+<script>
+// ── Register names ────────────────────────────────────────────────────────────
+const REG_NAMES = [
+  "zero","pc","sp","ra",
+  "s0","s1","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","s12","s13",
+  "a0","a1","a2","a3","a4","a5","a6","a7","a8","a9","a10","a11","a12","a13",
+  "t0","t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11","t12","t13",
+  "t14","t15","t16","t17","t18","t19","t20","t21","t22","t23","t24","t25",
+  "t26","t27","t28","t29","t30","t31"
+];
+
+// ── Sample program ────────────────────────────────────────────────────────────
+const SAMPLE = `; Fibonacci sequence — prints F(0) through F(10)
+; t0 = a (prev), t1 = b (curr), t2 = counter, t3 = limit, t4 = temp
+
+main:
+    addi t0, zero, 0        ; a = F(0)
+    addi t1, zero, 1        ; b = F(1)
+    addi t2, zero, 0        ; counter = 0
+    addi t3, zero, 10       ; limit = 10
+
+loop:
+    addi a0, t0, 0          ; a0 = current value
+    addi a1, zero, 0
+    addi a13, zero, 1       ; SYS_PRINT_INT
+    syscall
+
+    addi a0, zero, 10       ; newline
+    addi a13, zero, 3       ; SYS_PRINT_CHAR
+    syscall
+
+    add  t4, t0, t1         ; t4 = a + b
+    addi t0, t1, 0          ; a = b
+    addi t1, t4, 0          ; b = next
+
+    addi t2, t2, 1          ; counter++
+    ble  t2, t3, loop       ; if counter <= 10, repeat
+
+    addi a0, zero, 0        ; exit code 0
+    addi a13, zero, 0       ; SYS_EXIT
+    syscall
+`;
+
+// ── CodeMirror editor ─────────────────────────────────────────────────────────
+// ── Dirty-tracking helpers ────────────────────────────────────────────────────
+let editorDirty = false;
+function markDirty() {
+  if (editorDirty) return;
+  editorDirty = true;
+  btnSave.classList.add("dirty");
+  btnSave.title = "Unsaved changes — Save (Ctrl+S)";
+}
+function markClean() {
+  editorDirty = false;
+  btnSave.classList.remove("dirty");
+  btnSave.title = "Save source file (Ctrl+S)";
+}
+
+const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+  mode: "gas", theme: "material-darker",
+  lineNumbers: true, tabSize: 4, indentWithTabs: false,
+  autofocus: true,
+  extraKeys: {
+    "Ctrl-Enter": () => doRun(),
+    "Cmd-Enter":  () => doRun(),
+    "Ctrl-S":     () => doSave(),
+    "Cmd-S":      () => doSave(),
+  },
+});
+editor.setValue(SAMPLE);
+editor.setSize("100%", "100%");
+editor.on("change", (cm, change) => { if (change.origin !== "setValue") markDirty(); });
+
+// Pre-load source file if server was given one
+fetch("/source").then(r => r.json()).then(d => {
+  if (d.source != null) { editor.setValue(d.source); markClean(); }
+}).catch(() => {});
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+const tabSource   = document.getElementById("tab-source");
+const tabBytecode = document.getElementById("tab-bytecode");
+const tabMemory   = document.getElementById("tab-memory");
+const tabDocs     = document.getElementById("tab-docs");
+const wrapSource  = document.getElementById("wrap-source");
+const bcWrap      = document.getElementById("bc-wrap");
+const memWrap     = document.getElementById("mem-wrap");
+const docsWrap    = document.getElementById("docs-wrap");
+
+function showTab(name) {
+  tabSource.classList.toggle("active",   name === "source");
+  tabBytecode.classList.toggle("active", name === "bytecode");
+  tabMemory.classList.toggle("active",   name === "memory");
+  tabDocs.classList.toggle("active",     name === "docs");
+  wrapSource.classList.toggle("hidden",  name !== "source");
+  bcWrap.classList.toggle("hidden",      name !== "bytecode");
+  docsWrap.classList.toggle("hidden",    name !== "docs");
+  memWrap.classList.toggle("hidden",     name !== "memory");
+  if (name === "source") editor.refresh();
+}
+
+tabSource.addEventListener("click",   () => showTab("source"));
+tabBytecode.addEventListener("click", () => showTab("bytecode"));
+tabMemory.addEventListener("click",   () => { showTab("memory"); fetchMemory(); });
+tabDocs.addEventListener("click",     () => showTab("docs"));
+
+// ── Bytecode viewer ───────────────────────────────────────────────────────────
+const bcEmpty   = document.getElementById("bc-empty");
+const bcTable   = document.getElementById("bc-table");
+const bcBody    = document.getElementById("bc-body");
+const breakpoints = new Set();   // Set of word-index addresses (numbers)
+let bcEntryWord = 0;             // entry point word index
+
+function toggleBreakpoint(addr) {
+  if (breakpoints.has(addr)) {
+    breakpoints.delete(addr);
+  } else {
+    breakpoints.add(addr);
+  }
+  const gutter = bcTable.querySelector(`tr[data-addr="${addr}"] .bc-gutter`);
+  if (gutter) gutter.classList.toggle("has-bp", breakpoints.has(addr));
+}
+
+function buildBytecodeTable(words, entry, dataOffset) {
+  bcEntryWord = entry;
+  bcBody.innerHTML = "";
+  for (let i = 0; i < words.length; i++) {
+    const hexWord = words[i]; // 16-char hex string e.g. "0000000012345678"
+    // format as 8 pairs: "00 00 00 00 12 34 56 78"
+    const byteStr = hexWord.match(/.{2}/g).join(" ");
+    const addrHex = "0x" + i.toString(16).padStart(4, "0");
+    const isEntry = (i === entry);
+    const inData  = (dataOffset > 0 && i >= dataOffset);
+
+    const tr = document.createElement("tr");
+    tr.dataset.addr = i;
+    if (isEntry) tr.classList.add("entry-row");
+
+    const hasBp = breakpoints.has(i);
+    tr.innerHTML =
+      `<td class="bc-gutter${hasBp ? " has-bp" : ""}" title="Toggle breakpoint">&#x25CF;</td>` +
+      `<td class="bc-addr">${addrHex}</td>` +
+      `<td class="bc-bytes" style="${inData ? "color:var(--text-dim)" : ""}">${byteStr}</td>` +
+      (isEntry ? `<td class="bc-entry-marker">&#x25B6; entry</td>` : `<td></td>`);
+
+    tr.querySelector(".bc-gutter").addEventListener("click", () => toggleBreakpoint(i));
+    bcBody.appendChild(tr);
+  }
+  bcEmpty.style.display  = "none";
+  bcTable.style.display  = "";
+}
+
+function highlightPC(pcRegStr) {
+  // pc register holds byte offset from code base; divide by 8 to get word index
+  const pcBytes = BigInt(pcRegStr);
+  const wordIdx = Number(pcBytes / 8n);
+  bcTable.querySelectorAll("tr.pc-row").forEach(r => r.classList.remove("pc-row"));
+  const row = bcTable.querySelector(`tr[data-addr="${wordIdx}"]`);
+  if (row) {
+    row.classList.add("pc-row");
+    row.scrollIntoView({ block: "nearest" });
+  }
+}
+
+async function fetchBytecode(source) {
+  try {
+    const res = await fetch("/bytecode", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source }),
+    });
+    const data = await res.json();
+    if (data.ok) buildBytecodeTable(data.words, data.entry, data.data_offset);
+  } catch (_) {}
+}
+
+// ── Memory viewer ─────────────────────────────────────────────────────────────
+const HEAP_ADDR_BASE  = 0x0001000000000000n;
+const STACK_ADDR_BASE = 0x0008000000000000n;
+
+function buildMemCol(bodyId, words, baseAddr, highlightIdx) {
+  const body = document.getElementById(bodyId);
+  body.innerHTML = "";
+  if (!words || words.length === 0) {
+    body.innerHTML = '<div class="mem-empty">empty</div>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < words.length; i++) {
+    const addr = baseAddr + BigInt(i);
+    const row  = document.createElement("div");
+    row.className = "mem-row" + (i === highlightIdx ? " mem-pc" : "");
+    row.innerHTML =
+      `<span class="mem-addr">0x${addr.toString(16).padStart(4,"0").toUpperCase()}</span>` +
+      `<span class="mem-val">${words[i]}</span>`;
+    frag.appendChild(row);
+  }
+  body.appendChild(frag);
+  // scroll highlighted row into view
+  const hi = body.querySelector(".mem-pc");
+  if (hi) hi.scrollIntoView({ block: "nearest" });
+}
+
+async function fetchMemory() {
+  if (!debugMode) {
+    document.getElementById("mem-code").innerHTML  = '<div class="mem-empty">start a debug session to inspect memory</div>';
+    document.getElementById("mem-stack").innerHTML = '<div class="mem-empty">start a debug session to inspect memory</div>';
+    document.getElementById("mem-heap").innerHTML  = '<div class="mem-empty">start a debug session to inspect memory</div>';
+    return;
+  }
+  try {
+    const res  = await fetch("/debug/memory");
+    const data = await res.json();
+    if (!data.ok) return;
+    buildMemCol("mem-code",  data.code,  0n,              data.pc_word);
+    buildMemCol("mem-stack", data.stack, STACK_ADDR_BASE, data.sp_word > 0 ? data.sp_word - 1 : -1);
+    buildMemCol("mem-heap",  data.heap,  HEAP_ADDR_BASE,  -1);
+  } catch (_) {}
+}
+
+// ── Register table ────────────────────────────────────────────────────────────
+const regBody = document.getElementById("reg-body");
+let prevRegs = null;
+
+function buildRegTable() {
+  regBody.innerHTML = "";
+  for (let i = 0; i < 64; i++) {
+    const tr = document.createElement("tr");
+    tr.id = `reg-row-${i}`;
+    tr.innerHTML = `<td class="reg-name">${REG_NAMES[i]}</td>
+      <td class="reg-hex" id="reg-hex-${i}">0x0000000000000000</td>
+      <td class="reg-dec" id="reg-dec-${i}">0</td>`;
+    regBody.appendChild(tr);
+  }
+}
+
+function updateRegs(regs) {
+  for (let i = 0; i < 64; i++) {
+    const val = BigInt(regs[i]);
+    document.getElementById(`reg-hex-${i}`).textContent =
+      "0x" + val.toString(16).padStart(16, "0").toUpperCase();
+    document.getElementById(`reg-dec-${i}`).textContent = val.toString(10);
+    const row = document.getElementById(`reg-row-${i}`);
+    if (prevRegs && BigInt(prevRegs[i]) !== val) {
+      row.classList.add("changed");
+      setTimeout(() => row.classList.remove("changed"), 1200);
+    }
+  }
+  prevRegs = regs;
+  // update PC highlight in bytecode view
+  if (regs) highlightPC(regs[1]);
+}
+buildRegTable();
+
+// ── Console ───────────────────────────────────────────────────────────────────
+const consoleOut = document.getElementById("console-out");
+let runCount = 0;
+function appendConsole(html) { consoleOut.innerHTML += html; consoleOut.scrollTop = consoleOut.scrollHeight; }
+function clearConsole() { consoleOut.innerHTML = ""; runCount = 0; resetStdin(); }
+
+// ── Status bar ────────────────────────────────────────────────────────────────
+const statusMsg  = document.getElementById("status-msg");
+const statusExit = document.getElementById("status-exit");
+function setStatus(msg, type = "info") { statusMsg.textContent = msg; statusMsg.className = type; }
+
+// ── Debug mode state ──────────────────────────────────────────────────────────
+let debugMode = false;
+let stepCount = 0;
+
+const btnSave     = document.getElementById("btn-save");
+const btnAssemble = document.getElementById("btn-assemble");
+const btnRun      = document.getElementById("btn-run");
+const btnDebug    = document.getElementById("btn-debug");
+const btnStep     = document.getElementById("btn-step");
+const btnContinue = document.getElementById("btn-continue");
+const btnStop     = document.getElementById("btn-stop");
+const btnClear    = document.getElementById("btn-clear");
+
+function setDebugMode(on) {
+  debugMode = on;
+  btnAssemble.disabled = on;
+  btnRun.disabled      = on;
+  btnDebug.disabled    = on;
+  btnStep.disabled     = !on;
+  btnContinue.disabled = !on;
+  btnStop.disabled     = !on;
+  setTermEnabled(true);  // keep terminal usable for pre-typed stdin
+}
+
+function setBusy(busy) {
+  const locked = busy || debugMode || irunActive;
+  btnAssemble.disabled = locked;
+  btnRun.disabled      = locked;
+  btnDebug.disabled    = locked;
+  btnStep.disabled     = busy || !debugMode;
+  btnContinue.disabled = busy || !debugMode;
+  // Stop is available whenever a session of any kind is live
+  btnStop.disabled     = !(debugMode || irunActive);
+  setTermEnabled(!busy);  // terminal always usable (input / pre-type)
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtPC(regStr) {
+  return "0x" + BigInt(regStr).toString(16).padStart(4, "0").toUpperCase();
+}
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ── Halted helper (shared by step/continue) ───────────────────────────────────
+function onHalted(data) {
+  appendConsole(`<div class="ok-line">── Halted after ${stepCount} step${stepCount===1?'':'s'} · exit ${data.exit_code} ──</div>`);
+  setStatus(`Halted — exit code ${data.exit_code}`, data.exit_code === 0 ? "ok" : "error");
+  statusExit.textContent = `exit: ${data.exit_code}`;
+  setDebugMode(false);
+  fetch("/debug/stop", { method: "POST" }).catch(() => {});
+  // clear pc row
+  bcTable.querySelectorAll("tr.pc-row").forEach(r => r.classList.remove("pc-row"));
+}
+
+// ── Terminal input ────────────────────────────────────────────────────────────
+const termInput   = document.getElementById("term-input");
+const termPromptEl = document.getElementById("term-prompt");
+let irunActive = false;
+let pollTimer  = null;
+
+// Show a line the user typed, inline in the console
+function echoInput(line) {
+  const div = document.createElement("div");
+  div.className = "stdin-line";
+  div.textContent = line;
+  consoleOut.appendChild(div);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+
+// Pre-filled stdin for Debug mode (collects typed lines before session starts)
+let stdinLines = [];
+function getStdin() { return stdinLines.join("\n"); }
+function resetStdin() { stdinLines = []; }
+
+// when non-null, the debug session is blocked on a READ syscall waiting for input
+// value is 'step' or 'continue' so we know which action to resume after input
+let debugWaiting = false;
+let pendingDebugAction = null;
+
+termInput.addEventListener("keydown", async e => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const line = termInput.value;
+  termInput.value = "";
+  echoInput(line);
+  if (irunActive) {
+    // live interactive run: send directly to child process stdin
+    try {
+      await fetch("/irun/input", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ line }),
+      });
+    } catch (_) {}
+  } else if (debugMode) {
+    // active debug session: send directly to debug stdin pipe
+    try {
+      await fetch("/debug/input", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ line }),
+      });
+    } catch (_) {}
+    // if we were waiting on input, auto-resume the pending action
+    if (debugWaiting) {
+      debugWaiting = false;
+      const action = pendingDebugAction;
+      pendingDebugAction = null;
+      if (action === "step") doStep();
+      else if (action === "continue") doContinue();
+    }
+  } else {
+    // pre-fill mode: queue lines before debug session starts
+    stdinLines.push(line);
+  }
+});
+
+function setTermEnabled(enabled) {
+  termInput.disabled = !enabled;
+  termPromptEl.style.opacity = enabled ? "1" : "0.3";
+  if (enabled) termInput.focus();
+}
+
+// ── irun polling loop ─────────────────────────────────────────────────────────
+function appendOutput(text) {
+  if (!text) return;
+  const div = document.createElement("div");
+  div.className = "out-line";
+  div.textContent = text;
+  consoleOut.appendChild(div);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function appendError(text) {
+  if (!text) return;
+  const div = document.createElement("div");
+  div.className = "err-line";
+  div.textContent = text;
+  consoleOut.appendChild(div);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+
+async function pollIRun() {
+  if (!irunActive) return;
+  try {
+    const res  = await fetch("/irun/poll");
+    const data = await res.json();
+    if (data.stdout) appendOutput(data.stdout);
+    if (data.stderr) appendError(data.stderr);
+    if (!data.running) {
+      irunActive = false;
+      setStatus(`Completed — exit code ${data.exit_code}`,
+                data.exit_code === 0 ? "ok" : "error");
+      statusExit.textContent = `exit: ${data.exit_code}`;
+      setBusy(false);
+      appendConsole(
+        `<div class="run-header">── exit ${data.exit_code} ──</div>`);
+      return;
+    }
+  } catch (_) {}
+  pollTimer = setTimeout(pollIRun, 80);
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function doSave() {
+  const source = editor.getValue();
+  try {
+    const res  = await fetch("/save", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      markClean();
+      setStatus("Saved.", "ok");
+      return;
+    }
+    if (data.no_path) {
+      // no file path on server side — offer a browser download instead
+      const blob = new Blob([source], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "source.s";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      markClean();
+      setStatus("Downloaded as source.s (no file path configured on server).", "ok");
+      return;
+    }
+    setStatus("Save failed: " + data.error, "error");
+  } catch (e) { setStatus("Save error: " + e.message, "error"); }
+}
+
+async function doAssemble() {
+  const source = editor.getValue();
+  setBusy(true);
+  setStatus("Assembling…", "busy");
+  try {
+    const res = await fetch("/assemble", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setStatus("Assembled successfully — no errors.", "ok");
+      fetchBytecode(source);
+    } else {
+      setStatus("Assembly error — see console.", "error");
+      appendConsole(`<div class="run-header">── Assemble error ──</div><div class="err-line">${escHtml(data.error)}</div>`);
+    }
+  } catch (e) { setStatus("Server error: " + e.message, "error"); }
+  finally { setBusy(false); }
+}
+
+async function doRun() {
+  const source = editor.getValue();
+  setStatus("Assembling…", "busy");
+  statusExit.textContent = "";
+  runCount++;
+  try {
+    const res  = await fetch("/irun/start", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      appendConsole(`<div class="run-header">── Run #${runCount} · ERROR ──</div><div class="err-line">${escHtml(data.error)}</div>`);
+      setStatus("Assembly error — see console.", "error");
+      return;
+    }
+    irunActive = true;
+    resetStdin();
+    appendConsole(`<div class="run-header">── Run #${runCount} ──</div>`);
+    setStatus("Running…", "busy");
+    setBusy(false);   // re-enable terminal input while running
+    btnStop.disabled = false;
+    btnRun.disabled  = true;
+    btnAssemble.disabled = true;
+    btnDebug.disabled    = true;
+    fetchBytecode(source);
+    pollIRun();
+  } catch (e) { setStatus("Server error: " + e.message, "error"); }
+}
+
+async function doDebug() {
+  const source = editor.getValue();
+  setBusy(true);
+  setStatus("Assembling for debug…", "busy");
+  stepCount = 0;
+  try {
+    const res = await fetch("/debug/start", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, stdin: getStdin() }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      appendConsole(`<div class="run-header">── Debug error ──</div><div class="err-line">${escHtml(data.error)}</div>`);
+      setStatus("Debug error — see console.", "error");
+      setBusy(false);
+      return;
+    }
+    runCount++;
+    appendConsole(`<div class="run-header">── Debug session #${runCount} started ──</div>`);
+    updateRegs(data.regs);
+    resetStdin();   // stdin has been loaded into the debug pipe
+    setDebugMode(true);
+    await fetchBytecode(source);
+    highlightPC(data.regs[1]);
+    fetchMemory();
+    setStatus(`Debug ready — PC = ${fmtPC(data.regs[1])}`, "debug");
+    statusExit.textContent = "";
+    // switch to bytecode tab automatically
+    showTab("bytecode");
+  } catch (e) { setStatus("Server error: " + e.message, "error"); }
+  finally { setBusy(false); }
+}
+
+async function doStep() {
+  debugWaiting = false;
+  pendingDebugAction = null;
+  setBusy(true);
+  try {
+    const res = await fetch("/debug/step", { method: "POST" });
+    const data = await res.json();
+    if (!data.ok) { setStatus("Step error: " + data.error, "error"); return; }
+
+    if (data.waiting_for_input) {
+      updateRegs(data.regs);
+      highlightPC(data.regs[1]);
+      fetchMemory();
+      debugWaiting = true;
+      pendingDebugAction = "step";
+      setStatus("Waiting for input — type in the terminal below", "debug");
+      return;
+    }
+
+    if (data.stdout) appendConsole(`<div class="out-line">${escHtml(data.stdout)}</div>`);
+    updateRegs(data.regs);
+    stepCount++;
+    fetchMemory();
+
+    if (!data.running) {
+      onHalted(data);
+    } else {
+      setStatus(`Step ${stepCount} — PC = ${fmtPC(data.regs[1])}`, "debug");
+      highlightPC(data.regs[1]);
+    }
+  } catch (e) { setStatus("Server error: " + e.message, "error"); }
+  finally { setBusy(false); }
+}
+
+async function doContinue() {
+  debugWaiting = false;
+  pendingDebugAction = null;
+  setBusy(true);
+  setStatus("Running to breakpoint…", "busy");
+  try {
+    const res = await fetch("/debug/continue", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ breakpoints: Array.from(breakpoints) }),
+    });
+    const data = await res.json();
+    if (!data.ok) { setStatus("Continue error: " + data.error, "error"); return; }
+
+    if (data.stdout) appendConsole(`<div class="out-line">${escHtml(data.stdout)}</div>`);
+
+    if (data.waiting_for_input) {
+      updateRegs(data.regs);
+      highlightPC(data.regs[1]);
+      fetchMemory();
+      debugWaiting = true;
+      pendingDebugAction = "continue";
+      setStatus("Waiting for input — type in the terminal below", "debug");
+      return;
+    }
+
+    stepCount += (data.steps || 0);
+    updateRegs(data.regs);
+    fetchMemory();
+
+    if (!data.running) {
+      onHalted(data);
+    } else {
+      setStatus(`Breakpoint — PC = ${fmtPC(data.regs[1])}`, "debug");
+      highlightPC(data.regs[1]);
+    }
+  } catch (e) { setStatus("Server error: " + e.message, "error"); }
+  finally { setBusy(false); }
+}
+
+async function doStop() {
+  debugWaiting = false;
+  pendingDebugAction = null;
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  if (irunActive) {
+    irunActive = false;
+    await fetch("/irun/stop", { method: "POST" }).catch(() => {});
+  }
+  if (debugMode) {
+    await fetch("/debug/stop", { method: "POST" }).catch(() => {});
+    setDebugMode(false);
+    bcTable.querySelectorAll("tr.pc-row").forEach(r => r.classList.remove("pc-row"));
+  }
+  setBusy(false);
+  setStatus("Stopped.", "info");
+  statusExit.textContent = "";
+}
+
+// ── Wire up buttons ───────────────────────────────────────────────────────────
+btnSave.addEventListener("click", doSave);
+btnAssemble.addEventListener("click", doAssemble);
+btnRun.addEventListener("click", doRun);
+btnDebug.addEventListener("click", doDebug);
+btnStep.addEventListener("click", doStep);
+btnContinue.addEventListener("click", doContinue);
+btnStop.addEventListener("click", doStop);
+btnClear.addEventListener("click", () => { clearConsole(); setStatus("Ready", "info"); statusExit.textContent = ""; });
+
+document.addEventListener("keydown", e => {
+  if (e.key === "F8" && debugMode && !e.repeat) { e.preventDefault(); doStep(); }
+  if (e.key === "F5" && debugMode && !e.repeat) { e.preventDefault(); doContinue(); }
+});
+</script>
+</body>
+</html>

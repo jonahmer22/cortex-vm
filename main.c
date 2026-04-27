@@ -10,6 +10,7 @@
 #include "include/defs.h"
 #include "include/assembler.h"
 #include "include/disassembler.h"
+#include "include/server.h"
 
 // ==================
 // start of execution
@@ -27,6 +28,8 @@ int main(int argc, char **argv){
 	cliargsRegister("disassemble", 'd', "Disassembles a program at the given path");
 	cliargsRegister("run", 'r', "Executes a compiled binary immediately after execution (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("no-output", 'n', "Prevents the assembler or disassembler from creating an output file (may only be used in conjunction with -d and -a flags)");
+	cliargsRegister("dump-regs", 'D', "Print all 64 registers as JSON to stderr after execution");
+	cliargsRegister("visual", 'V', "Start the visual IDE in the browser (optionally pass a source file path)");
 
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
@@ -36,6 +39,14 @@ int main(int argc, char **argv){
 	if(!cliargsValid()){
 		fprintf(stderr, "[FATAL 0x%04X]: Invalid arguments: %s.\n", 0x0001, cliargsError());
 		return EXIT_FAILURE;
+	}
+
+	// -V: launch the visual browser-based IDE
+	if(cliargsFlag("visual", 'V') || cliargsArg("visual", 'V') != NULL){
+		const char *srcPath = cliargsArg("visual", 'V');
+		if(!srcPath) srcPath = cliargsSubcommand();
+		serverStart(7777, argv[0], srcPath);
+		return EXIT_SUCCESS;
 	}
 
 	// get the path from the args (should always just be the subcommand)
@@ -166,6 +177,14 @@ int main(int argc, char **argv){
 
 	// fetch, decode, and execute code
 	run(regs, codeBase, stackBase, fileLength, extensions, &exit_code);
+
+	if(cliargsFlag("dump-regs", 'D')){
+		fprintf(stderr, "{\"regs\":[");
+		for(int i = 0; i < 64; i++){
+			fprintf(stderr, "%llu%s", (unsigned long long)regs[i], i < 63 ? "," : "");
+		}
+		fprintf(stderr, "]}\n");
+	}
 
 	// free all the memory for the vm and exit with no errors
 	heapDestroy();
