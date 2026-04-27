@@ -712,13 +712,13 @@ static void handle_cm_gas_js(int fd){
 
 static void handle_source(int fd){
 	if(!g_source_path){
-		send_response(fd, "200 OK", "application/json", "{\"source\":null}", 14);
+		send_response(fd, "200 OK", "application/json", "{\"source\":null}", 15);
 		return;
 	}
 
 	FILE *f = fopen(g_source_path, "r");
 	if(!f){
-		send_response(fd, "200 OK", "application/json", "{\"source\":null}", 14);
+		send_response(fd, "200 OK", "application/json", "{\"source\":null}", 15);
 		return;
 	}
 
