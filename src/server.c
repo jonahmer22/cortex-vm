@@ -462,12 +462,19 @@ static int parse_regs(char *err, uint64_t regs[64]){
 
 static int run_vm_argv(const char **argv, const char *stdin_data, size_t stdin_len, char **out, char **err, uint64_t regs[64], int *exit_code){
 	int out_fds[2], err_fds[2], in_fds[2];
-	pipe(out_fds); pipe(err_fds);
+	if(pipe(out_fds) != 0 || pipe(err_fds) != 0)
+		return 0;
 
 	// write stdin data into a pipe before forking to avoid deadlock
 	int devnull = -1;
 	if(stdin_data && stdin_len > 0){
-		pipe(in_fds);
+		if(pipe(in_fds) != 0){
+			close(out_fds[0]);
+			close(out_fds[1]);
+			close(err_fds[0]);
+			close(err_fds[1]);
+			return 0;
+		}
 		size_t written = 0;
 
 		while(written < stdin_len){
@@ -737,7 +744,7 @@ static void handle_source(int fd){
 
 	fseek(f, 0, SEEK_END); long flen = ftell(f); fseek(f, 0, SEEK_SET);
 	char *content = malloc((size_t)flen + 1);
-	fread(content, 1, (size_t)flen, f);
+	(void)fread(content, 1, (size_t)flen, f);
 	content[flen] = '\0';
 	fclose(f);
 
@@ -1031,7 +1038,10 @@ static void handle_debug_start(int fd, const char *body){
 	// always create a pipe so step() reads from it; write end stays open for /debug/input
 	{
 		int in_fds[2];
-		pipe(in_fds);
+		if(pipe(in_fds) != 0){
+			send_response(fd, "500 Internal Server Error", "application/json", "{\"ok\":false,\"error\":\"pipe failed\"}", 32);
+			return;
+		}
 		if(stdin_str && stdin_len > 0){
 			size_t written = 0;
 			while(written < stdin_len){
@@ -1297,9 +1307,10 @@ static void handle_irun_start(int fd, const char *body){
 	free(err);
 
 	int in_fds[2], out_fds[2], err_fds[2];
-	pipe(in_fds);
-	pipe(out_fds);
-	pipe(err_fds);
+	if(pipe(in_fds) != 0 || pipe(out_fds) != 0 || pipe(err_fds) != 0){
+		send_response(fd, "500 Internal Server Error", "application/json", "{\"ok\":false,\"error\":\"pipe failed\"}", 32);
+		return;
+	}
 
 	pid_t pid = fork();
 	if(pid == 0){
@@ -1516,7 +1527,7 @@ void serverStart(int port, char *argv0, const char *sourcePath){
 #else
 	snprintf(cmd, sizeof(cmd), "xdg-open http://127.0.0.1:%d >/dev/null 2>&1 &", port);
 #endif
-	system(cmd);
+	(void)system(cmd);
 
 	for(;;){
 		// reap any finished worker children non-blockingly so they
