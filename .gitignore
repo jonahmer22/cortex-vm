@@ -21,6 +21,7 @@ build/
 
 # for people using claude
 # please see CONTRIBUTING.md and CODE_OF_CONDUCT.md if you are
+# BARE MINIMUM: manually review all code generated and ensure it fits the formatting of code around it.
 .claude/
 
 # any testing assembly files
