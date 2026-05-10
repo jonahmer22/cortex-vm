@@ -35,12 +35,50 @@ python3 -m venv "$VENV_DIR"
 echo "==> Installing Python dependencies..."
 "$VENV_DIR/bin/pip" install -r requirements.txt # I like seeing what it's doing
 
-# build
-echo "==> Building $BINARY..."
-make
+# build with PGO
+echo "==> Building instrumented binary for PGO profiling..."
+PGO_DIR="$(pwd)/build/pgo"
+mkdir -p "$PGO_DIR"
+make clean
+make PGO_CFLAGS="-fprofile-generate=$PGO_DIR" \
+     PGO_LDFLAGS="-fprofile-generate=$PGO_DIR"
 
-echo "==> Building lib$BINARY..."
-make lib
+echo "==> Collecting PGO profile data..."
+# one run per logical CPU, minimum 5
+if command -v nproc >/dev/null 2>&1; then
+    _NCPU=$(nproc)
+elif command -v sysctl >/dev/null 2>&1; then
+    _NCPU=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 5)
+else
+    _NCPU=5
+fi
+_NRUNS=$(( _NCPU > 5 ? _NCPU : 5 ))
+echo "    Launching $_NRUNS parallel benchmark runs..."
+_PIDS=()
+for _i in $(seq 1 "$_NRUNS"); do
+    "$VENV_DIR/bin/python" benchmarks/run.py --no-graphs >/dev/null 2>&1 &
+    _PIDS+=($!)
+done
+for _pid in "${_PIDS[@]}"; do
+    wait "$_pid" || true   # || true: partial profile data is still useful
+done
+
+# pgo-use calls `make clean` which would delete build/pgo/*.gcda, so
+# stash the profile data outside build/ and restore it after the clean.
+echo "==> Rebuilding $BINARY with PGO..."
+_PGO_TMP=$(mktemp -d)
+cp "$PGO_DIR"/*.gcda "$_PGO_TMP/" 2>/dev/null || true
+make clean
+mkdir -p "$PGO_DIR"
+cp "$_PGO_TMP"/*.gcda "$PGO_DIR/" 2>/dev/null || true
+rm -rf "$_PGO_TMP"
+make PGO_CFLAGS="-fprofile-use=$PGO_DIR -fprofile-correction" \
+     PGO_LDFLAGS="-fprofile-use=$PGO_DIR -fprofile-correction"
+
+echo "==> Building lib$BINARY with PGO..."
+make lib \
+     PGO_CFLAGS="-fprofile-use=$PGO_DIR -fprofile-correction" \
+     PGO_LDFLAGS="-fprofile-use=$PGO_DIR -fprofile-correction"
 
 # test
 echo "==> Running tests..."
