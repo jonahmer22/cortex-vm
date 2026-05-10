@@ -1081,6 +1081,8 @@ inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uin
 __attribute__((hot))	// tell the compiler that this is a hotpath
 void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 #if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 	// =========================================================
 	// threaded dispatch: fused (opcode << 8 | funct) -> label
 	// table is built once on first call, then sticks around.
@@ -1449,6 +1451,7 @@ void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileL
 	}
 
 	#undef NEXT
+#pragma GCC diagnostic pop
 #else
 	// portable fallback for compilers without labels-as-values
 	while(step(regs, codeBase, stackBase, fileLength, extensions, exit_code));
