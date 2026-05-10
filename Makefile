@@ -1,6 +1,12 @@
 CC 		:= $(shell command -v gcc-15 2>/dev/null || echo gcc)
-CFLAGS  := -std=c17 -Wall -Wextra -Wpedantic -Wunused-result -g -O3 -march=native
-LDFLAGS := -lm
+CFLAGS  := -std=c17 -Wall -Wextra -Wpedantic -Wunused-result -g -O3 -march=native -flto
+LDFLAGS := -lm -flto
+
+# extra flags injected by the pgo target (override on command line)
+PGO_CFLAGS  ?=
+PGO_LDFLAGS ?=
+CFLAGS  += $(PGO_CFLAGS)
+LDFLAGS += $(PGO_LDFLAGS)
 
 SRC_DIR    := src
 INC_DIR    := include
@@ -30,7 +36,7 @@ CM_GAS_JS_H  := include/cm_gas_js.h
 
 GENERATED_HEADERS := $(UI_HTML_H) $(FAVICON_H) $(CM_CSS_H) $(CM_THEME_H) $(CM_JS_H) $(CM_GAS_JS_H)
 
-.PHONY: all lib clean run debug
+.PHONY: all lib clean run debug pgo pgo-generate pgo-use
 
 all: $(GENERATED_HEADERS) $(TARGET)
 
@@ -54,6 +60,45 @@ run: $(TARGET)
 debug:
 	$(MAKE) clean
 	$(MAKE) CFLAGS="$(CFLAGS) -DDEBUG" all
+
+# Profile-guided optimization. Runs in three phases:
+#   1) build instrumented binary
+#   2) you run your representative workload(s) -> writes .gcda profile data
+#   3) rebuild using that profile to guide layout/inlining
+#
+# Usage:
+#   make pgo-generate       # build the instrumented binary
+#   ./cortex-vm <bench>     # run your benchmarks (repeat as desired)
+#   make pgo-use            # rebuild with the collected profile
+#
+# Or `make pgo PGO_RUN='./cortex-vm bench.cxb'` to do all three in one shot.
+PGO_DIR := $(BUILD_DIR)/pgo
+PGO_RUN ?=
+
+pgo-generate:
+	$(MAKE) clean
+	mkdir -p $(PGO_DIR)
+	$(MAKE) PGO_CFLAGS='-fprofile-generate=$(abspath $(PGO_DIR))' \
+	        PGO_LDFLAGS='-fprofile-generate=$(abspath $(PGO_DIR))' all
+
+pgo-use:
+	$(MAKE) clean
+	$(MAKE) PGO_CFLAGS='-fprofile-use=$(abspath $(PGO_DIR)) -fprofile-correction' \
+	        PGO_LDFLAGS='-fprofile-use=$(abspath $(PGO_DIR)) -fprofile-correction' all
+
+pgo:
+	$(MAKE) pgo-generate
+	@if [ -z "$(PGO_RUN)" ]; then \
+	  echo ""; \
+	  echo "  >> Instrumented binary built. Now run your benchmarks, e.g.:"; \
+	  echo "       ./cortex-vm <your-bench>"; \
+	  echo "     Then run: make pgo-use"; \
+	  echo ""; \
+	else \
+	  echo ">> Running PGO workload: $(PGO_RUN)"; \
+	  $(PGO_RUN); \
+	  $(MAKE) pgo-use; \
+	fi
 
 $(UI_HTML_H): ui/index.html
 	python3 -c "d=open('ui/index.html','rb').read();print('static const unsigned char UI_HTML[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t UI_HTML_LEN={len(d)};')" > $@

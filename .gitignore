@@ -19,6 +19,10 @@ results/
 lib/
 build/
 
+# for people using claude
+# please see CONTRIBUTING.md and CODE_OF_CONDUCT.md if you are
+.claude/
+
 # any testing assembly files
 /*.s
 
