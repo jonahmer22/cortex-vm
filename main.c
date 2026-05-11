@@ -19,7 +19,7 @@
 int main(int argc, char **argv){
 	// set up cliargs parameters before parse
 	cliargsStrict();
-	cliargsSetVersion("Cortex-VM v1.1.1");
+	cliargsSetVersion("Cortex-VM v1.1.2");
 	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble Cortex-ISA binaries.");
 	
 	// add all different args
@@ -33,6 +33,7 @@ int main(int argc, char **argv){
 
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
+	// it'd be like packaging an executable into a .app for MacOS or a .exe for windows
 
 	// need to parse arguments to check for flags like -a to assemble or others
 	cliargsParse(argc, argv);
