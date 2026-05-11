@@ -17,7 +17,7 @@ static uint64_t heapCap = 0;
 
 // file descriptor table
 #define MAX_FDS 64
-static FILE *fdTable[MAX_FDS] = {NULL};
+static FILE *fdTable[MAX_FDS] ={NULL};
 
 #define OPCODE(w)		(((w) >> 56) & 0xff)
 #define FUNCT(w)		(((w) >> 48) & 0xff)
@@ -35,6 +35,17 @@ static FILE *fdTable[MAX_FDS] = {NULL};
 // sign extension
 #define SIGN_EXT32(v)		((int64_t)(int32_t)(v))
 #define SIGN_EXT36(v)		((int64_t)(((v) & (1ULL << 35)) ? ((v) | ~((1ULL << 36) - 1)) : (v)))
+
+// pre-decoded instruction record produced once at run() entry.
+// hot path reads only handler/imm/rd/ra/rb/flags; raw is for extension fallback.
+typedef struct{
+	void *handler;
+	int64_t imm;
+	uint8_t rd, ra, rb, flags;
+	uint8_t opcode;
+	uint8_t _pad[3];
+	uint64_t raw;
+} DecodedInstr;
 
 // memory functions
 void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
@@ -54,7 +65,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 	}
 	else{
 		// memory must be on the stack
-		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))) {
+		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))){
 			fprintf(stderr, "[ERROR 0x%04X]: Write outside of stack bounds rejected.\n", 0xD041);
 			// since we don't want to write just return early
 			return;
@@ -64,7 +75,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 }
 uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase, uint64_t codeBaseSize){
 	if(addr < HEAP_ADDR){
-		if (addr >= codeBaseSize) {
+		if (addr >= codeBaseSize){
 			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x" FMT_X64 " is out of bounds (arena size " FMT_U64 " words).\n", 0xD042, addr, codeBaseSize);
 			// return early with an empty (0) value
 			return 0;
@@ -81,7 +92,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 	}
 	else{
 		// memory must be on the stack
-		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))) {
+		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))){
 			fprintf(stderr, "[ERROR 0x%04X]: Read outside of stack bounds rejected.\n", 0xD042);
 			// since we don't want to write just return early with a 0
 			return 0;
@@ -190,14 +201,14 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:	// TODO: binary not natively supported; read as octal fallback; idk what to do for this
 				case 2:{
-					if (scanf(SCN_O64, &v) != 1) {
+					if (scanf(SCN_O64, &v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8012);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
-					if (scanf(SCN_x64, &v) != 1) {
+					if (scanf(SCN_x64, &v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8013);
 						v = 0;
 					}
@@ -218,7 +229,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t v = 0;
 			switch(regs[A1]){
 				case 0:{
-					if (scanf(SCN_U64, &v) != 1) {
+					if (scanf(SCN_U64, &v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8014);
 						v = 0;
 					}
@@ -226,14 +237,14 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				}
 				case 1:	// TODO: need to make a binary reading function in the future
 				case 2:{
-					if (scanf(SCN_O64, &v) != 1) {
+					if (scanf(SCN_O64, &v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8015);
 						v = 0;
 					}
 					break;
 				}
 				case 3:{
-					if (scanf(SCN_x64, &v) != 1) {
+					if (scanf(SCN_x64, &v) != 1){
 						fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8016);
 						v = 0;
 					}
@@ -263,7 +274,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			uint64_t maxLen = regs[A1];
 			size_t i = 0;
 			int c;
-			if (maxLen == 0) {
+			if (maxLen == 0){
 				fprintf(stderr, "[ERROR 0x%04X]: Underflow prevented on readstring syscall with maxlen 0.\n", 0xE026);
 				break;
 			}
@@ -404,7 +415,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_READ_FLOAT:{
 			fflush(stdout);
 			double v = 0;
-			if (scanf("%lf", &v) != 1) {
+			if (scanf("%lf", &v) != 1){
 				fprintf(stderr, "[ERROR 0x%04X]: Improper input.\n", 0x8017);
 				v = 0;
 			}
@@ -418,21 +429,21 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			memcpy(&regs[A0], &v, sizeof(v));
 			break;
 		}
-		case SYS_HEAP_TOP: {
+		case SYS_HEAP_TOP:{
 			regs[A0] = HEAP_ADDR + heapUsed;
 			break;
 		}
-		case SYS_HEAP_GROW: {
+		case SYS_HEAP_GROW:{
 			uint64_t nwords = regs[A0];
-			if (nwords == 0) {
+			if (nwords == 0){
 				regs[A0] = 0;
 				break;
 			}
 
-			if (heapUsed + nwords > heapCap) {
+			if (heapUsed + nwords > heapCap){
 				uint64_t newCap = heapUsed + nwords;
 				uint64_t *newBase = realloc(heapBase, newCap * sizeof(uint64_t));
-				if (newBase == NULL) {
+				if (newBase == NULL){
 					regs[A0] = 0;
 					break;
 				}
@@ -734,7 +745,8 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 	return handled;
 }
 
-bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+// im dumb asf this made such a massive difference I should've been doing inline for this from the start
+inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 	bool running = true;
 
 	// FETCH
@@ -988,14 +1000,14 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 					}
 					break;
 				}
-				case FN_BGEU: {
-					if((uint64_t)regs[ra] >= (uint64_t)regs[rb]) {
+				case FN_BGEU:{
+					if((uint64_t)regs[ra] >= (uint64_t)regs[rb]){
 						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;
 				}
-				case FN_BLEU: {
-					if((uint64_t)regs[ra] <= (uint64_t)regs[rb]) {
+				case FN_BLEU:{
+					if((uint64_t)regs[ra] <= (uint64_t)regs[rb]){
 						regs[PC] = (regs[PC] - 1) + (uint64_t)imm;
 					}
 					break;
@@ -1066,8 +1078,384 @@ bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *
 	return running;
 }
 
+__attribute__((hot))	// tell the compiler that this is a hotpath
 void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+	// =========================================================
+	// threaded dispatch: fused (opcode << 8 | funct) -> label
+	// table is built once on first call, then sticks around.
+	// only base-ISA opcodes live in the table; extensions
+	// fall through to do_illegal -> handleExtensionOpcode.
+	// =========================================================
+	static void *dispatch[65536];
+	static bool dispatch_inited = false;
+
+	// fill out the dispatch table
+	if(!dispatch_inited){
+		for(int i = 0; i < 65536; i++)
+			dispatch[i] = &&do_illegal;
+
+		dispatch[(OP_R << 8) | FN_ADDSUB ] = &&l_r_addsub;
+		dispatch[(OP_R << 8) | FN_OR] = &&l_r_or;
+		dispatch[(OP_R << 8) | FN_XOR] = &&l_r_xor;
+		dispatch[(OP_R << 8) | FN_AND] = &&l_r_and;
+		dispatch[(OP_R << 8) | FN_SLL] = &&l_r_sll;
+		dispatch[(OP_R << 8) | FN_SR] = &&l_r_sr;
+		dispatch[(OP_R << 8) | FN_SLTU] = &&l_r_sltu;
+		dispatch[(OP_R << 8) | FN_SLT] = &&l_r_slt;
+		dispatch[(OP_R << 8) | FN_SEQ] = &&l_r_seq;
+
+		dispatch[(OP_I << 8) | FN_ADDSUB] = &&l_i_addsub;
+		dispatch[(OP_I << 8) | FN_OR] = &&l_i_or;
+		dispatch[(OP_I << 8) | FN_XOR] = &&l_i_xor;
+		dispatch[(OP_I << 8) | FN_AND] = &&l_i_and;
+		dispatch[(OP_I << 8) | FN_SLL] = &&l_i_sll;
+		dispatch[(OP_I << 8) | FN_SR] = &&l_i_sr;
+		dispatch[(OP_I << 8) | FN_JMP] = &&l_i_jmp;
+
+		dispatch[(OP_S << 8) | FN_SW] = &&l_s_sw;
+		dispatch[(OP_L << 8) | FN_LW] = &&l_l_lw;
+
+		dispatch[(OP_B << 8) | FN_BEQ] = &&l_b_beq;
+		dispatch[(OP_B << 8) | FN_BNE] = &&l_b_bne;
+		dispatch[(OP_B << 8) | FN_BLT] = &&l_b_blt;
+		dispatch[(OP_B << 8) | FN_BLTU] = &&l_b_bltu;
+		dispatch[(OP_B << 8) | FN_BGE] = &&l_b_bge;
+		dispatch[(OP_B << 8) | FN_BGT] = &&l_b_bgt;
+		dispatch[(OP_B << 8) | FN_BGTU] = &&l_b_bgtu;
+		dispatch[(OP_B << 8) | FN_BLE] = &&l_b_ble;
+		dispatch[(OP_B << 8) | FN_BLEU] = &&l_b_bleu;
+		dispatch[(OP_B << 8) | FN_BGEU] = &&l_b_bgeu;
+
+		dispatch[(OP_SYS << 8) | FN_HALT] = &&l_sys_halt;
+		dispatch[(OP_SYS << 8) | FN_SYSCALL] = &&l_sys_syscall;
+		dispatch[(OP_SYS << 8) | FN_NOP] = &&l_sys_nop;
+		dispatch[(OP_SYS << 8) | FN_BREAK] = &&l_sys_break;
+
+		dispatch_inited = true;
+	}
+
+	// ====================================================================
+	// pre-decode the entire code section into a parallel array of
+	// DecodedInstr records. cached across calls; rebuilt only if codeBase
+	// or fileLength changes. a sentinel halt sits at decoded[fileLength]
+	// so falling off the end of code halts naturally — no per-instruction
+	// PC bound check needed in the hot loop.
+	// ====================================================================
+	static DecodedInstr *decoded = NULL;
+	static uint64_t decoded_cap = 0;
+	static uint64_t *cached_cb = NULL;
+	static uint64_t cached_len = 0;
+
+	if(codeBase != cached_cb || fileLength != cached_len){
+		if(decoded_cap < fileLength + 1){
+			free(decoded);
+			decoded = (DecodedInstr*)malloc((fileLength + 1) * sizeof(DecodedInstr));
+
+			if(!decoded){
+				fprintf(stderr, "[FATAL 0x%04X]: Could not allocate decoded instruction cache.\n", 0x3801);
+				exit(EXIT_FAILURE);
+			}
+
+			decoded_cap = fileLength + 1;
+		}
+
+		// decode the entire file
+		for(uint64_t i = 0; i < fileLength; i++){
+			uint64_t w = codeBase[i];
+			uint8_t op = OPCODE(w);
+			uint8_t fn = FUNCT(w);
+			// key
+			uint16_t k = ((uint16_t)op << 8) | (uint8_t)fn;
+			// set values in DecodedInstr struct
+			decoded[i].handler = dispatch[k];
+			decoded[i].opcode = op;
+			decoded[i].rd = I_RD(w);
+			decoded[i].ra = I_RA(w);
+			decoded[i].rb = I_RB(w);
+			decoded[i].flags = FLAGS(w);
+			decoded[i].raw = w;
+
+			// pre-sign-extend the immediate per opcode shape.
+			// L uses L_IMM (different layout), S/B use S_IMM, I/R use I_IMM.
+			switch(op){
+				case OP_S:
+				case OP_B:{
+					decoded[i].imm = SIGN_EXT36(S_IMM(w));
+					break;
+				}
+				case OP_L:{
+					decoded[i].imm = SIGN_EXT36(L_IMM(w));
+					break;
+				}
+				case OP_I:
+				case OP_R:
+				default:{
+					decoded[i].imm = SIGN_EXT32(I_IMM(w));
+					break;
+				}
+			}
+		}
+
+		// sentinel halt (running off the end of code lands here)
+		decoded[fileLength].handler = &&l_sys_halt;
+		decoded[fileLength].opcode = OP_SYS;
+		decoded[fileLength].rd = decoded[fileLength].ra = decoded[fileLength].rb = 0;
+		decoded[fileLength].flags = 0;
+		decoded[fileLength].imm = 0;
+		decoded[fileLength].raw = 0;
+
+		cached_cb = codeBase;
+		cached_len = fileLength;
+	}
+
+	// ====================================================================
+	// hot path locals. restrict tells the optimizer these don't alias
+	// each other or the dispatch/decoded arrays, so it can keep things
+	// in CPU registers across the indirect goto.
+	// ====================================================================
+	uint64_t * restrict r = regs;
+	uint64_t * restrict cb = codeBase;
+	uint64_t * restrict sb = stackBase;
+	(void)cb; (void)sb;	// used inside setWord/loadWord paths
+
+	uint64_t pc = r[PC];
+	const uint64_t code_end = fileLength;
+	DecodedInstr *d;
+
+	// NEXT(): enforce r0=0 (one store), fetch decoded, jump. No PC bound
+	// check, no SP overflow check — those are off the hot path now.
+	#define NEXT() do{ \
+		r[ZERO] = 0; \
+		d = &decoded[pc++]; \
+		goto *d->handler; \
+	} while(0)
+
+	// PC may be at or beyond code_end on entry (fresh program, prior halt)
+	if(pc > code_end){
+		r[PC] = pc;
+		return;
+	}
+	d = &decoded[pc++];
+	goto *d->handler;
+
+	// NOTE: IF ANY OF THE FOLLOWING IS CONFUSING JUST LOOK AT THE run() FUNCTION
+	// it should be basically identical in form; just as labels not a switch.
+	// the run function is slightly more clear with variable names and the such
+	
+	// ============== R-type ==============
+	l_r_addsub:{
+		uint64_t a = r[d->ra], b = r[d->rb];
+		uint8_t f = d->flags;
+
+		if(f == 0)
+			r[d->rd] = a + b;
+		else if(f == 1)
+			r[d->rd] = a - b;
+		else{
+			fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0208, f);
+			exit(EXIT_FAILURE);
+		}
+
+		NEXT();
+	}
+	l_r_or:{
+		r[d->rd] = r[d->ra] | r[d->rb];
+		NEXT();
+	}
+	l_r_xor:{
+		r[d->rd] = r[d->ra] ^ r[d->rb];
+		NEXT();
+	}
+	l_r_and:{
+		r[d->rd] = r[d->ra] & r[d->rb];
+		NEXT();
+	}
+	l_r_sll:{
+		r[d->rd] = r[d->ra] << (r[d->rb] & 0x3F);
+		NEXT();
+	}
+	l_r_sr:{
+		uint64_t a = r[d->ra];
+		uint64_t s = r[d->rb] & 0x3F;
+		uint8_t f = d->flags;
+
+		if(f == 0)
+			r[d->rd] = a >> s;
+		else if(f == 1)
+			r[d->rd] = (uint64_t)((int64_t)a >> s);
+		else{
+			fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x0209, f);
+			exit(EXIT_FAILURE);
+		}
+
+		NEXT();
+	}
+	l_r_sltu:{r[d->rd] = (r[d->ra] <  r[d->rb]); NEXT(); }
+	l_r_slt:{ r[d->rd] = ((int64_t)r[d->ra] < (int64_t)r[d->rb]); NEXT(); }
+	l_r_seq:{ r[d->rd] = (r[d->ra] == r[d->rb]); NEXT(); }
+
+	// ============== I-type ==============
+	l_i_addsub:{
+		uint64_t a = r[d->ra]; uint64_t imm = (uint64_t)d->imm;
+		uint8_t f = d->flags;
+
+		if(f == 0)
+			r[d->rd] = a + imm;
+		else if(f == 1)
+			r[d->rd] = a - imm;
+		else{
+			fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x020A, f);
+			exit(EXIT_FAILURE);
+		}
+
+		NEXT();
+	}
+	l_i_or:{
+		r[d->rd] = r[d->ra] | (uint64_t)d->imm;
+		NEXT();
+	}
+	l_i_xor:{
+		r[d->rd] = r[d->ra] ^ (uint64_t)d->imm;
+		NEXT();
+	}
+	l_i_and:{
+		r[d->rd] = r[d->ra] & (uint64_t)d->imm;
+		NEXT();
+	}
+	l_i_sll:{
+		r[d->rd] = r[d->ra] << ((uint64_t)d->imm & 0x3F);
+		NEXT();
+	}
+	l_i_sr:{
+		uint64_t a = r[d->ra];
+		uint64_t s = (uint64_t)d->imm & 0x3F;
+		uint8_t f = d->flags;
+
+		if(f == 0)
+			r[d->rd] = a >> s;
+		else if(f == 1)
+			r[d->rd] = (uint64_t)((int64_t)a >> s);
+		else{
+			fprintf(stderr, "[FATAL 0x%04X]: Illegal flags 0x%01X.\n", 0x020B, f);
+			exit(EXIT_FAILURE);
+		}
+
+		NEXT();
+	}
+	l_i_jmp:{
+		uint64_t target = r[d->ra] + (uint64_t)d->imm;
+		uint64_t link = pc;	// pc already points past this instr
+
+		// clamp out-of-bounds targets to the sentinel
+		if(target > code_end)
+			target = code_end;
+
+		r[d->rd] = link;
+		pc = target;
+
+		NEXT();
+	}
+
+	// ============== S-type / L-type ==============
+	l_s_sw:{
+		setWord(r[d->ra] + (uint64_t)d->imm, r[d->rb], codeBase, stackBase);
+		NEXT();
+	}
+	l_l_lw:{
+		r[d->rd] = loadWord(r[d->ra] + (uint64_t)d->imm, codeBase, stackBase, fileLength);
+		NEXT();
+	}
+
+	// ============== B-type (branchless via cmov) ==============
+	// pc was already incremented in NEXT(); branch target = (pc-1) + imm.
+	// Computing both target and fallthrough then selecting via ?: lets the
+	// compiler emit cmov instead of a conditional branch.
+	#define BR(COND) do{ \
+		uint64_t a = r[d->ra], b = r[d->rb]; \
+		uint64_t target = (pc - 1) + (uint64_t)d->imm; \
+		\
+		if(target > code_end) \
+			target = code_end; \
+		pc = (COND) ? target : pc; \
+		\
+		NEXT(); \
+	} while(0)
+
+	l_b_beq:
+		BR(a == b);
+	l_b_bne:
+		BR(a != b);
+	l_b_blt:
+		BR((int64_t)a <  (int64_t)b);
+	l_b_bltu:
+		BR(a <  b);
+	l_b_bge:
+		BR((int64_t)a >= (int64_t)b);
+	l_b_bgt:
+		BR((int64_t)a >  (int64_t)b);
+	l_b_bgtu:
+		BR(a >  b);
+	l_b_ble:
+		BR((int64_t)a <= (int64_t)b);
+	l_b_bleu:
+		BR(a <= b);
+	l_b_bgeu:
+		BR(a >= b);
+	#undef BR
+
+	// ============== SYS ==============
+	l_sys_halt:
+		r[PC] = pc;
+		return;
+	l_sys_syscall:{
+		// sync PC out so syscalls that read it see the right value;
+		// reload after in case a syscall modified it.
+		r[PC] = pc;
+		if(!handleSyscall(regs, codeBase, stackBase, exit_code, fileLength)){
+			return;
+		}
+		pc = r[PC];
+
+		NEXT();
+	}
+	l_sys_nop:
+		NEXT();
+	l_sys_break:{
+		// dump all registers to stderr
+		fprintf(stderr, "[BREAK]: Breakpoint hit at PC " FMT_U64 "\n", pc - 1);
+		fprintf(stderr, "Registers:\n");
+		for(int i = 0; i < 64; i++)
+			fprintf(stderr, "  r%-2d: 0x" FMT_X64 "\n", i, r[i]);
+		fprintf(stderr, "Press enter to continue...\n");
+		getchar();
+
+		NEXT();
+	}
+
+	// ============== fallback (extensions or illegal) ==============
+	do_illegal:{
+		// sync PC so the extension handler sees a consistent state
+		r[PC] = pc;
+		uint8_t opcode = d->opcode;
+
+		if(!handleExtensionOpcode(opcode, extensions, d->raw, regs)){
+			fprintf(stderr, "[FATAL 0x%04X]: Illegal opcode 0x%02X.\n", 0x0201, opcode);
+			exit(EXIT_FAILURE);
+		}
+		pc = r[PC];
+		
+		NEXT();
+	}
+
+	#undef NEXT
+#pragma GCC diagnostic pop
+#else
+	// portable fallback for compilers without labels-as-values
 	while(step(regs, codeBase, stackBase, fileLength, extensions, exit_code));
+#endif
 }
 
 void heapDestroy(void){
