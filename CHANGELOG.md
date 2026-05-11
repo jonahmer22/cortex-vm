@@ -6,10 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.2] - 2026-05-10
+
+### Changed
+- **~3x throughput improvement** across all instruction categories - cumulative result of the optimizations below
+
+### Performance
+- **Threaded dispatch in `run()`** - replaced the `switch`/`case` opcode loop with a pre-computed GCC computed-goto table keyed on `(opcode << 8 | funct)`; each instruction jumps directly to its handler label with no comparisons
+- **Instruction decode cache** - `run()` now pre-decodes the entire code section into a `DecodedInstr` array before execution begins; fields (`handler`, `imm`, `rd`, `ra`, `rb`, `flags`) are read directly on the hot path without re-extracting them from the raw word each iteration
+- **`run()` marked `__attribute__((hot))`** - hints to GCC that this is the hottest function in the binary, enabling more aggressive inlining and register allocation decisions
+- **`step()` inlined into `run()`** - eliminated the function-call overhead on every instruction; the former `step()` body is now expanded directly inside the dispatch loop (~1.9x speedup on its own)
+- **Register file accessed via `restrict` pointer** - `regs`, `codeBase`, and `stackBase` are aliased to `restrict`-qualified local pointers (`r`, `cb`, `sb`) so the compiler can keep values in registers across instructions without reload-store barriers
+- **PC held in a local variable** - `uint64_t pc` shadows `r[PC]` for the duration of the dispatch loop; written back to the register file only on exits and syscalls, eliminating a memory round-trip per instruction
+
+### Added
+- **Cross-language benchmark suite** (`benchmarks/cross_lang/`) - compares Cortex-VM against Lua and WebAssembly (Wasmtime) on four workloads: iterative Fibonacci, recursive Fibonacci, Newton's method, and prime sieve
+- **`benchmarks/compare.py`** - CLI runner for the cross-language suite; outputs a side-by-side timing table
+- **PGO build in `install.sh`** - `install.sh` now runs a profile-guided optimization pass (instrument -> benchmark -> optimize) before installing the final binary; profile data is collected from the benchmark suite automatically
+
+### Fixed
+- **`-WPedantic` warning on computed-goto table** - `src/core.c` wraps the dispatch-table initializer in a `#pragma GCC diagnostic` block to suppress the "address of label" pedantic warning without disabling it globally
+- **`fread` null-termination in `handle_source`** - `content` was null-terminated at `flen` (the requested file size) instead of `nread` (actual bytes read); a short read would leave uninitialized bytes before the null terminator
+- **`system()` unused-result in `serverStart`** - replaced `(void)system(cmd)` with an explicit non-fatal check; browser-open failure is intentionally ignored
+
+---
+
 ## [1.1.1] - 2026-04-27
 
 ### Fixed
-- **Linux build warnings** — resolved all `-Wunused-result` warnings in `src/server.c`:
+- **Linux build warnings** - resolved all `-Wunused-result` warnings in `src/server.c`:
   - `pipe()` calls in `run_vm_argv`, `handle_debug_start`, and `handle_irun_start` now check the return value and return an error on failure
   - `fread()` in `handle_source` and `system()` in `serverStart` cast to `(void)` to signal intentional discard
 
@@ -208,6 +233,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.1.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.2
 [1.1.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.1
 [1.1.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.0
 [1.0.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.0.0
