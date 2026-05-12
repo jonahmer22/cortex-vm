@@ -33,17 +33,17 @@ cd cortex-vm
 ./install.sh
 ```
 
-`install.sh` takes care of everything in one step: initialising submodules, creating a Python virtual environment and installing dependencies, building the binary and static library, running the full test suite, and installing `cortex-vm` to `/usr/local/bin`. After it completes, `cortex-vm` is available system-wide.
+`install.sh` takes care of everything in one step: initialising submodules, creating a Python virtual environment and installing dependencies, building the binary and static library, running the full test suite, and installing `cortex` to `/usr/local/bin`. After it completes, `cortex` is available system-wide.
 
 > **Developing or building manually?** Run `make` directly from the project root to build without installing. The test suite can then be run with `.venv/bin/pytest` (after the venv has been created at least once by `install.sh` or `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`).
 
 **Assembling and running a program:**
 ```bash
-cortex-vm -a program.s           # assemble to a.out
-cortex-vm -a program.s -o out    # assemble to 'out'
-cortex-vm -ar program.s          # assemble to a.out and run immediately
-cortex-vm -ar program.s -o out   # assemble to 'out' and run immediately
-cortex-vm program.out            # run a pre-assembled binary
+cortex -a program.s           # assemble to a.out
+cortex -a program.s -o out    # assemble to 'out'
+cortex -ar program.s          # assemble to a.out and run immediately
+cortex -ar program.s -o out   # assemble to 'out' and run immediately
+cortex program.out            # run a pre-assembled binary
 ```
 
 ---
@@ -67,7 +67,7 @@ main:
 
 Run it:
 ```bash
-./cortex-vm -ar hello.s
+./cortex -ar hello.s
 Hello, World!
 ```
 
@@ -531,8 +531,8 @@ main:
 The disassembler converts a compiled binary back into readable assembly source. This is useful for debugging, inspecting what the assembler produced, or understanding an existing binary.
 
 ```sh
-./cortex-vm -d program.out             # disassemble to out.s
-./cortex-vm -d program.out -o prog.s   # disassemble to a specific file
+./cortex -d program.out             # disassemble to out.s
+./cortex -d program.out -o prog.s   # disassemble to a specific file
 ```
 
 **What the output looks like:**
@@ -573,7 +573,7 @@ A few things to note:
 **Disassemble and run immediately:**
 
 ```sh
-./cortex-vm -dr program.out    # disassemble to out.s, then run out.s
+./cortex -dr program.out    # disassemble to out.s, then run out.s
 ```
 
 ---
@@ -652,8 +652,8 @@ main:
 Cortex-VM includes a browser-based IDE that you can launch with the `-V` flag. No internet connection is required - all assets are embedded in the binary.
 
 ```bash
-./cortex-vm -V              # open IDE with blank editor
-./cortex-vm -V hello.s      # open IDE with hello.s pre-loaded and saveable
+./cortex -V              # open IDE with blank editor
+./cortex -V hello.s      # open IDE with hello.s pre-loaded and saveable
 ```
 
 The IDE opens in your browser automatically. The exact URL (starting from `http://127.0.0.1:7777`, scanning upward for the first free port) is printed to stdout when the server starts. It has four tabs across the top of the main panel:
@@ -679,7 +679,7 @@ The IDE opens in your browser automatically. The exact URL (starting from `http:
 If you are running programs from the command line and want to inspect register state after execution, use `-D` (dump registers):
 
 ```bash
-./cortex-vm -arD hello.s
+./cortex -arD hello.s
 ```
 
 This prints all 64 registers as a JSON array to stderr after the program exits:

@@ -9,11 +9,9 @@
 
 #include "../include/core.h"
 #include "../include/defs.h"
-
-// heap
-static uint64_t *heapBase = NULL;
-static uint64_t heapUsed = 0;
-static uint64_t heapCap = 0;
+#include "../include/cortex-vm.h"
+#include "../include/vm_ctx.h"
+#include "../include/heap.h"
 
 // file descriptor table
 #define MAX_FDS 64
@@ -48,7 +46,7 @@ typedef struct{
 } DecodedInstr;
 
 // memory functions
-void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase){
+void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase, HeapState *heap, uint64_t *stackBase){
 	(void)codeBase;	// just to shut up the compiler
 
 	if(addr < HEAP_ADDR){
@@ -57,11 +55,11 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 		exit(EXIT_FAILURE);
 	}
 	else if(addr < STACK_ADDR){
-		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
+		if(heap->base == NULL || (addr - HEAP_ADDR) >= heap->used){
 			fprintf(stderr, "[FATAL 0x%04X]: Heap write to unallocated address 0x" FMT_X64 ".\n", 0x0211, addr);
 			exit(EXIT_FAILURE);
 		}
-		heapBase[addr - HEAP_ADDR] = val;
+		heap->base[addr - HEAP_ADDR] = val;
 	}
 	else{
 		// memory must be on the stack
@@ -73,7 +71,7 @@ void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase,/* uint64_t* heapBa
 		stackBase[addr - STACK_ADDR] = val;
 	}
 }
-uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uint64_t* stackBase, uint64_t codeBaseSize){
+uint64_t loadWord(uint64_t addr, uint64_t* codeBase, uint64_t codeBaseSize, HeapState *heap, uint64_t *stackBase){
 	if(addr < HEAP_ADDR){
 		if (addr >= codeBaseSize){
 			fprintf(stderr, "[ERROR 0x%04X]: Code read address 0x" FMT_X64 " is out of bounds (arena size " FMT_U64 " words).\n", 0xD042, addr, codeBaseSize);
@@ -84,11 +82,11 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 		return codeBase[addr];
 	}
 	else if(addr < STACK_ADDR){
-		if(heapBase == NULL || (addr - HEAP_ADDR) >= heapUsed){
+		if(heap->base == NULL || (addr - HEAP_ADDR) >= heap->used){
 			fprintf(stderr, "[ERROR 0x%04X]: Heap read from unallocated address 0x" FMT_X64 ".\n", 0x0212, addr);
 			return 0;
 		}
-		return heapBase[addr - HEAP_ADDR];
+		return heap->base[addr - HEAP_ADDR];
 	}
 	else{
 		// memory must be on the stack
@@ -102,13 +100,17 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase,/* uint64_t* heapBase,*/ uin
 }
 
 // returns a pointer to the heap data and the number of words currently allocated
-uint64_t *heapSnapshot(uint64_t *out_used){
-	*out_used = heapUsed;
-	return heapBase;
+uint64_t *heapSnapshot(HeapState *heap, uint64_t *out_used){
+	*out_used = heap->used;
+	return heap->base;
 }
 
 // returns false if the VM should stop running (SYS_EXIT)
-static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t *exit_code, uint64_t fileLength){
+static bool handleSyscall(CortexVM *vm, uint64_t *exit_code, uint64_t fileLength){
+	uint64_t  *regs      = vm->regs;
+	uint64_t  *codeBase  = vm->codeBase;
+	HeapState *heap      = vm->heap;
+	uint64_t  *stackBase = vm->stackBase;
 	switch(regs[A13]){
 		// exit syscall
 		case SYS_EXIT:{
@@ -179,7 +181,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 		case SYS_PRINT_STR:{
 			// print a string whose address is at A0
 			for(size_t i = 0; ; i++){
-				char chars = (char)loadWord(regs[A0] + i, codeBase, stackBase, fileLength);
+				char chars = (char)loadWord(regs[A0] + i, codeBase, fileLength, heap, stackBase);
 				if(chars == '\0'){
 					break;
 				}
@@ -279,10 +281,10 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 				break;
 			}
 			while(i < maxLen - 1 && (c = getchar()) != EOF && c != '\n'){
-				setWord(addr + i, (uint64_t)(unsigned char)c, codeBase, stackBase);
+				setWord(addr + i, (uint64_t)(unsigned char)c, codeBase, heap, stackBase);
 				i++;
 			}
-			setWord(addr + i, 0, codeBase, stackBase);
+			setWord(addr + i, 0, codeBase, heap, stackBase);
 			break;
 		}
 		// random number syscalls
@@ -312,7 +314,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			size_t pi = 0;
 			uint64_t addr = regs[A0];
 			char c;
-			while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, stackBase, fileLength)) != '\0')
+			while(pi < sizeof(path) - 1 && (c = (char)loadWord(addr++, codeBase, fileLength, heap, stackBase)) != '\0')
 				path[pi++] = c;
 			path[pi] = '\0';
 
@@ -364,11 +366,11 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			int c;
 			uint64_t wi = 0;
 			while((c = fgetc(fdTable[fd])) != EOF){
-				setWord(bufAddr + wi, (uint64_t)(unsigned char)c, codeBase, stackBase);
+				setWord(bufAddr + wi, (uint64_t)(unsigned char)c, codeBase, heap, stackBase);
 				wi++;
 			}
 			// null terminate
-			setWord(bufAddr + wi, 0, codeBase, stackBase);
+			setWord(bufAddr + wi, 0, codeBase, heap, stackBase);
 			regs[A0] = wi;	// return number of words written (not counting null terminator)
 			break;
 		}
@@ -388,7 +390,7 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			}
 			uint64_t addr = regs[A1];
 			char c;
-			while((c = (char)loadWord(addr++, codeBase, stackBase, fileLength)) != '\0')
+			while((c = (char)loadWord(addr++, codeBase, fileLength, heap, stackBase)) != '\0')
 				fputc(c, fdTable[fd]);
 			break;
 		}
@@ -430,29 +432,35 @@ static bool handleSyscall(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBas
 			break;
 		}
 		case SYS_HEAP_TOP:{
-			regs[A0] = HEAP_ADDR + heapUsed;
+			if(heap == NULL)
+				heap = heapStateCreate();
+
+			regs[A0] = HEAP_ADDR + heap->used;
 			break;
 		}
 		case SYS_HEAP_GROW:{
+			if(heap == NULL)
+				heap = heapStateCreate();
+
 			uint64_t nwords = regs[A0];
-			if (nwords == 0){
+			if(nwords == 0){
 				regs[A0] = 0;
 				break;
 			}
 
-			if (heapUsed + nwords > heapCap){
-				uint64_t newCap = heapUsed + nwords;
-				uint64_t *newBase = realloc(heapBase, newCap * sizeof(uint64_t));
+			if(heap->used + nwords > heap->cap){
+				uint64_t newCap = heap->used + nwords;
+				uint64_t *newBase = realloc(heap->base, newCap * sizeof(uint64_t));
 				if (newBase == NULL){
 					regs[A0] = 0;
 					break;
 				}
-				heapBase = newBase;
-				heapCap = newCap;
+				heap->base = newBase;
+				heap->cap = newCap;
 			}
 
-			regs[A0] = heapUsed + HEAP_ADDR;
-			heapUsed += nwords;
+			regs[A0] = heap->used + HEAP_ADDR;
+			heap->used += nwords;
 
 			#ifdef DEBUG
 			printf("[DEBUG]: Heap expanded to " FMT_U64 ", " FMT_U64 " words allocated.\n", heapCap, nwords);
@@ -746,8 +754,12 @@ static bool handleExtensionOpcode(uint8_t opcode, uint64_t extensions, uint64_t 
 }
 
 // im dumb asf this made such a massive difference I should've been doing inline for this from the start
-inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+inline bool step(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
 	bool running = true;
+	uint64_t *regs      = vm->regs;
+	uint64_t *codeBase  = vm->codeBase;
+	uint64_t *stackBase = vm->stackBase;
+	HeapState *heap     = vm->heap;
 
 	// FETCH
 	uint64_t instr = codeBase[regs[PC]++];
@@ -919,7 +931,7 @@ inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uin
 
 			switch(funct){
 				case FN_SW:{
-					setWord((uint64_t)(regs[ra] + imm), (uint64_t)regs[rb], codeBase, stackBase);
+					setWord((uint64_t)(regs[ra] + imm), (uint64_t)regs[rb], codeBase, heap, stackBase);
 					break;
 				}
 				default:
@@ -936,7 +948,7 @@ inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uin
 
 			switch(funct){
 				case FN_LW:{
-					regs[rd] = loadWord((uint64_t)(regs[ra] + imm), codeBase, stackBase, fileLength);
+					regs[rd] = loadWord((uint64_t)(regs[ra] + imm), codeBase, fileLength, heap, stackBase);
 					break;
 				}
 				default:
@@ -1027,7 +1039,7 @@ inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uin
 					break;
 				}
 				case FN_SYSCALL:{
-					if(!handleSyscall(regs, codeBase, stackBase, exit_code, fileLength))
+					if(!handleSyscall(vm, exit_code, fileLength))
 						running = false;
 					break;
 				}
@@ -1079,7 +1091,12 @@ inline bool step(uint64_t *regs, uint64_t *codeBase,/* uint64_t *heapBase,*/ uin
 }
 
 __attribute__((hot))	// tell the compiler that this is a hotpath
-void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+void run(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
+	uint64_t *regs      = vm->regs;
+	uint64_t *codeBase  = vm->codeBase;
+	uint64_t *stackBase = vm->stackBase;
+	HeapState *heap     = vm->heap;
+	(void)heap; (void)stackBase;	// used indirectly via setWord/loadWord
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -1361,11 +1378,11 @@ void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileL
 
 	// ============== S-type / L-type ==============
 	l_s_sw:{
-		setWord(r[d->ra] + (uint64_t)d->imm, r[d->rb], codeBase, stackBase);
+		setWord(r[d->ra] + (uint64_t)d->imm, r[d->rb], codeBase, heap, stackBase);
 		NEXT();
 	}
 	l_l_lw:{
-		r[d->rd] = loadWord(r[d->ra] + (uint64_t)d->imm, codeBase, stackBase, fileLength);
+		r[d->rd] = loadWord(r[d->ra] + (uint64_t)d->imm, codeBase, fileLength, heap, stackBase);
 		NEXT();
 	}
 
@@ -1414,7 +1431,7 @@ void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileL
 		// sync PC out so syscalls that read it see the right value;
 		// reload after in case a syscall modified it.
 		r[PC] = pc;
-		if(!handleSyscall(regs, codeBase, stackBase, exit_code, fileLength)){
+		if(!handleSyscall(vm, exit_code, fileLength)){
 			return;
 		}
 		pc = r[PC];
@@ -1454,17 +1471,12 @@ void run(uint64_t *regs, uint64_t *codeBase, uint64_t *stackBase, uint64_t fileL
 #pragma GCC diagnostic pop
 #else
 	// portable fallback for compilers without labels-as-values
-	while(step(regs, codeBase, stackBase, fileLength, extensions, exit_code));
+	while(step(vm, fileLength, extensions, exit_code));
 #endif
 }
 
-void heapDestroy(void){
-	if(heapBase){
-		free(heapBase);
-		heapBase = NULL;
-		heapUsed = 0;
-		heapCap  = 0;
-	}
+void heapDestroy(CortexVM *vm){
+	heapStateDestroy(vm->heap);
 }
 
 // 	.:

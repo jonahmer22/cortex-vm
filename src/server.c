@@ -28,6 +28,8 @@
 #include "../include/core.h"
 #include "../include/defs.h"
 #include "../include/header.h"
+#include "../include/heap.h"
+#include "../include/vm_ctx.h"
 #include "../include/utils.h"
 #include "../include/server.h"
 #include "../deps/arena/arena.h"
@@ -87,6 +89,7 @@ static struct {
 	Arena *stack_arena;
 	uint64_t *code_base;
 	uint64_t *stack_base;
+	HeapState *heap;
 	uint64_t regs[64];
 	uint64_t file_length;
 	uint64_t extensions;
@@ -611,7 +614,8 @@ static void debug_teardown(void){
 		return;
 	
 	// destroy VM memory
-	heapDestroy();
+	heapStateDestroy(g_debug.heap);
+	g_debug.heap = NULL;
 	if(g_debug.code_arena){
 		arenaLocalDestroy(g_debug.code_arena);
 		g_debug.code_arena  = NULL;
@@ -665,6 +669,7 @@ static int debug_load_binary(const char *binpath, char **err_out){
 		g_debug.code_base[i - HEADER_LEN] = binary[i];
 	free(binary);
 
+	g_debug.heap = heapStateCreate();
 	g_debug.file_length = code_words;
 	g_debug.extensions = extensions;
 	memset(g_debug.regs, 0, sizeof(g_debug.regs));
@@ -1097,7 +1102,10 @@ static void handle_debug_step(int fd){
 
 	CAPTURE_STDOUT_START(tmpf, saved_out)
 
-	bool still_running = step(g_debug.regs, g_debug.code_base, g_debug.stack_base, g_debug.file_length, g_debug.extensions, &g_debug.exit_code);
+	struct CortexVM step_ctx = {.codeBase=g_debug.code_base,.stackBase=g_debug.stack_base,.heap=g_debug.heap};
+	memcpy(step_ctx.regs, g_debug.regs, sizeof(step_ctx.regs));
+	bool still_running = step(&step_ctx, g_debug.file_length, g_debug.extensions, &g_debug.exit_code);
+	memcpy(g_debug.regs, step_ctx.regs, sizeof(g_debug.regs));
 	g_debug.running = still_running ? 1 : 0;
 
 	char *out;
@@ -1135,7 +1143,10 @@ static void handle_debug_continue(int fd, const char *body){
 			break;
 		}
 
-		bool still_running = step(g_debug.regs, g_debug.code_base, g_debug.stack_base, g_debug.file_length, g_debug.extensions, &g_debug.exit_code);
+		struct CortexVM step_ctx = {.codeBase=g_debug.code_base,.stackBase=g_debug.stack_base,.heap=g_debug.heap};
+	memcpy(step_ctx.regs, g_debug.regs, sizeof(step_ctx.regs));
+	bool still_running = step(&step_ctx, g_debug.file_length, g_debug.extensions, &g_debug.exit_code);
+	memcpy(g_debug.regs, step_ctx.regs, sizeof(g_debug.regs));
 		g_debug.running = still_running ? 1 : 0;
 		steps++;
 
@@ -1220,7 +1231,7 @@ static void handle_debug_memory(int fd){
 
 	// heap: all allocated words
 	uint64_t heap_used = 0;
-	uint64_t *heap_data = heapSnapshot(&heap_used);
+	uint64_t *heap_data = heapSnapshot(g_debug.heap, &heap_used);
 	size_t heap_count = (size_t)(heap_used < MEM_MAX_WORDS ? heap_used : MEM_MAX_WORDS);
 	char *heap_json = words_to_json(heap_data, heap_count);
 

@@ -46,7 +46,7 @@ HERE         = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 ASM_DIR      = os.path.join(PROJECT_ROOT, "benchmarks", "asm")
 RESULTS_DIR  = os.path.join(PROJECT_ROOT, "benchmarks", "results")
-VM_BINARY    = os.path.join(PROJECT_ROOT, "cortex-vm")
+VM_BINARY    = os.path.join(PROJECT_ROOT, "cortex")
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +363,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # sanity checks
     if not os.path.isfile(args.vm) or not os.access(args.vm, os.X_OK):
-        print(f"error: cortex-vm binary not found at {args.vm} — run `make` first",
+        print(f"error: cortex binary not found at {args.vm} — run `make` first",
               file=sys.stderr)
         return 1
     for label, path in [("lua", args.lua), ("wasm3", args.wasm3), ("wat2wasm", args.wat2wasm)]:

@@ -5,6 +5,8 @@
 #include "deps/arena/arena.h"
 #include "deps/cliargs/cliargs.h"
 #include "include/core.h"
+#include "include/cortex-vm.h"
+#include "include/vm_ctx.h"
 #include "include/utils.h"
 #include "include/header.h"
 #include "include/defs.h"
@@ -19,7 +21,7 @@
 int main(int argc, char **argv){
 	// set up cliargs parameters before parse
 	cliargsStrict();
-	cliargsSetVersion("Cortex-VM v1.1.2");
+	cliargsSetVersion("Cortex-VM v1.2.0");
 	cliargsSetDescription("Cortex-VM is a general purpose, extensible virtual machine built around a custom virtual ISA.\nThis program may be used to execute, assemble, or disassemble Cortex-ISA binaries.");
 	
 	// add all different args
@@ -160,43 +162,19 @@ int main(int argc, char **argv){
 	// ===========
 	// init the vm
 	// ===========
-	
-	// initialize the memory arenas
-	Arena *code  = arenaLocalInit();
-	Arena *stack = arenaLocalInit();
 
-	uint64_t *codeBase  = arenaLocalAlloc(code, sizeof(uint64_t) * (fileLength - HEADER_LEN));
-	uint64_t *stackBase = arenaLocalAlloc(stack, STACKSIZE);
-
-	// move code into the code section
-	for(size_t i = HEADER_LEN; i < fileLength; i++){
-		codeBase[i - HEADER_LEN] = buff[i];
-	}
-	fileLength -= HEADER_LEN;
-
-	// initialize all registers to 0s
-	uint64_t regs[64] = {0};
-	regs[1] = offset - HEADER_LEN;		// set PC to entry point relative to code base
-	regs[2] = 0x0008000000000000;	// set sp to the stack base (top 16 bits is 0x0008)
-	
-	// exit_code
-	uint64_t exit_code = 0;
-
-	// fetch, decode, and execute code
-	run(regs, codeBase, stackBase, fileLength, extensions, &exit_code);
+	CortexVM *vm = cortexVMCreate();
+	uint64_t exit_code = (uint64_t)cortexVMExecBinary(vm, buff, fileSize);
 
 	if(cliargsFlag("dump-regs", 'D')){
 		fprintf(stderr, "{\"regs\":[");
 		for(int i = 0; i < 64; i++){
-			fprintf(stderr, "%llu%s", (unsigned long long)regs[i], i < 63 ? "," : "");
+			fprintf(stderr, "%llu%s", (unsigned long long)vm->regs[i], i < 63 ? "," : "");
 		}
 		fprintf(stderr, "]}\n");
 	}
 
-	// free all the memory for the vm and exit with no errors
-	heapDestroy();
-	arenaLocalDestroy(code);
-	arenaLocalDestroy(stack);
+	cortexVMDestroy(vm);
 
 	// free the buffers that hold code and source
 	free(buff);

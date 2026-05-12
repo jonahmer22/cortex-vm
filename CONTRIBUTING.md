@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 | Command      | Description                               |
 |--------------|-------------------------------------------|
-| `make`       | Build the `cortex-vm` binary              |
+| `make`       | Build the `cortex` binary                 |
 | `make lib`   | Build `lib/libcortex-vm.a` static library |
 | `make debug` | Rebuild with `-DDEBUG`                    |
 | `make clean` | Remove build artifacts                    |

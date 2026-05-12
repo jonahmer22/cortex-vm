@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.0] - 2026-05-12
+
+### Added
+- **Persistent VM context API** — `cortexVMCreate`, `cortexVMExecSource`, `cortexVMExecBinary`, `cortexVMDestroy` for REPL-style use from embedding projects; heap, stack, and register state persist across calls within a single context
+
+### Changed
+- **Binary renamed** from `cortex-vm` to `cortex`; `install.sh` / `uninstall.sh` updated accordingly
+
+### Fixed
+- **`CortexVM` made opaque in `cortex-vm.h`** — the public header no longer includes internal headers (`heap.h`, `arena.h`); previously, `#include "cortex-vm.h"` would fail to compile in any project that didn't have those internal headers on its include path, making `make lib` effectively unusable
+
+---
+
 ## [1.1.2] - 2026-05-10
 
 ### Changed
@@ -155,7 +168,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`LIBRARY.md`** - full guide covering submodule setup, Makefile integration, API reference, and examples
 
 ### Changed
-- `-a` and `-d` flags no longer fall through to execution after assembling or disassembling. To assemble and run in one step, use `-ar` (or `-ra`). Running a pre-assembled binary directly (`./cortex-vm <binary>`) is unchanged.
+- `-a` and `-d` flags no longer fall through to execution after assembling or disassembling. To assemble and run in one step, use `-ar` (or `-ra`). Running a pre-assembled binary directly (`./cortex <binary>`) is unchanged.
 - `make clean` now also removes the `lib/` directory
 
 ### Fixed
@@ -233,6 +246,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.2.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.0
 [1.1.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.2
 [1.1.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.1
 [1.1.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.0

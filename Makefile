@@ -12,7 +12,7 @@ SRC_DIR    := src
 INC_DIR    := include
 DEPS_DIR   := deps
 BUILD_DIR  := build
-TARGET     := cortex-vm
+TARGET     := cortex
 
 DEPS_SRCS := $(shell find $(DEPS_DIR) -type f -name '*.c' ! -path '*/testing/*' 2>/dev/null)
 DEPS_INC_DIRS := $(sort $(dir $(shell find $(DEPS_DIR) -type f -name '*.h' 2>/dev/null)))
@@ -68,10 +68,10 @@ debug:
 #
 # Usage:
 #   make pgo-generate       # build the instrumented binary
-#   ./cortex-vm <bench>     # run your benchmarks (repeat as desired)
+#   ./cortex <bench>        # run your benchmarks (repeat as desired)
 #   make pgo-use            # rebuild with the collected profile
 #
-# Or `make pgo PGO_RUN='./cortex-vm bench.cxb'` to do all three in one shot.
+# Or `make pgo PGO_RUN='./cortex bench.cxb'` to do all three in one shot.
 PGO_DIR := $(BUILD_DIR)/pgo
 PGO_RUN ?=
 
@@ -91,7 +91,7 @@ pgo:
 	@if [ -z "$(PGO_RUN)" ]; then \
 	  echo ""; \
 	  echo "  >> Instrumented binary built. Now run your benchmarks, e.g.:"; \
-	  echo "       ./cortex-vm <your-bench>"; \
+	  echo "       ./cortex <your-bench>"; \
 	  echo "     Then run: make pgo-use"; \
 	  echo ""; \
 	else \
