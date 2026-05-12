@@ -2,6 +2,8 @@ CC 		:= $(shell command -v gcc-15 2>/dev/null || echo gcc)
 CFLAGS  := -std=c17 -Wall -Wextra -Wpedantic -Wunused-result -g -O3 -march=native -flto
 LDFLAGS := -lm -flto
 
+VERSION := $(shell cat version.num | tr -d '[:space:]')
+
 # extra flags injected by the pgo target (override on command line)
 PGO_CFLAGS  ?=
 PGO_LDFLAGS ?=
@@ -16,7 +18,7 @@ TARGET     := cortex
 
 DEPS_SRCS := $(shell find $(DEPS_DIR) -type f -name '*.c' ! -path '*/testing/*' 2>/dev/null)
 DEPS_INC_DIRS := $(sort $(dir $(shell find $(DEPS_DIR) -type f -name '*.h' 2>/dev/null)))
-CPPFLAGS := -I$(INC_DIR) $(addprefix -I,$(DEPS_INC_DIRS))
+CPPFLAGS := -I$(INC_DIR) $(addprefix -I,$(DEPS_INC_DIRS)) -DCORTEX_VERSION_STR=\"$(VERSION)\"
 
 LIB_DIR    := lib
 LIB_TARGET := $(LIB_DIR)/libcortex-vm.a
@@ -36,7 +38,7 @@ CM_GAS_JS_H  := include/cm_gas_js.h
 
 GENERATED_HEADERS := $(UI_HTML_H) $(FAVICON_H) $(CM_CSS_H) $(CM_THEME_H) $(CM_JS_H) $(CM_GAS_JS_H)
 
-.PHONY: all lib clean run debug pgo pgo-generate pgo-use
+.PHONY: all lib clean run debug pgo pgo-generate pgo-use version
 
 all: $(GENERATED_HEADERS) $(TARGET)
 
@@ -100,8 +102,12 @@ pgo:
 	  $(MAKE) pgo-use; \
 	fi
 
-$(UI_HTML_H): ui/index.html
-	python3 -c "d=open('ui/index.html','rb').read();print('static const unsigned char UI_HTML[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t UI_HTML_LEN={len(d)};')" > $@
+$(UI_HTML_H): ui/index.html version.num
+	python3 -c "v=open('version.num').read().strip();d=open('ui/index.html').read().replace('%%CORTEX_VERSION%%','Cortex-VM v'+v).encode();print('static const unsigned char UI_HTML[]={'+','.join(str(b)for b in d)+',0};');print(f'static const size_t UI_HTML_LEN={len(d)};')" > $@
+
+version:
+	python3 -c "import re,pathlib;v=pathlib.Path('version.num').read_text().strip();p=pathlib.Path('README.md');p.write_text(re.sub(r'version-v[\d.]+-blue','version-v'+v+'-blue',p.read_text()))"
+	@echo "README.md badge updated to v$(VERSION)"
 
 $(FAVICON_H): cortex-logos/sq_blk.png
 	python3 -c "d=open('cortex-logos/sq_blk.png','rb').read();print('static const unsigned char FAVICON_PNG[]={'+','.join(str(b)for b in d)+'};');print(f'static const size_t FAVICON_PNG_LEN={len(d)};')" > $@
