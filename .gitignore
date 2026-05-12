@@ -2,7 +2,7 @@
 *.DS_Store
 
 # Cortex Binary
-cortex-vm
+cortex
 
 # compiled objects in headers
 # codemirror stuff

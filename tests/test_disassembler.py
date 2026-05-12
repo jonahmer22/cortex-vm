@@ -21,7 +21,7 @@ import tempfile
 import pytest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VM           = os.path.join(PROJECT_ROOT, "cortex-vm")
+VM           = os.path.join(PROJECT_ROOT, "cortex")
 
 
 # ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ def assert_round_trip(source: str, stdin: str = ""):
 @pytest.fixture(scope="session", autouse=True)
 def require_binary():
     if not os.path.isfile(VM):
-        pytest.skip(f"cortex-vm binary not found at {VM}. Run `make` first.")
+        pytest.skip(f"cortex binary not found at {VM}. Run `make` first.")
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@ A fast, extensible 64-bit virtual machine and assembler designed as the primary 
 
 [![CI](https://github.com/jonahmer22/cortex-vm/actions/workflows/ci.yml/badge.svg)](https://github.com/jonahmer22/cortex-vm/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.1.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)](#)
 [![Language](https://img.shields.io/badge/language-C17-00599C?logo=c&logoColor=white)](#)
 
@@ -57,14 +57,14 @@ main:
 ```
 
 ```sh
-./cortex-vm -a hello.s -o hello.out    # assemble to hello.out
-./cortex-vm hello.out                  # run
+./cortex -a hello.s -o hello.out    # assemble to hello.out
+./cortex hello.out                  # run
 ```
 
 ### Assemble and Run in One Step
 
 ```sh
-./cortex-vm -ar hello.s     # assemble to a.out and run immediately
+./cortex -ar hello.s     # assemble to a.out and run immediately
 ```
 
 ---
@@ -72,28 +72,28 @@ main:
 ## Usage
 
 ```
-./cortex-vm <binary>                    # run a pre-assembled binary
-./cortex-vm -a <source.s>              # assemble to a.out
-./cortex-vm -a <source.s> -o <out>     # assemble to a specific path
-./cortex-vm -ar <source.s>             # assemble and run immediately
-./cortex-vm -ar <source.s> -o <out>    # assemble to a specific path and run
-./cortex-vm -d <binary>                # disassemble to out.s
-./cortex-vm -d <binary> -o <out.s>     # disassemble to a specific path
-./cortex-vm -dr <binary>               # disassemble and run the result
-./cortex-vm -V                         # launch the visual IDE in the browser
-./cortex-vm -V <source.s>             # launch the IDE with a source file pre-loaded
-./cortex-vm -arD <source.s>           # assemble, run, and dump registers as JSON to stderr
+./cortex <binary>                    # run a pre-assembled binary
+./cortex -a <source.s>              # assemble to a.out
+./cortex -a <source.s> -o <out>     # assemble to a specific path
+./cortex -ar <source.s>             # assemble and run immediately
+./cortex -ar <source.s> -o <out>    # assemble to a specific path and run
+./cortex -d <binary>                # disassemble to out.s
+./cortex -d <binary> -o <out.s>     # disassemble to a specific path
+./cortex -dr <binary>               # disassemble and run the result
+./cortex -V                         # launch the visual IDE in the browser
+./cortex -V <source.s>             # launch the IDE with a source file pre-loaded
+./cortex -arD <source.s>           # assemble, run, and dump registers as JSON to stderr
 ```
 
 ---
 
 ## Visual IDE
 
-`cortex-vm -V` starts a self-contained browser-based IDE on `http://127.0.0.1:<port>` (starting from 7777, scanning upward for the first free port - the exact URL is printed to stdout). No internet connection is required - all assets are embedded in the binary at build time.
+`cortex -V` starts a self-contained browser-based IDE on `http://127.0.0.1:<port>` (starting from 7777, scanning upward for the first free port - the exact URL is printed to stdout). No internet connection is required - all assets are embedded in the binary at build time.
 
 ```sh
-./cortex-vm -V              # open IDE with blank editor
-./cortex-vm -V hello.s      # open IDE with hello.s pre-loaded
+./cortex -V              # open IDE with blank editor
+./cortex -V hello.s      # open IDE with hello.s pre-loaded
 ```
 
 ![Cortex-VM IDE](ui/ui-example.png)

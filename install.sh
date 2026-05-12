@@ -6,7 +6,7 @@ BIN_DIR="$PREFIX/bin"
 LIB_DIR="$PREFIX/lib"
 INC_DIR="$PREFIX/include"
 
-BINARY=cortex-vm
+BINARY=cortex
 LIBRARY=libcortex-vm.a
 HEADER=cortex-vm.h
 
@@ -112,7 +112,7 @@ if [ "$(uname -s)" = "Linux" ]; then
 fi
 
 echo ""
-echo "cortex-vm installed successfully."
+echo "cortex installed successfully."
 echo "  binary : $BIN_DIR/$BINARY"
 echo "  library: $LIB_DIR/$LIBRARY"
 echo "  header : $INC_DIR/$HEADER"

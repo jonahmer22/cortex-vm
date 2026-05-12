@@ -11,4 +11,8 @@ typedef struct HeapState{
     uint64_t cap;
 } HeapState;
 
+HeapState *heapStateCreate();
+
+void heapStateDestroy(HeapState *heap);
+
 #endif

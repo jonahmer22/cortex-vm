@@ -4,23 +4,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../deps/arena/arena.h"
-#include "heap.h"
-
 // ==============
 // Persistent API
 // ==============
 
-typedef struct CortexVM{
-    uint64_t regs[64];
+// Opaque handle; callers only ever hold a pointer; internals are in cortex-vm.c
+typedef struct CortexVM CortexVM;
 
-    uint64_t *stackBase;
-    Arena *stackArena;
+// Create a new VM context with zeroed registers and fresh stack/heap.
+// Returns NULL on allocation failure.
+CortexVM *cortexVMCreate(void);
 
-    HeapState heap;
+// Assemble `source` and execute it inside `vm`, preserving all VM state afterward.
+// Returns the program's exit code (the value passed to SYS_EXIT), or -1 on
+// assembly failure. SYS_EXIT does NOT destroy the context; it only ends this run.
+int cortexVMExecSource(CortexVM *vm, const char *source);
 
-    uint64_t extenstions;
-} CortexVM;
+// Execute a pre-assembled binary (word buffer + word count) inside `vm`.
+// Same semantics as cortexVMExecSource regarding state preservation and SYS_EXIT.
+int cortexVMExecBinary(CortexVM *vm, const uint64_t *binary, size_t wordCount);
+
+// Free all resources owned by `vm`. Do not use the pointer afterward.
+void cortexVMDestroy(CortexVM *vm);
 
 // ================================================
 // Old Non-Persistent API (kept for the sake of it)

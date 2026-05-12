@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VM_BINARY = os.path.join(PROJECT_ROOT, "cortex-vm")
+VM_BINARY = os.path.join(PROJECT_ROOT, "cortex")
 
 
 def run_asm(source: str, stdin: str = "", timeout: int = 10) -> subprocess.CompletedProcess:
@@ -78,5 +78,5 @@ def print_float(reg: str = "t2", precision: int = 6) -> str:
 def require_binary():
     if not os.path.isfile(VM_BINARY):
         pytest.skip(
-            f"cortex-vm binary not found at {VM_BINARY}. Run `make` first."
+            f"cortex binary not found at {VM_BINARY}. Run `make` first."
         )

@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bench_core import BenchmarkRunner, ASM_DIR
 
 VM_BINARY = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cortex-vm"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cortex"
 )
 
 
@@ -33,7 +33,7 @@ VM_BINARY = os.path.join(
 def require_binary():
     if not os.path.isfile(VM_BINARY):
         pytest.skip(
-            f"cortex-vm binary not found at {VM_BINARY}. Run `make` first."
+            f"cortex binary not found at {VM_BINARY}. Run `make` first."
         )
 
 

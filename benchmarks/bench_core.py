@@ -19,7 +19,7 @@ import time
 from dataclasses import dataclass, field
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VM_BINARY    = os.path.join(PROJECT_ROOT, "cortex-vm")
+VM_BINARY    = os.path.join(PROJECT_ROOT, "cortex")
 ASM_DIR      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asm")
 
 
