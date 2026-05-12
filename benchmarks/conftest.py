@@ -112,16 +112,16 @@ def test_branch_taken_throughput(runner):
 
 @pytest.mark.benchmark
 def test_fib_iter_correctness(runner):
-    r = runner.run_realworld(_asm("realworld_fib_iter.s"), "fib(40) iter", "102334155", repeats=1)
-    assert r.actual_out == "102334155", f"fib(40) wrong: {r.actual_out!r}"
-    assert r.elapsed_ms < 30_000, f"fib(40) iter too slow: {r.elapsed_ms:.0f} ms"
+    r = runner.run_realworld(_asm("realworld_fib_iter.s"), "fib(40) iter x1M", "102334155", repeats=1)
+    assert r.actual_out == "102334155", f"fib(40) x1M wrong: {r.actual_out!r}"
+    assert r.elapsed_ms < 30_000, f"fib(40) iter x1M too slow: {r.elapsed_ms:.0f} ms"
 
 
 @pytest.mark.benchmark
 def test_fib_rec_correctness(runner):
-    r = runner.run_realworld(_asm("realworld_fib_rec.s"), "fib(30) rec", "832040", repeats=1)
-    assert r.actual_out == "832040", f"fib(30) rec wrong: {r.actual_out!r}"
-    assert r.elapsed_ms < 60_000, f"fib(30) rec too slow: {r.elapsed_ms:.0f} ms"
+    r = runner.run_realworld(_asm("realworld_fib_rec.s"), "fib(35) rec", "9227465", repeats=1)
+    assert r.actual_out == "9227465", f"fib(35) rec wrong: {r.actual_out!r}"
+    assert r.elapsed_ms < 60_000, f"fib(35) rec too slow: {r.elapsed_ms:.0f} ms"
 
 
 @pytest.mark.benchmark

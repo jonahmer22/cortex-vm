@@ -114,8 +114,8 @@ def run_realworld(runner: BenchmarkRunner, repeats: int) -> list[BenchmarkResult
     print("[realworld] Real-world benchmarks...")
     results = []
     for name, fname, expected in [
-        ("fib(40) iter",   "realworld_fib_iter.s", "102334155"),
-        ("fib(30) rec",    "realworld_fib_rec.s",  "832040"),
+        ("fib(40) iter x1M", "realworld_fib_iter.s", "102334155"),
+        ("fib(35) rec",      "realworld_fib_rec.s",  "9227465"),
         ("sieve(1000)",    "realworld_sieve.s",    "168"),
         ("newton sqrt(2)", "realworld_newton.s",   "1.414214"),
     ]:

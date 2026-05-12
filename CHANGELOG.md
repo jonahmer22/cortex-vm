@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.1] - 2026-05-12
+
+### Fixed
+- **`install.sh` PGO build was silently broken** -- `.gcda` profile files are stored in deeply nested subdirectories of `build/pgo/`; the previous `cp *.gcda` only matched the top level (nothing), so profile data was discarded before the PGO rebuild and every install produced a plain `-O3` binary without any profile guidance. Fixed with `cp -r`. A verification step now aborts with an error if no profile data is found rather than proceeding silently.
+- **`restrict` aliases unused in sw/lw hot path** -- `cb`, `sb`, and `hp` were declared as `restrict`-qualified locals in `run()` but immediately voided; the sw/lw dispatch handlers were passing the non-restrict originals (`codeBase`, `stackBase`, `heap`) to `setWord`/`loadWord` instead, defeating the aliasing hint. Fixed so the restrict-qualified names are used throughout.
+- **Benchmark fib_rec expected output wrong** -- `realworld_fib_rec.s` was updated to compute fib(35) (result: 9227465) but `benchmarks/conftest.py` and `benchmarks/run.py` still asserted fib(30) (result: 832040), causing the correctness check to silently report wrong results.
+
+---
+
 ## [1.2.0] - 2026-05-12
 
 ### Added
@@ -246,6 +255,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.2.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.1
 [1.2.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.0
 [1.1.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.2
 [1.1.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.1

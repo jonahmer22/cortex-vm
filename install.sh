@@ -63,15 +63,26 @@ for _pid in "${_PIDS[@]}"; do
     wait "$_pid" || true   # || true: partial profile data is still useful
 done
 
-# pgo-use calls `make clean` which would delete build/pgo/*.gcda, so
-# stash the profile data outside build/ and restore it after the clean.
+# pgo-use calls `make clean` which would delete build/pgo/, so stash the
+# entire profile directory (recursively) outside build/ and restore it after.
 echo "==> Rebuilding $BINARY with PGO..."
+_GCDA_COUNT=$(find "$PGO_DIR" -name "*.gcda" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_GCDA_COUNT" -eq 0 ]; then
+    echo "error: no .gcda profile data found in $PGO_DIR — profiling runs may have failed." >&2
+    exit 1
+fi
+echo "    Found $_GCDA_COUNT .gcda profile files."
 _PGO_TMP=$(mktemp -d)
-cp "$PGO_DIR"/*.gcda "$_PGO_TMP/" 2>/dev/null || true
+cp -r "$PGO_DIR/." "$_PGO_TMP/"
 make clean
 mkdir -p "$PGO_DIR"
-cp "$_PGO_TMP"/*.gcda "$PGO_DIR/" 2>/dev/null || true
+cp -r "$_PGO_TMP/." "$PGO_DIR/"
 rm -rf "$_PGO_TMP"
+_GCDA_RESTORED=$(find "$PGO_DIR" -name "*.gcda" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_GCDA_RESTORED" -eq 0 ]; then
+    echo "error: profile data was lost during make clean — cannot do PGO rebuild." >&2
+    exit 1
+fi
 make PGO_CFLAGS="-fprofile-use=$PGO_DIR -fprofile-correction" \
      PGO_LDFLAGS="-fprofile-use=$PGO_DIR -fprofile-correction"
 
