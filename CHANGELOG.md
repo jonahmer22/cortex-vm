@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.1] - 2026-05-12
+
+### Changed
+- **Version number centralized into `version.num`** -- previously the version string had to be updated in three separate places (`main.c`, `ui/index.html`, `README.md`). It is now the sole source of truth: the Makefile reads it into `VERSION`, injects `-DCORTEX_VERSION_STR` at compile time (used by `main.c`), substitutes the `%%CORTEX_VERSION%%` placeholder when generating `include/ui_html.h` from `ui/index.html`, and a new `make version` target rewrites the README badge. Bumping the version now only requires editing `version.num` and running `make version`.
+
+### Fixed
+- **`install.sh` PGO build was silently broken** -- `.gcda` profile files are stored in deeply nested subdirectories of `build/pgo/`; the previous `cp *.gcda` only matched the top level (nothing), so profile data was discarded before the PGO rebuild and every install produced a plain `-O3` binary without any profile guidance. Fixed with `cp -r`. A verification step now aborts with an error if no profile data is found rather than proceeding silently.
+- **`restrict` aliases unused in sw/lw hot path** -- `cb`, `sb`, and `hp` were declared as `restrict`-qualified locals in `run()` but immediately voided; the sw/lw dispatch handlers were passing the non-restrict originals (`codeBase`, `stackBase`, `heap`) to `setWord`/`loadWord` instead, defeating the aliasing hint. Fixed so the restrict-qualified names are used throughout.
+- **Benchmark fib_rec expected output wrong** -- `realworld_fib_rec.s` was updated to compute fib(35) (result: 9227465) but `benchmarks/conftest.py` and `benchmarks/run.py` still asserted fib(30) (result: 832040), causing the correctness check to silently report wrong results.
+
+---
+
 ## [1.2.0] - 2026-05-12
 
 ### Added
@@ -246,6 +258,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.2.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.1
 [1.2.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.0
 [1.1.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.2
 [1.1.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.1

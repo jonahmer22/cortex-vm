@@ -1092,11 +1092,10 @@ inline bool step(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_
 
 __attribute__((hot))	// tell the compiler that this is a hotpath
 void run(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code){
-	uint64_t *regs      = vm->regs;
-	uint64_t *codeBase  = vm->codeBase;
-	uint64_t *stackBase = vm->stackBase;
-	HeapState *heap     = vm->heap;
-	(void)heap; (void)stackBase;	// used indirectly via setWord/loadWord
+	uint64_t  *regs      = vm->regs;
+	uint64_t  *codeBase  = vm->codeBase;
+	uint64_t  *stackBase = vm->stackBase;
+	HeapState *heap      = vm->heap;
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -1233,10 +1232,10 @@ void run(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_
 	// each other or the dispatch/decoded arrays, so it can keep things
 	// in CPU registers across the indirect goto.
 	// ====================================================================
-	uint64_t * restrict r = regs;
-	uint64_t * restrict cb = codeBase;
-	uint64_t * restrict sb = stackBase;
-	(void)cb; (void)sb;	// used inside setWord/loadWord paths
+	uint64_t  * restrict r  = regs;
+	uint64_t  * restrict cb = codeBase;
+	uint64_t  * restrict sb = stackBase;
+	HeapState * restrict hp = heap;
 
 	uint64_t pc = r[PC];
 	const uint64_t code_end = fileLength;
@@ -1378,11 +1377,11 @@ void run(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_
 
 	// ============== S-type / L-type ==============
 	l_s_sw:{
-		setWord(r[d->ra] + (uint64_t)d->imm, r[d->rb], codeBase, heap, stackBase);
+		setWord(r[d->ra] + (uint64_t)d->imm, r[d->rb], cb, hp, sb);
 		NEXT();
 	}
 	l_l_lw:{
-		r[d->rd] = loadWord(r[d->ra] + (uint64_t)d->imm, codeBase, fileLength, heap, stackBase);
+		r[d->rd] = loadWord(r[d->ra] + (uint64_t)d->imm, cb, fileLength, hp, sb);
 		NEXT();
 	}
 
