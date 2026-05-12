@@ -4,6 +4,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "../deps/arena/arena.h"
+#include "heap.h"
+
+// ==============
+// Persistent API
+// ==============
+
+typedef struct CortexVM{
+    uint64_t regs[64];
+
+    uint64_t *stackBase;
+    Arena *stackArena;
+
+    HeapState heap;
+
+    uint64_t extenstions;
+} CortexVM;
+
+// ================================================
+// Old Non-Persistent API (kept for the sake of it)
+// ================================================
+
 // assemble source text and write binary to outputPath (defaults to "a.out" if NULL)
 // returns heap-allocated word buffer; caller must free(); binary[1] == word count
 uint64_t *cortexAssemble(const char *source, const char *outputPath);
