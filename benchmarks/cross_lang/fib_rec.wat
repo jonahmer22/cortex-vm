@@ -1,4 +1,4 @@
-;; Recursive Fibonacci, fib(30) = 832040
+;; Recursive Fibonacci, fib(35) = 9227465
 ;; Matches benchmarks/asm/realworld_fib_rec.s
 (module
   (func $fib (param $n i64) (result i64)
@@ -9,4 +9,4 @@
           (call $fib (i64.sub (local.get $n) (i64.const 1)))
           (call $fib (i64.sub (local.get $n) (i64.const 2)))))))
   (func (export "main") (result i64)
-    (call $fib (i64.const 30))))
+    (call $fib (i64.const 35))))

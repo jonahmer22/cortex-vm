@@ -1,12 +1,13 @@
 ; Real-world benchmark: Newton's method for sqrt(2.0)
-; Runs 30 iterations: x = (x + n/x) / 2
+; Runs 1,000,000 iterations: x = (x + n/x) / 2
+; Converges in ~50 iterations; the remainder stress-tests the float loop.
 ; Prints result with 6 decimal places. Expected: ~1.414214
 main:
     faddi t0, zero, 2.0     ; n = 2.0
     faddi t1, zero, 1.0     ; x = initial guess = 1.0
     faddi t2, zero, 2.0     ; divisor constant
     addi  t3, zero, 0       ; iteration counter
-    addi  t4, zero, 30      ; max iterations
+    addi  t4, zero, 1000000 ; max iterations
 
 newton_loop:
     fdiv  t5, t0, t1        ; t5 = n / x

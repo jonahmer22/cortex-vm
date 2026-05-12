@@ -1,5 +1,5 @@
 ; Real-world benchmark: recursive Fibonacci
-; Computes fib(30) recursively. Expected result: 832040
+; Computes fib(35) recursively. Expected result: 9227465
 ; Prints the result then exits.
 ;
 ; Calling convention:
@@ -9,7 +9,7 @@
 ;   jmp zero, ra, 0     => return
 ;
 main:
-    addi a0, zero, 30
+    addi a0, zero, 35
     jmp  ra, zero, fib
     addi t2, a0, 0
     addi a0, t2, 0

@@ -1,11 +1,19 @@
 ; Real-world benchmark: Sieve of Eratosthenes up to 1000
+; Runs the full sieve 500 times to amortize startup cost.
 ; Stores prime flags in stack memory (1=prime, 0=composite).
 ; Prints the count of primes found (expected: 168 primes <= 1000).
 ;
 ; Layout: flag[i] stored at sp+i for i in 0..999
-;   0 and 1 are not prime → initialize all to 1, then clear 0 and 1.
+;   0 and 1 are not prime -> initialize all to 1, then clear 0 and 1.
+;
+; s0 = outer iteration counter
+; s1 = outer iteration limit
 ;
 main:
+    addi s0, zero, 0        ; outer = 0
+    addi s1, zero, 500      ; outer limit
+
+outer_loop:
     ; Initialize flag[0..999] = 1
     addi t0, zero, 0        ; i = 0
     addi t1, zero, 1000
@@ -58,6 +66,9 @@ count_loop:
     add  t7, t7, t4
     addi t0, t0, 1
     blt  t0, t1, count_loop
+
+    addi s0, s0, 1          ; outer++
+    blt  s0, s1, outer_loop ; if outer < 500, repeat
 
     addi a0, t7, 0
     addi a1, zero, 0

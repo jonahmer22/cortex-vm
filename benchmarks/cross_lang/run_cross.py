@@ -66,15 +66,15 @@ class CrossBench:
 BENCHES: list[CrossBench] = [
     CrossBench(
         name="fib_rec",
-        description="Recursive fib(30)",
+        description="Recursive fib(35) -- ~29M calls",
         asm_file="realworld_fib_rec.s",
         lua_file="fib_rec.lua",
         wat_file="fib_rec.wat",
-        expected="832040",
+        expected="9227465",
     ),
     CrossBench(
         name="fib_iter",
-        description="Iterative fib(40)",
+        description="Iterative fib(40) x1,000,000 outer loops",
         asm_file="realworld_fib_iter.s",
         lua_file="fib_iter.lua",
         wat_file="fib_iter.wat",
@@ -82,7 +82,7 @@ BENCHES: list[CrossBench] = [
     ),
     CrossBench(
         name="sieve",
-        description="Sieve of Eratosthenes (N=1000)",
+        description="Sieve of Eratosthenes (N=1000) x500",
         asm_file="realworld_sieve.s",
         lua_file="sieve.lua",
         wat_file="sieve.wat",
@@ -90,7 +90,7 @@ BENCHES: list[CrossBench] = [
     ),
     CrossBench(
         name="newton",
-        description="Newton's method, sqrt(2), 30 iters",
+        description="Newton's method, sqrt(2), 1,000,000 iters",
         asm_file="realworld_newton.s",
         lua_file="newton.lua",
         wat_file="newton.wat",
