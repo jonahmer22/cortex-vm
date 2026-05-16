@@ -8,6 +8,7 @@
 
 void run(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code);
 bool step(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_code);
+void runCacheReset(void);
 void heapDestroy(CortexVM *vm);
 uint64_t *heapSnapshot(HeapState *heap, uint64_t *out_used);
 

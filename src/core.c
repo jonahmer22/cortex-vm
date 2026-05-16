@@ -45,6 +45,18 @@ typedef struct{
 	uint64_t raw;
 } DecodedInstr;
 
+// decoded instruction cache (see run()); promoted to file scope so it can be
+// invalidated by runCacheReset() when a new binary is loaded into the same vm.
+static DecodedInstr *decoded = NULL;
+static uint64_t decoded_cap = 0;
+static uint64_t *cached_cb = NULL;
+static uint64_t cached_len = 0;
+
+void runCacheReset(void){
+	cached_cb = NULL;
+	cached_len = 0;
+}
+
 // memory functions
 void setWord(uint64_t addr, uint64_t val, uint64_t* codeBase, HeapState *heap, uint64_t *stackBase){
 	(void)codeBase;	// just to shut up the compiler
@@ -90,7 +102,7 @@ uint64_t loadWord(uint64_t addr, uint64_t* codeBase, uint64_t codeBaseSize, Heap
 	}
 	else{
 		// memory must be on the stack
-		if ((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))){
+		if((addr - STACK_ADDR) >= (STACKSIZE / sizeof(uint64_t))){
 			fprintf(stderr, "[ERROR 0x%04X]: Read outside of stack bounds rejected.\n", 0xD042);
 			// since we don't want to write just return early with a 0
 			return 0;
@@ -1155,16 +1167,15 @@ void run(CortexVM *vm, uint64_t fileLength, uint64_t extensions, uint64_t *exit_
 
 	// ====================================================================
 	// pre-decode the entire code section into a parallel array of
-	// DecodedInstr records. cached across calls; rebuilt only if codeBase
-	// or fileLength changes. a sentinel halt sits at decoded[fileLength]
-	// so falling off the end of code halts naturally — no per-instruction
-	// PC bound check needed in the hot loop.
+	// DecodedInstr records. cached across calls; rebuilt when codeBase
+	// or fileLength changes, or when runCacheReset() is called by the
+	// persistent VM API to signal that the previous code arena was freed
+	// and a new binary loaded (the arena may hand back the same address,
+	// so pointer equality alone is not a reliable freshness signal).
+	// a sentinel halt sits at decoded[fileLength] so falling off the end
+	// of code halts naturally — no per-instruction PC bound check needed
+	// in the hot loop.
 	// ====================================================================
-	static DecodedInstr *decoded = NULL;
-	static uint64_t decoded_cap = 0;
-	static uint64_t *cached_cb = NULL;
-	static uint64_t cached_len = 0;
-
 	if(codeBase != cached_cb || fileLength != cached_len){
 		if(decoded_cap < fileLength + 1){
 			free(decoded);
