@@ -90,6 +90,12 @@ int cortexVMExecBinary(CortexVM *vm, const uint64_t *binary, size_t wordCount){
 	}
 	fileLength -= HEADER_LEN;
 
+	// invalidate the decoded-instruction cache: the arena may have handed
+	// codeBase the same address as the previous load, so pointer+length
+	// equality cannot distinguish "same binary" from "different binary that
+	// happens to be the same size at the same address".
+	runCacheReset();
+
 	// reset PC to this binary's entry point
 	vm->regs[1] = offset - HEADER_LEN;
 

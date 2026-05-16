@@ -314,6 +314,62 @@ int main(void) {
     assert result.stdout.strip() == "55"
 
 
+def test_vm_exec_source_same_length_different_immediate():
+    """
+    Regression: two source strings with identical instruction count and
+    structure but different immediates must each produce their own output.
+
+    The decoded-instruction cache used pointer+length equality to decide
+    whether the loaded code had changed. The arena can hand back the same
+    address after a destroy+init, so consecutive runs of same-length binaries
+    would re-execute the previous program's decoded instructions, ignoring
+    the new immediates entirely. Fixed by invalidating the cache from
+    cortexVMExecBinary on every load.
+    """
+    c = r"""
+#include "cortex-vm.h"
+int main(void) {
+    CortexVM *vm = cortexVMCreate();
+
+    cortexVMExecSource(vm,
+        "main:\n"
+        "    addi t0, zero, 4\n"
+        "    addi a0, t0, 0\n"
+        "    addi a1, zero, 0\n"
+        "    addi a13, zero, 1\n"
+        "    syscall\n"
+        "    addi a0, zero, ' '\n"
+        "    addi a13, zero, 3\n"
+        "    syscall\n"
+        "    addi a0, zero, 0\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n"
+    );
+
+    cortexVMExecSource(vm,
+        "main:\n"
+        "    addi t0, zero, 763\n"
+        "    addi a0, t0, 0\n"
+        "    addi a1, zero, 0\n"
+        "    addi a13, zero, 1\n"
+        "    syscall\n"
+        "    addi a0, zero, ' '\n"
+        "    addi a13, zero, 3\n"
+        "    syscall\n"
+        "    addi a0, zero, 0\n"
+        "    addi a13, zero, 0\n"
+        "    syscall\n"
+    );
+
+    cortexVMDestroy(vm);
+    return 0;
+}
+"""
+    result = compile_and_run(c)
+    assert result.returncode == 0
+    assert result.stdout == "4 763 "
+
+
 def test_vm_sequential_runs_accumulate():
     """
     Three sequential runs on the same context, each incrementing a counter in s0.

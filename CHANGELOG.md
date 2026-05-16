@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.2] - 2026-05-16
+
+### Fixed
+- **Stale decoded-instruction cache in persistent VM API** -- `run()` keeps a process-wide cache of pre-decoded instructions keyed on `(codeBase pointer, fileLength)`. In `cortexVMExecBinary`, the code arena is destroyed and re-initialized on every call; the underlying allocator very often hands back the same virtual address, so two consecutive runs of same-length binaries on the same `CortexVM*` would compare equal under the cache check and re-execute the previous program's decoded instructions, silently ignoring the new source. The bug only manifested when the new binary had the same instruction count as the previous one (different counts changed `fileLength` and invalidated the cache correctly). Fixed by adding an internal `runCacheReset()` that `cortexVMExecBinary` calls after copying the new code into the arena, forcing a re-decode on every load. No public API change. Added a regression test (`test_vm_exec_source_same_length_different_immediate`) that runs two same-length programs differing only in an immediate and verifies both outputs.
+
+---
+
 ## [1.2.1] - 2026-05-12
 
 ### Changed
@@ -258,6 +265,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.2.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.2
 [1.2.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.1
 [1.2.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.0
 [1.1.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.1.2
