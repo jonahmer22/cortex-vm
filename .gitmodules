@@ -1,6 +1,6 @@
 [submodule "deps/arena"]
 	path = deps/arena
-	url = https://github.com/jonahmer22/arena
+	url = git@pi:repos/arena
 [submodule "deps/cliargs"]
 	path = deps/cliargs
-	url = https://github.com/jonahmer22/cliargs
+	url = git@pi:repos/cliargs
