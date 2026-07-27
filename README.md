@@ -182,6 +182,8 @@ loop:
     syscall
 ```
 
+Further examples can be found [here](https://github.com/jonahmer22/cortex-projects).
+
 ---
 
 ## Extensions
