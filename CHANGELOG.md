@@ -9,7 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.3.0] - 2026-09-15
 
 ### Changed
-- **Build now forces real GCC, never clang** -- on macOS, `gcc` is an Apple alias for clang, which produces a different (and incompatible) profiling model than GCC. The Makefile now hardcodes `CC` per platform (`gcc-16` on macOS via Homebrew, `gcc` on Linux) instead of probing for `gcc-15`/falling back to `gcc`, and fails fast with an actionable error if the chosen compiler is missing or turns out to be clang after all. `make clean` is exempted from the check so it always works.
+- **Build now forces real GCC, never clang** -- on macOS, `gcc` is an Apple alias for clang, which produces a different (and incompatible) profiling model than GCC. The Makefile now hardcodes `CC` per platform (`gcc-16` on macOS via Homebrew, `gcc` on Linux) instead of probing for `gcc-16`/falling back to `gcc`, and fails fast with an actionable error if the chosen compiler is missing or turns out to be clang after all. `make clean` is exempted from the check so it always works.
 - **PGO profile data moved out of `build/`** -- `PGO_DIR` was `build/pgo`, but both `pgo-generate` and `pgo-use` begin with `$(MAKE) clean`, which does `rm -rf build`. That meant `pgo-use` deleted its own profile data before it could be used, breaking the entire PGO workflow. `PGO_DIR` is now the top-level `pgo-data/` (added to `.gitignore`), which survives the clean step.
 
 ### Added
