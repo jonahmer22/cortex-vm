@@ -4,6 +4,10 @@
 #define VERSION     0x0000000000000001
 #define HEADER_LEN  5   // number of 64-bit words in the binary header
 
+// stuff for shabang linking
+// i'm just going to hardcode this "#!/usr/local/bin/cortex\n" is 24 characters long
+#define SHABANG_LENGTH 24
+
 // platform format specifiers
 // int64_t / uint64_t are "long" on Linux (LP64) and "long long" on macOS (LLP64)
 #ifdef __APPLE__

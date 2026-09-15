@@ -3,10 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "../include/defs.h"
 #include "../include/utils.h"
-
-// i'm just going to hardcode this "#!/usr/local/bin/cortex\n" is 24 characters long
-#define SHABANG_LENGTH 24
 
 // ===========
 // Basic Utils
