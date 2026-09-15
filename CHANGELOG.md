@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.0] - 2026-09-15
+
+### Changed
+- **Build now forces real GCC, never clang** -- on macOS, `gcc` is an Apple alias for clang, which produces a different (and incompatible) profiling model than GCC. The Makefile now hardcodes `CC` per platform (`gcc-16` on macOS via Homebrew, `gcc` on Linux) instead of probing for `gcc-15`/falling back to `gcc`, and fails fast with an actionable error if the chosen compiler is missing or turns out to be clang after all. `make clean` is exempted from the check so it always works.
+- **PGO profile data moved out of `build/`** -- `PGO_DIR` was `build/pgo`, but both `pgo-generate` and `pgo-use` begin with `$(MAKE) clean`, which does `rm -rf build`. That meant `pgo-use` deleted its own profile data before it could be used, breaking the entire PGO workflow. `PGO_DIR` is now the top-level `pgo-data/` (added to `.gitignore`), which survives the clean step.
+
+### Added
+- **Execution engine linking via shabang** -- `writeFileWords` now prepends `#!/usr/local/bin/cortex\n` to every binary it writes, so an assembled binary can be `chmod +x`'d and executed directly by the OS (`./program.bin`) instead of always going through `cortex ./program.bin`. `readFileWords` detects and strips the shebang before parsing the rest of the file as instruction words.
+- **Output binaries are automatically marked executable** -- `writeFileWords` now `chmod`s the file it just wrote, mirroring `chmod +x` (adds an execute bit everywhere there's a read bit) rather than hardcoding a mode. Previously the assembler/disassembler relied on the caller to remember to `chmod +x` the output themselves, which was easy to forget since the output filename isn't guaranteed to be `a.out`.
+
+### Fixed
+- **Shebang bytes leaking into the parsed instruction stream** -- `SHABANG_LENGTH` was briefly bumped to 25 (one past the real 24-byte length of `"#!/usr/local/bin/cortex\n"`), which caused `writeFileWords` to write the string literal's trailing `'\0'` into the file, and caused `readFileWords`'s byte-count bookkeeping to fall out of sync with how many bytes `fread` had actually consumed, shifting every subsequent word by one byte. Reverted to 24 and made the read/write paths agree exactly on the shebang's length.
+- **Shebang detection never ran for valid binaries** -- the check for a shebang was gated behind `if(size % 8 != 0)`, but `SHABANG_LENGTH` (24) is itself a multiple of 8, so a well-formed binary with a shebang prepended was *still* 8-byte aligned in total and the check silently never fired; the shebang bytes were fed straight into the VM as instructions instead of being stripped. The shebang check now always runs before the alignment check, regardless of file size.
+- **Fixed minor -Wpedantic warnings** -- `heapStateCreate()` declared and defined with empty parameter lists (`()`), which is not a true "no arguments" prototype in C and triggers `-Wstrict-prototypes`-adjacent pedantic warnings; changed to explicit `(void)` in both `include/heap.h` and `src/heap.c`. Also added missing trailing newlines at the end of `include/heap.h` and `src/heap.c`.
+
+---
+
 ## [1.2.2] - 2026-05-16
 
 ### Fixed
@@ -265,6 +282,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.3.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.3.0
 [1.2.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.2
 [1.2.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.1
 [1.2.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.0
