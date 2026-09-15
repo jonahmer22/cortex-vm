@@ -2,7 +2,7 @@
 
 #include "../include/heap.h"
 
-HeapState *heapStateCreate(){
+HeapState *heapStateCreate(void){
     HeapState *heap = malloc(sizeof(HeapState));
 
     heap->base = NULL;

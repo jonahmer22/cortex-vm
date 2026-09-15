@@ -31,6 +31,7 @@ int main(int argc, char **argv){
 	cliargsRegister("run", 'r', "Executes a compiled binary immediately after execution (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("no-output", 'n', "Prevents the assembler or disassembler from creating an output file (may only be used in conjunction with -d and -a flags)");
 	cliargsRegister("dump-regs", 'D', "Print all 64 registers as JSON to stderr after execution");
+	cliargsRegister("link", 'l', "Link the execution engine while compiling (uses shabang)");
 	cliargsRegister("visual", 'V', "Start the visual IDE in the browser (optionally pass a source file path)");
 
 	// TODO: might be a cool idea, but I don't know how to exactly execute an idea like this
@@ -41,6 +42,7 @@ int main(int argc, char **argv){
 	// #!$(CORTEX_PATH)
 	// need to add in functionality and make sure that it ignores the shabang when running if it's there
 	// maybe just like when loading / checking binary move the start head up until you hit the signature of .:CORT[version number]
+	// need a flag for it like -l for linking the execution engine via shabang...
 
 	// need to parse arguments to check for flags like -a to assemble or others
 	cliargsParse(argc, argv);
