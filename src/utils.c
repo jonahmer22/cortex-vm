@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "../include/utils.h"
+
+// i'm just going to hardcode this "#!/usr/local/bin/cortex" is 23 characters long
+#define SHABANG_LENGTH 23
 
 // ===========
 // Basic Utils
@@ -57,9 +61,20 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 	fseek(file, 0, SEEK_SET);
 
 	if(size % 8 != 0){
-		fclose(file);
-		fprintf(stderr, "[FATAL 0x%04X]: File size %ld is not a multiple of 8 bytes.\n", 0x0114, size);
-		exit(EXIT_FAILURE);
+		// check for a shabang
+		char temp[SHABANG_LENGTH] = {0};
+		fread(&temp, sizeof(char), SHABANG_LENGTH, file);
+		if(memcmp(temp, "#!/usr/local/bin/cortex", SHABANG_LENGTH) == 0){
+			// we have a shabang, idk what to do now...
+
+
+		}
+		// otherwise it's an invalid binary
+		else{
+			fclose(file);
+			fprintf(stderr, "[FATAL 0x%04X]: File size %ld is not a multiple of 8 bytes.\n", 0x0114, size);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	size_t wordCount = size / 8;
@@ -80,7 +95,7 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 	// reconstruct each word from bytes in big-endian order
 	for(size_t i = 0; i < wordCount; i++){
 		uint8_t *b = raw + i * 8;
-		buffer[i] = ((uint64_t)b[0] << 56) | ((uint64_t)b[1] << 48)
+		buffer[i] =  ((uint64_t)b[0] << 56) | ((uint64_t)b[1] << 48)
 		           | ((uint64_t)b[2] << 40) | ((uint64_t)b[3] << 32)
 		           | ((uint64_t)b[4] << 24) | ((uint64_t)b[5] << 16)
 		           | ((uint64_t)b[6] <<  8) | ((uint64_t)b[7]);
