@@ -19,6 +19,9 @@ results/
 lib/
 build/
 
+# PGO profile data
+pgo-data/
+
 # for people using claude
 # please see CONTRIBUTING.md and CODE_OF_CONDUCT.md if you are
 # BARE MINIMUM: manually review all code generated and ensure it fits the formatting of code around it.

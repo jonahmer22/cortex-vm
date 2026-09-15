@@ -1,4 +1,20 @@
-CC 		:= $(shell command -v gcc-15 2>/dev/null || echo gcc)
+# force real GCC (never clang, which macOS aliases as "gcc")
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+  CC := gcc-16
+else
+  CC := gcc
+endif
+
+ifneq ($(MAKECMDGOALS),clean)
+  ifeq ($(shell command -v $(CC) 2>/dev/null),)
+    $(error "$(CC)" not found. This project must be built with real GCC$(if $(filter Darwin,$(UNAME_S)), (install it with: brew install gcc)))
+  endif
+  ifeq ($(shell $(CC) --version 2>/dev/null | grep -qi clang && echo 1),1)
+    $(error "$(CC)" resolves to clang, not GCC. This project must be built with real GCC, not clang)
+  endif
+endif
+
 CFLAGS  := -std=c17 -Wall -Wextra -Wpedantic -Wunused-result -g -O3 -march=native -flto
 LDFLAGS := -lm -flto
 
@@ -74,7 +90,7 @@ debug:
 #   make pgo-use            # rebuild with the collected profile
 #
 # Or `make pgo PGO_RUN='./cortex bench.cxb'` to do all three in one shot.
-PGO_DIR := $(BUILD_DIR)/pgo
+PGO_DIR := pgo-data
 PGO_RUN ?=
 
 pgo-generate:

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "../include/defs.h"
 #include "../include/utils.h"
@@ -58,22 +59,23 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 	long size = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
-	if(size % 8 != 0){
-		// check for a shabang
-		char temp[SHABANG_LENGTH] = {0};
-		fread(&temp, sizeof(char), SHABANG_LENGTH, file);
-		if(memcmp(temp, "#!/usr/local/bin/cortex\n", SHABANG_LENGTH) == 0){
-			// we have a shabang, idk what to do now...
-			size -= (SHABANG_LENGTH + 1);
+	// check for a shabang (must be checked regardless of alignment, since
+	// SHABANG_LENGTH is itself a multiple of 8)
+	char temp[SHABANG_LENGTH] = {0};
+	fread(&temp, sizeof(char), SHABANG_LENGTH, file);
+	if(memcmp(temp, "#!/usr/local/bin/cortex\n", SHABANG_LENGTH) == 0){
+		// we have a shabang, idk what to do now...
+		size -= SHABANG_LENGTH;
 
-			// doing just this lowkey worked... I'm a genious (love the foresight to make this function well months ago)
-		}
-		// otherwise it's an invalid binary (check that now we removed the shabang len it is valid)
-		if(size % 8 != 0){
-			fclose(file);
-			fprintf(stderr, "[FATAL 0x%04X]: File size %ld is not a multiple of 8 bytes.\n", 0x0114, size);
-			exit(EXIT_FAILURE);
-		}
+		// doing just this lowkey worked... I'm a genious (love the foresight to make this function well months ago)
+	} else {
+		fseek(file, 0, SEEK_SET);
+	}
+
+	if(size % 8 != 0){
+		fclose(file);
+		fprintf(stderr, "[FATAL 0x%04X]: File size %ld is not a multiple of 8 bytes.\n", 0x0114, size);
+		exit(EXIT_FAILURE);
 	}
 
 	size_t wordCount = size / 8;
@@ -131,6 +133,8 @@ void writeFileWords(const char *path, uint64_t *buff, size_t wordCount){
 		exit(EXIT_FAILURE);
 	}
 
+	fwrite("#!/usr/local/bin/cortex\n", sizeof(char), SHABANG_LENGTH, file);
+
 	for(size_t i = 0; i < wordCount; i++){
 		uint8_t bytes[8];
 		bytes[0] = (buff[i] >> 56) & 0xff;
@@ -150,6 +154,16 @@ void writeFileWords(const char *path, uint64_t *buff, size_t wordCount){
 	}
 
 	fclose(file);
+
+	// mark the binary executable (mirroring `chmod +x`: add an x wherever there's an r)
+	struct stat st;
+	if(stat(path, &st) == 0){
+		mode_t mode = st.st_mode;
+		if(mode & S_IRUSR) mode |= S_IXUSR;
+		if(mode & S_IRGRP) mode |= S_IXGRP;
+		if(mode & S_IROTH) mode |= S_IXOTH;
+		chmod(path, mode);
+	}
 }
 
 //	.:
