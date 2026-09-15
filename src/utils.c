@@ -1,3 +1,6 @@
+// need POSIX visibility for mode_t / chmod under strict -std=c17 on Linux (glibc)
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

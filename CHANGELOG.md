@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.1] - 2026-09-15
+
+### Fixed
+- **`unknown type name 'mode_t'` on Linux** -- `writeFileWords`'s new automatic `chmod +x` (added in 1.3.0) used `mode_t`/`S_IRUSR`/etc. from `<sys/stat.h>`, but under strict `-std=c17` glibc hides POSIX types and constants unless a feature-test macro opts in first; this compiled fine against macOS's libc (which doesn't gate them the same way) but failed on Linux. Fixed by defining `_DEFAULT_SOURCE` at the top of `src/utils.c` before any includes, matching the existing pattern in `src/server.c` (`_GNU_SOURCE`). Verified with a real Linux GCC 13 toolchain (Docker), where `src/utils.c` now compiles cleanly with `-std=c17 -Wpedantic`.
+
+---
+
 ## [1.3.0] - 2026-09-15
 
 ### Changed
@@ -282,6 +289,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+[1.3.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.3.1
 [1.3.0]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.3.0
 [1.2.2]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.2
 [1.2.1]: https://github.com/jonahmer22/cortex-vm/releases/tag/v1.2.1
