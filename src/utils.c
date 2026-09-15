@@ -5,8 +5,8 @@
 
 #include "../include/utils.h"
 
-// i'm just going to hardcode this "#!/usr/local/bin/cortex" is 23 characters long
-#define SHABANG_LENGTH 23
+// i'm just going to hardcode this "#!/usr/local/bin/cortex\n" is 24 characters long
+#define SHABANG_LENGTH 24
 
 // ===========
 // Basic Utils
@@ -64,13 +64,14 @@ uint64_t *readFileWords(const char *path, size_t *outWordCount){
 		// check for a shabang
 		char temp[SHABANG_LENGTH] = {0};
 		fread(&temp, sizeof(char), SHABANG_LENGTH, file);
-		if(memcmp(temp, "#!/usr/local/bin/cortex", SHABANG_LENGTH) == 0){
+		if(memcmp(temp, "#!/usr/local/bin/cortex\n", SHABANG_LENGTH) == 0){
 			// we have a shabang, idk what to do now...
+			size -= (SHABANG_LENGTH + 1);
 
-
+			// doing just this lowkey worked... I'm a genious (love the foresight to make this function well months ago)
 		}
-		// otherwise it's an invalid binary
-		else{
+		// otherwise it's an invalid binary (check that now we removed the shabang len it is valid)
+		if(size % 8 != 0){
 			fclose(file);
 			fprintf(stderr, "[FATAL 0x%04X]: File size %ld is not a multiple of 8 bytes.\n", 0x0114, size);
 			exit(EXIT_FAILURE);
