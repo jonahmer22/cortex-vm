@@ -37,6 +37,11 @@ int main(int argc, char **argv){
 	// cliargsRegister("portable", 'p', "Output binary includes execution engine for portability");
 	// it'd be like packaging an executable into a .app for MacOS or a .exe for windows
 
+	// the above idea might not even really by required if I just do something like this at the top of output binaries:
+	// #!$(CORTEX_PATH)
+	// need to add in functionality and make sure that it ignores the shabang when running if it's there
+	// maybe just like when loading / checking binary move the start head up until you hit the signature of .:CORT[version number]
+
 	// need to parse arguments to check for flags like -a to assemble or others
 	cliargsParse(argc, argv);
 	if(!cliargsValid()){
@@ -119,6 +124,7 @@ int main(int argc, char **argv){
 			return EXIT_SUCCESS;
 		}
 	}
+
 	// ===================================
 	// default execution of binary at path
 	// ===================================
